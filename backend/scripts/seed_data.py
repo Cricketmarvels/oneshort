@@ -158,12 +158,7 @@ class Seeder:
         await self.call("POST", "/agreements/acceptance", key, json={"version": 1, "accepted": True})
         lat, lng = AREAS[area]
         jitter = lambda: random.uniform(-0.008, 0.008)  # noqa: E731 - homes spread around the area
-        await self.call(
-            "PUT",
-            "/users/me",
-            key,
-            json={"profile_image": f"https://api.dicebear.com/9.x/initials/svg?seed={name.replace(' ', '%20')}"},
-        )
+        # No profile_image: the app shows branded initials until the player uploads a photo.
         secondary = random.sample([r for r in ROLES if r != role], k=random.choice([0, 1, 1, 2]))
         await self.call(
             "PUT",
@@ -219,7 +214,6 @@ class Seeder:
                 "category": category,
                 "description": desc,
                 "location": {"lat": lat, "lng": lng},
-                "logo": f"https://api.dicebear.com/9.x/shapes/svg?seed={name.replace(' ', '%20')}",
             },
         )
         self.ids[key] = t["id"]
