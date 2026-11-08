@@ -1,0 +1,17 @@
+.data/
+node_modules/
+dist/
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/.env
+backend/uploads/
+frontend/test-results/
+frontend/playwright-report/
+mobile/.expo/
+mobile/ios/
+mobile/android/
+*.log
+.DS_Store

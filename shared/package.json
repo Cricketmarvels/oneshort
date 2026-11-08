@@ -1,0 +1,11 @@
+{
+  "name": "@cm/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared API contracts (generated from FastAPI OpenAPI) and domain helpers for web + mobile. No runtime dependencies.",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "gen": "npx --yes openapi-typescript@7.13.0 openapi.json -o src/api-types.ts"
+  }
+}

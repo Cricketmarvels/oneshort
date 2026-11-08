@@ -1,0 +1,333 @@
+/**
+ * PlayR premium design system (3-screen reference, Nov 2026): app header + role switcher, sports hero,
+ * pastel quick actions, match / player / team discovery cards, discovery search header and filters.
+ * Only real API values are rendered; missing data shows a neutral fallback, never an invented number.
+ */
+import type { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { ArrowLeft, ArrowRight, Bell, Bookmark, CalendarDays, ChevronDown, MapPin, SlidersHorizontal, Trophy, Users } from "lucide-react-native";
+import type { ComponentType, ReactNode } from "react";
+import { memo, useRef } from "react";
+import { Pressable, ScrollView, TextInput, View, type ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { PHOTO } from "@/components/identity";
+import { FilterBottomSheet } from "@/components/sheet";
+import { Avatar, Txt } from "@/components/ui";
+import { useSaved } from "@/lib/saved";
+import { FW, R, shadow, SP, T } from "@/theme";
+
+export type IconT = ComponentType<{ size?: number; color?: string; strokeWidth?: number; fill?: string }>;
+
+// ---------------------------------------------------------------- header
+export function Wordmark({ size = 30 }: { size?: number }) {
+  return (
+    <Txt accessibilityRole="header" accessibilityLabel="PlayR" style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", letterSpacing: -1, color: T.ink }}>
+      Play<Txt style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", color: T.primary }}>R</Txt>
+    </Txt>
+  );
+}
+
+/** "Player ⌄" pill → sheet. Captains switch context; players get a path to start a team (one account, never a second one). */
+export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" | "captain"; canCaptain: boolean; onChange: (v: "player" | "captain") => void }) {
+  const sheet = useRef<BottomSheetModal>(null);
+  const opt = (v: "player" | "captain", title: string, body: string) => (
+    <Pressable key={v} accessibilityRole="radio" accessibilityState={{ selected: value === v }} onPress={() => { sheet.current?.dismiss(); onChange(v); }}
+      style={{ padding: 16, borderRadius: 18, borderWidth: value === v ? 2 : 1, borderColor: value === v ? T.primary : T.line, backgroundColor: value === v ? T.primarySoft : T.surface, gap: 3 }}>
+      <Txt v="h3">{title}</Txt><Txt v="small" color={T.muted}>{body}</Txt>
+    </Pressable>
+  );
+  return (
+    <>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Viewing as ${value}. Change`} onPress={() => sheet.current?.present()}
+        style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 6, height: 40, paddingHorizontal: 16, borderRadius: R.pill, backgroundColor: pressed ? T.pressedSoft : T.primarySoft })}>
+        <Txt v="smallSemi" style={{ fontSize: 14 }}>{value === "player" ? "Player" : "Captain"}</Txt>
+        <ChevronDown size={16} color={T.ink} strokeWidth={2.2} />
+      </Pressable>
+      <FilterBottomSheet ref={sheet} title="View PlayR as" snap={["44%"]}>
+        <View style={{ gap: 10 }}>
+          {opt("player", "Player", "Find games, teams and playing partners")}
+          {canCaptain ? opt("captain", "Captain", "Manage your team, matches and invitations") : (
+            <Pressable accessibilityRole="button" onPress={() => { sheet.current?.dismiss(); router.push("/team/new"); }}
+              style={{ padding: 16, borderRadius: 18, borderWidth: 1, borderColor: T.line, borderStyle: "dashed", gap: 3 }}>
+              <Txt v="h3" color={T.primaryDark}>Become a captain</Txt><Txt v="small" color={T.muted}>Create a team — same account, captain tools unlock.</Txt>
+            </Pressable>
+          )}
+        </View>
+      </FilterBottomSheet>
+    </>
+  );
+}
+
+export function AppHeader({ role, canCaptain, onRole, unread, avatarUri, name }: {
+  role: "player" | "captain"; canCaptain: boolean; onRole: (v: "player" | "captain") => void; unread?: number; avatarUri?: string | null; name: string;
+}) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48 }}>
+      <View style={{ flex: 1 }}><Wordmark /></View>
+      <RoleSwitcher value={role} canCaptain={canCaptain} onChange={onRole} />
+      <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Notifications, ${unread} unread` : "Notifications"} onPress={() => router.push("/notifications")} hitSlop={4}
+        style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+        <Bell size={24} color={T.ink} strokeWidth={1.8} />
+        {unread ? <View style={{ position: "absolute", top: 8, right: 9, width: 10, height: 10, borderRadius: 5, backgroundColor: "#F2554A", borderWidth: 2, borderColor: T.bg }} /> : null}
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Your profile" onPress={() => router.push("/me")}>
+        <View style={{ borderRadius: 26, borderWidth: 2, borderColor: "#F5C044", padding: 1 }}><Avatar uri={avatarUri} name={name} size={42} /></View>
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------- hero
+export function SportsHeroBanner({ eyebrow, title, body, cta, onCta, photo = "bowler" }: {
+  eyebrow: string; title: string; body?: string; cta?: string; onCta?: () => void; photo?: keyof typeof PHOTO;
+}) {
+  return (
+    <View style={{ borderRadius: 24, overflow: "hidden", minHeight: 214, backgroundColor: T.heroInk, ...shadow(2) }}>
+      <Image source={PHOTO[photo] as number} contentFit="cover" style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "62%" }} accessibilityLabel="" />
+      <LinearGradient colors={["#063F3D", "rgba(6,63,61,0.92)", "rgba(0,107,101,0.35)", "rgba(0,107,101,0.05)"]} locations={[0, 0.42, 0.72, 1]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
+      <View style={{ padding: 22, gap: 10, maxWidth: "74%" }}>
+        <View style={{ alignSelf: "flex-start", paddingHorizontal: 12, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.14)", justifyContent: "center" }}>
+          <Txt v="micro" color="#FFFFFF">{eyebrow}</Txt>
+        </View>
+        <Txt style={{ ...FW.display, fontSize: 28, lineHeight: 32, letterSpacing: -0.6, color: "#FFFFFF" }}>{title}</Txt>
+        {body ? <Txt v="small" color="rgba(255,255,255,0.86)" style={{ fontSize: 14 }}>{body}</Txt> : null}
+        {cta && onCta ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={cta} onPress={onCta}
+            style={({ pressed }) => ({ marginTop: 6, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, height: 46, paddingHorizontal: 22, borderRadius: 23, backgroundColor: pressed ? "#CBEEE5" : "#DDF5EF" })}>
+            <Txt v="h3" color={T.heroInk} style={{ fontSize: 15 }}>{cta}</Txt>
+            <ArrowRight size={18} color={T.heroInk} strokeWidth={2.4} />
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------- quick actions
+const PASTEL = (): Record<string, [string, string, string]> => ({
+  mint: [T.tileMint, T.tileMint2, T.tileMintInk],
+  aqua: [T.tileAqua, T.tileAqua2, T.tileAquaInk],
+  peach: [T.tilePeach, T.tilePeach2, T.tilePeachInk],
+  lilac: [T.tileLilac, T.tileLilac2, T.tileLilacInk],
+});
+export function QuickActionTile({ icon: Icon, title, sub, tone, onPress }: { icon: IconT; title: string; sub: string; tone: "mint" | "aqua" | "peach" | "lilac"; onPress: () => void }) {
+  const [a, b, ink] = PASTEL()[tone]!;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${sub}`} onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 20, overflow: "hidden", transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      <LinearGradient colors={[a, b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16, minHeight: 112, gap: 8, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23,43,43,0.04)" }}>
+        <Icon size={30} color={ink} strokeWidth={1.8} />
+        <View style={{ gap: 2 }}>
+          <Txt v="h3" style={{ fontSize: 17 }}>{title}</Txt>
+          <Txt v="small" color={T.muted} numberOfLines={1}>{sub}</Txt>
+        </View>
+      </LinearGradient>
+    </Pressable>
+  );
+}
+export function QuickActionsGrid({ tiles }: { tiles: Parameters<typeof QuickActionTile>[0][] }) {
+  return (
+    <View style={{ gap: 12 }}>
+      <View style={{ flexDirection: "row", gap: 12 }}>{tiles.slice(0, 2).map((t) => <QuickActionTile key={t.title} {...t} />)}</View>
+      <View style={{ flexDirection: "row", gap: 12 }}>{tiles.slice(2, 4).map((t) => <QuickActionTile key={t.title} {...t} />)}</View>
+    </View>
+  );
+}
+
+export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 28 }}>
+      <Txt v="h1" style={{ fontSize: 21 }}>{title}</Txt>
+      {action && onAction ? (
+        <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Txt v="smallSemi" color={T.primaryDark} style={{ fontSize: 14 }}>{action}</Txt><ArrowRight size={16} color={T.primaryDark} strokeWidth={2.2} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+/** Branded fallback where a real photo doesn't exist (grounds, team covers): deep-teal gradient + soft pitch lines. */
+export function BrandFallback({ style, icon: Icon = Trophy, label }: { style?: ViewStyle; icon?: IconT; label?: string }) {
+  return (
+    <LinearGradient colors={["#0B5D58", "#063F3D"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ alignItems: "center", justifyContent: "center", overflow: "hidden" }, style]}>
+      <View style={{ position: "absolute", width: "70%", aspectRatio: 1, borderRadius: 999, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.10)" }} />
+      <View style={{ position: "absolute", width: 22, top: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.06)" }} />
+      <View style={{ position: "absolute", width: "160%", height: 40, backgroundColor: "rgba(127,224,214,0.08)", transform: [{ rotate: "-18deg" }], top: "30%" }} />
+      <Icon size={26} color="rgba(255,255,255,0.75)" strokeWidth={1.6} />
+      {label ? <Txt v="micro" color="rgba(255,255,255,0.7)" style={{ marginTop: 4, fontSize: 9.5 }}>{label}</Txt> : null}
+    </LinearGradient>
+  );
+}
+
+// ---------------------------------------------------------------- match card
+export const MatchDiscoveryCard = memo(function MatchDiscoveryCard({ title, format, when, distanceKm, spots, onPress }: {
+  title: string; format?: string | null; when: string; distanceKm?: number | null; spots: number; onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${when}. ${spots} spots open`} onPress={onPress}
+      style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 14, padding: 12, borderRadius: 20, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
+      <BrandFallback style={{ width: 92, height: 92, borderRadius: 16 }} label="Ground" />
+      <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+        {format ? <View style={{ alignSelf: "flex-start", paddingHorizontal: 7, height: 18, borderRadius: 6, backgroundColor: T.primarySoft, justifyContent: "center" }}><Txt v="micro" color={T.primaryDark} style={{ fontSize: 10, letterSpacing: 0.2 }}>{format}</Txt></View> : null}
+        <Txt v="h3" numberOfLines={2}>{title}</Txt>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><CalendarDays size={14} color={T.muted} strokeWidth={2} /><Txt v="small" color={T.ink}>{when}</Txt></View>
+          {distanceKm != null ? <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><MapPin size={14} color={T.muted} strokeWidth={2} /><Txt v="small" color={T.ink}>~{distanceKm} km</Txt></View> : null}
+        </View>
+        <AvailabilityPill text={`${spots} spot${spots === 1 ? "" : "s"} open`} />
+      </View>
+      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: T.primarySoft, alignItems: "center", justifyContent: "center" }}><ArrowRight size={18} color={T.primaryDark} strokeWidth={2.4} /></View>
+    </Pressable>
+  );
+});
+
+export function AvailabilityPill({ text }: { text: string }) {
+  return (
+    <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, height: 24, borderRadius: 12, backgroundColor: T.successPill }}>
+      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: T.success }} />
+      <Txt v="smallSemi" color={T.successText} style={{ fontSize: 12 }}>{text}</Txt>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------- discovery header & filters
+export function DiscoveryTitle({ title }: { title: string }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingTop: insets.top + 10, paddingBottom: 6, minHeight: 56 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} hitSlop={10} style={{ width: 44, height: 44, justifyContent: "center" }}>
+        <ArrowLeft size={26} color={T.ink} strokeWidth={2.2} />
+      </Pressable>
+      <Txt v="hero" accessibilityRole="header">{title}</Txt>
+    </View>
+  );
+}
+
+export function SearchField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 54, paddingHorizontal: 18, borderRadius: 18, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) }}>
+      <SearchIcon />
+      <TextInput accessibilityLabel={placeholder} value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={T.muted} autoCorrect={false}
+        style={{ flex: 1, minWidth: 0, ...FW.body, fontSize: 15.5, color: T.ink }} />
+    </View>
+  );
+}
+function SearchIcon() {
+  return <View style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}><View style={{ width: 15, height: 15, borderRadius: 8, borderWidth: 2, borderColor: T.ink }} /><View style={{ position: "absolute", right: 1, bottom: 1, width: 6, height: 2, backgroundColor: T.ink, transform: [{ rotate: "45deg" }] }} /></View>;
+}
+
+export function LocationRow({ label, radius, onLocation, onFilters, activeFilters }: { label: string; radius: string | number; onLocation: () => void; onFilters: () => void; activeFilters?: number }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${radius} km. Change location`} onPress={onLocation}
+        style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 8, height: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, flexShrink: 1 })}>
+        <MapPin size={17} color={T.primary} fill={T.primarySoft} strokeWidth={2.2} />
+        <Txt v="bodyMed" numberOfLines={1} style={{ flexShrink: 1, fontSize: 14.5 }}>{label} · {radius} km</Txt>
+        <ChevronDown size={16} color={T.ink} strokeWidth={2.2} />
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={activeFilters ? `Filters, ${activeFilters} active` : "Filters"} onPress={onFilters}
+        style={({ pressed }) => ({ width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: activeFilters ? T.primary : T.line, ...shadow(1) })}>
+        <SlidersHorizontal size={20} color={T.ink} strokeWidth={2} />
+        {activeFilters ? <View style={{ position: "absolute", top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: T.primary, alignItems: "center", justifyContent: "center" }}><Txt v="micro" color="#FFFFFF" style={{ fontSize: 9, letterSpacing: 0 }}>{activeFilters}</Txt></View> : null}
+      </Pressable>
+    </View>
+  );
+}
+
+/** Pill chip: selected = solid primary with white label; optional leading icon. */
+export function Pill({ label, active, onPress, icon: Icon }: { label: string; active?: boolean; onPress: () => void; icon?: IconT }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: !!active }} accessibilityLabel={label} onPress={onPress} hitSlop={{ top: 4, bottom: 4 }}
+      style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 6, height: 40, paddingHorizontal: Icon ? 12 : 18, borderRadius: 20, backgroundColor: active ? T.primary : pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: active ? T.primary : T.line, ...(active ? shadow(2) : {}) })}>
+      {Icon ? <Icon size={16} color={active ? "#FFFFFF" : T.ink} strokeWidth={2} /> : null}
+      <Txt v="smallSemi" color={active ? "#FFFFFF" : T.ink} style={{ fontSize: 14 }}>{label}</Txt>
+    </Pressable>
+  );
+}
+export function PillRow({ children }: { children: ReactNode }) {
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -SP.page, flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: SP.page, gap: 8 }}>{children}</ScrollView>;
+}
+
+export function SaveButton({ kind, id, name }: { kind: "player" | "team"; id: string; name: string }) {
+  const saved = useSaved((s) => !!s.ids[`${kind}:${id}`]);
+  const toggle = useSaved((s) => s.toggle);
+  return (
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: saved }} accessibilityLabel={saved ? `Remove ${name} from saved` : `Save ${name}`} onPress={() => toggle(kind, id)} hitSlop={10}
+      style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+      <Bookmark size={22} color={saved ? T.primary : T.ink} fill={saved ? T.primary : "transparent"} strokeWidth={1.8} />
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------- player card
+export type InviteState = "idle" | "sending" | "sent" | "error";
+export const PlayerDiscoveryCard = memo(function PlayerDiscoveryCard({ id, name, photo, role, ratingText, meta, available, onOpen, onInvite, invite, canInvite }: {
+  id: string; name: string; photo?: string | null; role: string; ratingText?: string | null; meta: string; available: boolean;
+  onOpen: () => void; onInvite?: () => void; invite?: InviteState; canInvite: boolean;
+}) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${name}, ${role}. ${meta}${available ? ". Available this week" : ""}`} onPress={onOpen}
+      style={({ pressed }) => ({ flexDirection: "row", gap: 14, padding: 14, paddingRight: 12, borderRadius: 22, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
+      <Avatar uri={photo} name={name} size={66} />
+      <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingRight: 30 }}>
+          <Txt v="h3" numberOfLines={1} style={{ flexShrink: 1, fontSize: 17 }}>{name}</Txt>
+          {ratingText ? <Txt v="small" color={T.muted} style={{ fontSize: 13 }}><Txt style={{ color: "#F5A623" }}>★</Txt> {ratingText}</Txt> : null}
+        </View>
+        <View style={{ alignSelf: "flex-start", paddingHorizontal: 9, height: 22, borderRadius: 11, backgroundColor: T.chipNeutral, justifyContent: "center" }}><Txt v="smallSemi" style={{ fontSize: 12 }}>{role}</Txt></View>
+        <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
+          <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+            <Txt v="small" color={T.muted} numberOfLines={1} style={{ fontSize: 13.5 }}>{meta}</Txt>
+            {available ? <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: T.success }} /><Txt v="smallSemi" color={T.successText}>Available this week</Txt></View> : null}
+          </View>
+          {canInvite ? (
+            <Pressable accessibilityRole="button" accessibilityState={{ disabled: invite === "sending" || invite === "sent" }} accessibilityLabel={invite === "sent" ? `${name} invited` : `Invite ${name}`}
+              disabled={invite === "sending" || invite === "sent"} onPress={onInvite}
+              style={({ pressed }) => ({ height: 40, minWidth: 88, paddingHorizontal: 18, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: invite === "sent" ? T.primarySoft : invite === "error" ? T.dangerBackground : pressed ? T.primaryPressed : T.primary })}>
+              <Txt v="h3" color={invite === "sent" ? T.primaryDark : invite === "error" ? T.dangerText : "#FFFFFF"} style={{ fontSize: 14.5 }}>
+                {invite === "sending" ? "Sending…" : invite === "sent" ? "Invited" : invite === "error" ? "Retry" : "Invite"}
+              </Txt>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+      <View style={{ position: "absolute", top: 10, right: 8 }}><SaveButton kind="player" id={id} name={name} /></View>
+    </Pressable>
+  );
+});
+
+// ---------------------------------------------------------------- team card
+export type TeamState = "recruiting" | "pending" | "mine" | "invited" | "full" | "member";
+export const TeamDiscoveryCard = memo(function TeamDiscoveryCard({ id, name, ratingText, meta, need, state, onOpen, onJoin, joining }: {
+  id: string; name: string; ratingText?: string | null; meta: string; need?: string | null; state: TeamState; onOpen: () => void; onJoin?: () => void; joining?: boolean;
+}) {
+  const action = state === "mine" ? "Manage Team" : state === "pending" ? "Request Pending" : state === "invited" ? "View invitation" : state === "recruiting" && onJoin ? "Request to join" : "View Team";
+  const primary = state === "recruiting" && !!onJoin;
+  const stack = (need?.length ?? 0) > 24; // long requirement lists get their own row instead of truncating
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${name}. ${meta}${need ? `. ${need}` : ""}`} onPress={onOpen}
+      style={({ pressed }) => ({ borderRadius: 22, overflow: "hidden", backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
+      <BrandFallback style={{ height: 104 }} icon={Users} />
+      <View style={{ position: "absolute", top: 70, left: 14, borderRadius: 34, borderWidth: 3, borderColor: T.surface }}><Avatar name={name} size={60} /></View>
+      <View style={{ paddingTop: 10, paddingLeft: 86, paddingRight: 12, paddingBottom: 14, gap: 4 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingRight: 32 }}>
+          <Txt v="h3" numberOfLines={1} style={{ fontSize: 17, flexShrink: 1 }}>{name}</Txt>
+        </View>
+        {ratingText ? <Txt v="small" color={T.muted}><Txt style={{ color: "#F5A623" }}>★</Txt> {ratingText}</Txt> : null}
+        <Txt v="small" color={T.muted} numberOfLines={1} style={{ fontSize: 13 }}>{meta}</Txt>
+        <View style={{ flexDirection: stack ? "column" : "row", alignItems: stack ? "stretch" : "center", justifyContent: "space-between", gap: 10, marginTop: 6, marginLeft: -72 }}>
+          {need ? <View style={{ alignSelf: "flex-start", flexShrink: 1, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, backgroundColor: state === "full" ? T.chipNeutral : T.successPill }}><Txt v="smallSemi" color={state === "full" ? T.muted : T.successText}>{need}</Txt></View> : <View />}
+          <Pressable accessibilityRole="button" accessibilityLabel={action} disabled={state === "pending" || joining} onPress={primary ? onJoin : onOpen}
+            style={({ pressed }) => ({ alignSelf: stack ? "flex-end" : "auto", flexDirection: "row", alignItems: "center", gap: 6, height: 40, paddingHorizontal: 18, borderRadius: 20, borderWidth: primary ? 0 : 1.5, borderColor: T.line, backgroundColor: primary ? (pressed ? T.primaryPressed : T.primary) : state === "pending" ? T.surface2 : T.surface })}>
+            <Txt v="h3" color={primary ? "#FFFFFF" : state === "pending" ? T.muted : T.primaryDark} style={{ fontSize: 14 }}>{joining ? "Sending…" : action}</Txt>
+            {!primary && state !== "pending" ? <ArrowRight size={16} color={T.primaryDark} strokeWidth={2.4} /> : null}
+          </Pressable>
+        </View>
+      </View>
+      <View style={{ position: "absolute", top: 108, right: 8 }}><SaveButton kind="team" id={id} name={name} /></View>
+    </Pressable>
+  );
+});

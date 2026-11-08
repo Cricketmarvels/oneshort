@@ -1,0 +1,10 @@
+{
+  "name": "CricketMarvels Play",
+  "short_name": "CM Play",
+  "description": "Hyperlocal cricket matchmaking and team management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f3",
+  "theme_color": "#0b3d2e",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

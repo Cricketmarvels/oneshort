@@ -1,0 +1,66 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: platform/backend } }
+    services:
+      mongo:
+        image: mongo:8.0
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'" --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install 3.13 && uv sync --frozen
+      - name: Turn the service container into a replica set (transactions need it)
+        run: |
+          docker exec ${{ job.services.mongo.id }} mongosh --quiet --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]})"
+          sleep 5
+      - run: uv run ruff check app tests
+      - run: uv run ruff format --check app tests
+      - run: uv run mypy app
+      - run: uv run pytest -q
+        env:
+          TEST_MONGODB_URI: mongodb://localhost:27017/?replicaSet=rs0&directConnection=true
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: OpenAPI contract is up to date
+        working-directory: platform/backend
+        run: |
+          uv python install 3.13 && uv sync --frozen
+          uv run python -m scripts.export_openapi
+          cd ../shared && npx --yes openapi-typescript@7.13.0 openapi.json -o src/api-types.ts
+          git diff --exit-code -- openapi.json src/api-types.ts
+
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: platform/frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: platform/frontend/package-lock.json }
+      - run: npm ci
+      - run: npx tsc --noEmit -p .
+      - run: npm test
+      - run: npx vite build
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: platform/mobile } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: platform/mobile/package-lock.json }
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx jest
+      - run: npx expo-doctor

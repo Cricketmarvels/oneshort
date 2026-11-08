@@ -1,0 +1,20 @@
+import type { S } from "@cm/shared";
+
+export type PlayerEntry = S<"PlayerLeaderboardEntry">;
+export type PlayerBoard = S<"PlayerLeaderboardOut">;
+export type TeamEntry = S<"TeamLeaderboardEntry">;
+export type TeamBoard = S<"TeamLeaderboardOut">;
+export type TeamBrief = S<"TeamCard">;
+export type RatingBrief = S<"RatingBrief">;
+export type PlayerRating = S<"PlayerRatingOut">;
+export type RatingHistory = S<"RatingHistoryOut">;
+export type Challenge = S<"ChallengeOut">;
+export type Fixture = S<"FixtureOut">;
+export type Dashboard = S<"TeamDashboardOut">;
+export type DiscoverTeam = S<"TeamDiscoverEntry">;
+export type Community = S<"CommunityOut">;
+export type Post = S<"PostOut">;
+export type Home = S<"HomeOut">;
+export type Scope = "5km" | "10km" | "20km" | "50km" | "city" | "state" | "national";
+export type Category = "overall" | "batting" | "bowling" | "all_rounder" | "fielding" | "consistency" | "rising";
+export type FixtureFormat = S<"FixtureFormat">;
