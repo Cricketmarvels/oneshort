@@ -30,7 +30,7 @@ from app.modules.cricheroes.schemas import (
     CricHeroesSnapshotOut,
     CricHeroesStatOut,
 )
-from app.modules.cricheroes.urls import parse_team_ref, safe_cricheroes_url
+from app.modules.cricheroes.urls import parse_team_ref, safe_cricheroes_url, safe_profile_url
 from app.modules.teams.policy import can_manage_team, ensure_team_manager
 from app.modules.teams.service import TeamService
 from app.modules.users.schemas import public_user
@@ -125,6 +125,11 @@ class CricHeroesService:
             {"$set": {"link": link, "updated_at": utcnow()}, "$setOnInsert": {"team_id": team_id}},
             upsert=True,
         )
+        team_url, team_ext = safe_profile_url(ref.url, "team")
+        if team_url:  # keep the team record's CricHeroes link in step with this older endpoint
+            await self.c.mongo["teams"].update_one(
+                {"_id": team_id}, {"$set": {"cricheroes_team_url": team_url, "cricheroes_team_id": team_ext}}
+            )
         await self.c.audit.log(
             actor_id=user.id,
             action="cricheroes.link",

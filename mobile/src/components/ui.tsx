@@ -2,7 +2,7 @@
 import { STATUS_TONE } from "@cm/shared";
 import { Image } from "expo-image";
 import { Search, X } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +17,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
+import { mediaUrl } from "@/lib/media";
 import { FW, ICON, R, shadow, SIZE, SP, T, type } from "@/theme";
 
 /** Legacy palette names (older screens). */
@@ -245,12 +246,20 @@ export function DateBlock({ iso }: { iso: string }) {
 // ---------------------------------------------------------------- avatar
 /** Starter Avatar: circular photo, or white initials on the dark teal circle. */
 export function Avatar({ uri, name, size = SIZE.avatar, online }: { uri?: string | null; name: string; size?: number; ring?: string; online?: boolean }) {
+  const [failed, setFailed] = useState(false);
   const words = name.split(/\s+/).filter(Boolean);
   const lettered = words.filter((w) => /^\p{L}/u.test(w));
   const initials = (lettered.length ? lettered : words).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
   const dot = online ? <View accessibilityLabel="Available" style={{ position: "absolute", right: 0, bottom: 0, width: 9, height: 9, borderRadius: 5, backgroundColor: T.successText, borderWidth: 2, borderColor: T.surface }} /> : null;
-  if (uri && !uri.includes("dicebear")) {
-    return <View><Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} contentFit="cover" accessibilityLabel={name} />{dot}</View>;
+  const src = mediaUrl(uri);
+  if (src && !failed) {
+    return (
+      <View>
+        <Image source={{ uri: src }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: T.primarySoft }} contentFit="cover"
+          cachePolicy="memory-disk" transition={150} recyclingKey={src} accessibilityLabel={`${name}'s photo`} onError={() => setFailed(true)} />
+        {dot}
+      </View>
+    );
   }
   return (
     <View accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: T.heroInk, alignItems: "center", justifyContent: "center" }}>

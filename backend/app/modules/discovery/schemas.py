@@ -117,6 +117,7 @@ class TeamBrief(BaseModel):
 
 class OpportunityOut(BaseModel):
     match_id: str
+    cover_image: str | None = None
     match_code: str
     title: str
     start_at: datetime

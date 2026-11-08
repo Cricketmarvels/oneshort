@@ -1,8 +1,12 @@
 """Image storage providers."""
 
+import io
+import re
 import secrets
 from pathlib import Path
 from typing import Protocol
+
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.core.config import Settings
 from app.core.exceptions import ValidationFailed
@@ -27,6 +31,41 @@ def validate_image(content: bytes, content_type: str, max_bytes: int) -> str:
     return _EXT[content_type]
 
 
+# Longest edge per purpose (px). Re-encoding also strips EXIF/GPS metadata and neutralises polyglot files.
+MAX_EDGE = {"profile": 800, "team_logo": 600, "team": 600, "team_cover": 1800, "match": 1800, "evidence": 2000}
+Image.MAX_IMAGE_PIXELS = 40_000_000  # refuse decompression bombs
+
+
+def process_image(content: bytes, ext: str, purpose: str) -> tuple[bytes, str]:
+    """Decode, auto-rotate, downscale and re-encode an already type-checked image. Returns (bytes, ext)."""
+    try:
+        with Image.open(io.BytesIO(content)) as src:
+            src.load()
+            img: Image.Image = ImageOps.exif_transpose(src)
+            edge = MAX_EDGE.get(purpose, 1600)
+            img.thumbnail((edge, edge), Image.Resampling.LANCZOS)
+            out = io.BytesIO()
+            if ext == "png" and img.mode in ("RGBA", "LA", "P"):
+                img.save(out, "PNG", optimize=True)  # keep transparency (logos)
+                return out.getvalue(), "png"
+            img.convert("RGB").save(out, "JPEG", quality=82, optimize=True, progressive=True)
+            return out.getvalue(), "jpg"
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+        raise ValidationFailed("That image couldn't be read", code="UNSUPPORTED_MEDIA") from exc
+
+
+_OWN_MEDIA = re.compile(r"^/uploads/[A-Za-z0-9_-]{1,40}/[a-f0-9]{32}\.(?:jpg|png|webp)$")
+
+
+def is_own_media(url: str | None, settings: Settings) -> bool:
+    """True only for files PlayR stored itself (relative /uploads/… path, or legacy absolute URL on our base)."""
+    if not url:
+        return False
+    base = settings.public_base_url.rstrip("/")
+    path = url[len(base) :] if url.startswith(base + "/uploads/") else url
+    return bool(_OWN_MEDIA.match(path))
+
+
 class StorageProvider(Protocol):
     async def save_image(self, content: bytes, ext: str, folder: str) -> str: ...
 
@@ -44,7 +83,8 @@ class LocalStorage:
         target_dir.mkdir(parents=True, exist_ok=True)
         name = f"{secrets.token_hex(16)}.{ext}"
         (target_dir / name).write_bytes(content)
-        return f"{self.public_base_url}/uploads/{safe_folder}/{name}"
+        # Relative path: works behind any host/tunnel; clients resolve it against the API origin.
+        return f"/uploads/{safe_folder}/{name}"
 
 
 class CloudinaryStorage:

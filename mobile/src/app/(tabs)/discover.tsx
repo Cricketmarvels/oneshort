@@ -5,7 +5,6 @@
 import type { S } from "@cm/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { LandPlot, Trophy, UserRoundSearch, Users, UsersRound, Zap } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 
@@ -34,15 +33,15 @@ export default function Explore() {
       <H title="Explore" sub={`Find your next sports connection · ${label}, ${radius} km`} />
       <SmartSearchBar value={q} onChange={setQ} onSubmit={(v) => { if (v.trim().length >= 2) router.push({ pathname: "/search", params: { q: v.trim() } }); }} />
       <View style={{ gap: 12 }}>
-        <LinkCard icon={UserRoundSearch} title="Find Players" sub={n(players.data) != null ? `${n(players.data)} players within ${radius} km` : "Players near you"} onPress={() => router.push("/find/players")} />
-        <LinkCard icon={Users} title="Find Teams" sub={n(teams.data) != null ? `${n(teams.data)} teams looking for players` : "Teams near you"} onPress={() => router.push("/find/teams")} />
-        <LinkCard icon={LandPlot} title="Book a Ground" sub={n(grounds.data) != null ? `${n(grounds.data)} grounds · contact the venue to book` : "Grounds near you"} onPress={() => router.push("/grounds")} />
-        <LinkCard icon={Zap} title="Quick Match" sub={open != null ? `${open} game${open === 1 ? "" : "s"} with open spots` : "Games that need players soon"} onPress={() => router.push("/quick-match")} />
+        <LinkCard icon="search" title="Find Players" sub={n(players.data) != null ? `${n(players.data)} players within ${radius} km` : "Players near you"} onPress={() => router.push("/find/players")} />
+        <LinkCard icon="users" title="Find Teams" sub={n(teams.data) != null ? `${n(teams.data)} teams looking for players` : "Teams near you"} onPress={() => router.push("/find/teams")} />
+        <LinkCard icon="stadium" title="Book a Ground" sub={n(grounds.data) != null ? `${n(grounds.data)} grounds · contact the venue to book` : "Grounds near you"} onPress={() => router.push("/grounds")} />
+        <LinkCard icon="bolt" title="Quick Match" sub={open != null ? `${open} game${open === 1 ? "" : "s"} with open spots` : "Games that need players soon"} onPress={() => router.push("/quick-match")} />
       </View>
       <View style={{ gap: 12 }}>
         <SectionRow title="More" />
-        <LinkCard icon={Trophy} title="Leaderboard" sub="Local rankings from verified matches" onPress={() => router.push("/leaderboard")} />
-        <LinkCard icon={UsersRound} title="Communities" sub="Local groups for your sector, society or office" onPress={() => router.push("/community")} />
+        <LinkCard icon="trophy" title="Leaderboard" sub="Local rankings from verified matches" onPress={() => router.push("/leaderboard")} />
+        <LinkCard icon="community" title="Communities" sub="Local groups for your sector, society or office" onPress={() => router.push("/community")} />
       </View>
       <Txt v="small" color={T.muted}>Distances are approximate. Exact player locations are never shown.</Txt>
     </StarterScreen>

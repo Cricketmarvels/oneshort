@@ -79,7 +79,7 @@ export function RacketHome({ sport }: { sport: RacketSport }) {
   const refresh = () => { for (const q of [profile, nearby, courts, pending]) void q.refetch(); };
   return (
     <>
-      <HeroScreen title={`${greeting()}, ${user?.full_name.split(" ")[0] ?? ""} 👋`} kicker={`Ready for some ${SPORTS[sport].name.toLowerCase()}?`} subtitle={`${place} · ${radius} km`} onSubtitle={() => locSheet.current?.present()}
+      <HeroScreen title={`${greeting()}, ${user?.full_name.split(" ")[0] ?? ""}`} kicker={`Ready for some ${SPORTS[sport].name.toLowerCase()}?`} subtitle={`${place} · ${radius} km`} onSubtitle={() => locSheet.current?.present()}
         refreshing={profile.isRefetching} onRefresh={refresh}>
         {profile.data === null ? <ProfilePrompt sport={sport} /> : null}
         <View style={{ gap: 12 }}>

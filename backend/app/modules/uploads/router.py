@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from app.api.dependencies import ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
-from app.infrastructure.integrations.storage import validate_image
+from app.infrastructure.integrations.storage import process_image, validate_image
 
 router = APIRouter(prefix="/uploads", tags=["Uploads"], responses=ERROR_RESPONSES)
 
@@ -21,10 +21,11 @@ async def upload_image(
     user: UserDep,
     c: ContainerDep,
     file: Annotated[UploadFile, File()],
-    purpose: Annotated[Literal["profile", "team", "evidence"], Form()] = "profile",
+    purpose: Annotated[Literal["profile", "team", "team_logo", "team_cover", "match", "evidence"], Form()] = "profile",
 ) -> Envelope[UploadOut]:
     content = await file.read(c.settings.max_upload_bytes + 1)
     ext = validate_image(content, file.content_type or "", c.settings.max_upload_bytes)
+    content, ext = process_image(content, ext, purpose)  # resize, strip metadata, re-encode
     url = await c.storage.save_image(content, ext, purpose)
     await c.audit.log(
         actor_id=user.id,

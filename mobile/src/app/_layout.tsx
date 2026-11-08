@@ -16,6 +16,7 @@ import { useSport } from "@/lib/sports";
 import { registerForPush } from "@/lib/device";
 import { applyTheme, FW, scheme, type Scheme, T } from "@/theme";
 import { useAppearance } from "@/lib/appearance";
+import { usePendingJoin } from "@/lib/joinlink";
 
 /** Stack header options — built at render time so they follow the current theme. */
 const makeHeader = () => ({
@@ -34,7 +35,8 @@ function Gate() {
   const { user, ready, reload } = useAuth();
   const seg = useSegments();
   const sport = useSport();
-  useEffect(() => { void sport.load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const pending = usePendingJoin();
+  useEffect(() => { void sport.load(); void pending.load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (user) void registerForPush(); }, [user]);
   // keep the device selection and the profile in step: a fresh pre-login choice wins; otherwise adopt the profile's
   useEffect(() => {
@@ -42,15 +44,17 @@ function Gate() {
     if (!sport.sport) sport.choose(user.preferred_sport);
     else if (sport.sport !== user.preferred_sport) void api("/users/me", { method: "PUT", body: { preferred_sport: sport.sport } }).then(() => reload()).catch(() => undefined);
   }, [user?.id, sport.ready, sport.sport]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!ready || !sport.ready) return <Loading />;
+  if (!ready || !sport.ready || !pending.ready) return <Loading />;
   const inAuth = seg[0] === "(auth)";
+  const onJoin = (seg as string[])[0] === "join"; // captain invite links are reachable before login
   const onSport = inAuth && ["sport", "welcome"].includes((seg as string[])[1] ?? "");
-  if (!user && !sport.sport && !onSport) return <Redirect href="/welcome" />;
+  if (!user && !sport.sport && !onSport && !onJoin) return <Redirect href="/welcome" />;
   const onSim = (seg as string[])[0] === "whatsapp-sim"; // WhatsApp simulator (test mode) is reachable before login
-  if (!user && !inAuth && !onSim) return <Redirect href="/login" />;
+  if (!user && !inAuth && !onSim && !onJoin) return <Redirect href="/login" />;
   if (user && inAuth) return <Redirect href="/" />;
   if (user && !user.agreement.satisfied && seg[0] !== "agreement") return <Redirect href="/agreement" />;
-  if (user && user.agreement.satisfied && seg[0] === "agreement") return <Redirect href="/" />;
+  if (user && user.agreement.satisfied && seg[0] === "agreement") return <Redirect href={pending.code ? { pathname: "/join/[code]", params: { code: pending.code } } : "/"} />;
+  if (user && user.agreement.satisfied && pending.code && !onJoin) return <Redirect href={{ pathname: "/join/[code]", params: { code: pending.code } }} />;
   return (
     <Stack screenOptions={header}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -77,6 +81,7 @@ function Gate() {
       <Stack.Screen name="find/teams" options={{ title: "Find Teams", headerShown: false }} />
       <Stack.Screen name="grounds" options={{ title: "Book a Ground" }} />
       <Stack.Screen name="quick-match" options={{ title: "Quick Match" }} />
+      <Stack.Screen name="join/[code]" options={{ headerShown: false }} />
       <Stack.Screen name="match/players" options={{ title: "Find Players for a Match" }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="racket/profile" options={{ title: "Profile" }} />

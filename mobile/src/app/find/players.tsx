@@ -7,10 +7,10 @@ import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import type { S } from "@cm/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { CircleDot, Hand, Shuffle, Slash, UserPlus, Users } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, View } from "react-native";
 
+import { PlayRIcon } from "@/components/icons";
 import { LocationOptions } from "@/components/cricket";
 import { InviteToMatch } from "@/components/find";
 import { DiscoveryTitle, type InviteState, LocationRow, Pill, PillRow, PlayerDiscoveryCard, SearchField } from "@/components/premium";
@@ -26,10 +26,10 @@ import { ICON, SP, T } from "@/theme";
 type Nearby = S<"NearbyPlayerOut">;
 const ROLES = [
   { v: "", l: "All Roles" },
-  { v: "batsman", l: "Batter", icon: Slash },
-  { v: "bowler", l: "Bowler", icon: CircleDot },
-  { v: "wicketkeeper", l: "WK", icon: Hand },
-  { v: "all_rounder", l: "All-rounder", icon: Shuffle },
+  { v: "batsman", l: "Batter", icon: "cricket" as const },
+  { v: "bowler", l: "Bowler", icon: "ball" as const },
+  { v: "wicketkeeper", l: "WK", icon: "glove" as const },
+  { v: "all_rounder", l: "All-rounder", icon: "shuffle" as const },
 ] as const;
 const MIN_RATING = [{ v: "", l: "Any rating" }, { v: "1400", l: "1400+" }, { v: "1500", l: "1500+" }, { v: "1600", l: "1600+" }] as const;
 
@@ -93,7 +93,7 @@ export default function FindPlayersScreen() {
           </View>
         }
         ListEmptyComponent={res.isPending || res.isError ? undefined : (
-          <EmptyState icon={<Users size={22} color={T.primaryDark} strokeWidth={ICON.stroke} />} title="No players found" body={`Try a wider radius${active || role ? " or clear filters" : ""}.`} action="Show 20 km" onAction={() => setRadius("20")} />
+          <EmptyState icon={<PlayRIcon name="users" size={22} color={T.primaryDark} />} title="No players found" body={`Try a wider radius${active || role ? " or clear filters" : ""}.`} action="Show 20 km" onAction={() => setRadius("20")} />
         )}
         renderItem={({ item: p }) => (
           <PlayerDiscoveryCard
@@ -129,7 +129,7 @@ export default function FindPlayersScreen() {
       <FilterBottomSheet ref={invite} title={focus ? `Invite ${focus.user.full_name}` : ""} snap={pickMatch ? ["78%"] : ["40%"]}>
         {!pickMatch ? (
           <>
-            <Button title="Invite to my team" icon={<UserPlus size={16} color={T.onPrimary} strokeWidth={ICON.stroke} />} loading={toTeam.isPending} onPress={() => focus && toTeam.mutate(focus)} />
+            <Button title="Invite to my team" icon={<PlayRIcon name="userPlus" size={18} color={T.onPrimary} />} loading={toTeam.isPending} onPress={() => focus && toTeam.mutate(focus)} />
             <Button title="Invite to one of my matches" variant="secondary" onPress={() => setPickMatch(true)} />
             <Txt v="small" color={T.muted}>They'll get a notification and can accept or decline.</Txt>
           </>

@@ -124,7 +124,13 @@ class UserService:
             await m["player_profiles"].update_one(
                 {"user_id": uid},
                 {
-                    "$unset": {"home_location": "", "bio": "", "cricheroes_url": "", "previous_teams": ""},
+                    "$unset": {
+                        "home_location": "",
+                        "bio": "",
+                        "cricheroes_url": "",
+                        "cricheroes_player_id": "",
+                        "previous_teams": "",
+                    },
                     "$set": {"availability_visibility": "private", "updated_at": now},
                 },
                 session=s,

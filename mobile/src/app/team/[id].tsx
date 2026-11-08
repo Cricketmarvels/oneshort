@@ -8,10 +8,12 @@ import { Alert, Pressable, RefreshControl, ScrollView, useWindowDimensions, View
 import { VersusCard } from "@/components/art";
 import { RowHeader, ShareButton, ShieldCrest, StatTile } from "@/components/identity";
 import { CricHeroesSection } from "@/components/CricHeroes";
+import { CricHeroesCard, CricHeroesEditor } from "@/components/cricheroes-link";
 import { DemoBanner, HeadToHeadCard, MatchCard, SkillBadge, TeamChallengeCard } from "@/components/cricket";
 import { FilterBottomSheet, PromptModal } from "@/components/sheet";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorBox, LoadingSkeleton, Section, Segmented, Stat, TextLink, Txt } from "@/components/ui";
 import { FormPills, PlayerPerformanceChart } from "@/components/viz";
+import { MediaEditButton, TeamCoverImage, TeamLogo } from "@/components/media";
 import { api, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { rating, roleCount, roleLabel, when } from "@/lib/format";
@@ -62,6 +64,7 @@ export default function TeamDashboard() {
   const act = async (fn: () => Promise<unknown>, done?: string) => {
     try { await fn(); sheet.current?.dismiss(); reload(); if (done) Alert.alert(done); } catch (e) { Alert.alert("Couldn't do that", errorText(e)); }
   };
+  const [chEdit, setChEdit] = useState(false);
   const capMatches = useQuery({ queryKey: ["my-matches"], queryFn: () => api<{ data: S<"MatchOut">[] }>("/matches", { query: { role: "captain", when: "upcoming" } }) });
   const join = useMutation({ mutationFn: () => api(`/teams/${id}/join-requests`, { method: "POST" }), onSuccess: () => { reload(); Alert.alert("Request sent", "The captain will review it."); }, onError: (e) => Alert.alert("Couldn't send", errorText(e)) });
 
@@ -80,9 +83,14 @@ export default function TeamDashboard() {
       {d.can_manage ? (
         /* My team (captain dashboard) */
         <View style={{ paddingHorizontal: SP.page, paddingTop: SP.sm, gap: SP.lg }}>
-          <View style={{ borderRadius: 22, padding: 20, gap: 14, backgroundColor: T.heroInk }}>
+          <View style={{ borderRadius: 22, overflow: "hidden", backgroundColor: T.heroInk }}>
+            <TeamCoverImage name={d.team.team_name} uri={d.team.cover_image} height={128} />
+            <View style={{ position: "absolute", top: 10, right: 10 }}>
+              <MediaEditButton onDark label={d.team.cover_image ? "Change cover" : "Add cover photo"} purpose="team_cover" save={(u) => api(`/teams/${id}`, { method: "PUT", body: { cover_image: u } }).then(reload)} />
+            </View>
+          <View style={{ padding: 20, gap: 14 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              <ShieldCrest name={d.team.team_name} size={64} />
+              <TeamLogo name={d.team.team_name} uri={d.team.logo} size={64} ring />
               <View style={{ flex: 1, gap: 4 }}>
                 <KickerChip label="YOUR TEAM" tone="dark" />
                 <Txt v="h1" color="#FFFFFF" numberOfLines={2}>{d.team.team_name}</Txt>
@@ -101,6 +109,8 @@ export default function TeamDashboard() {
                 </View>
               ))}
             </View>
+            <MediaEditButton onDark label={d.team.logo ? "Change team logo" : "Add team logo"} purpose="team_logo" save={(u) => api(`/teams/${id}`, { method: "PUT", body: { logo: u } }).then(reload)} />
+          </View>
           </View>
           <ActionGrid tiles={[
             { icon: CalendarPlus, title: "Create Match", onPress: () => router.push({ pathname: "/match/new", params: { team: d.team.id } }) },
@@ -150,7 +160,8 @@ export default function TeamDashboard() {
         /* Team profile (public) */
         <View style={{ paddingHorizontal: SP.page, paddingTop: SP.md, gap: SP.lg }}>
           <View style={{ alignItems: "center", gap: 6 }}>
-            <ShieldCrest name={d.team.team_name} size={118} />
+            <View style={{ alignSelf: "stretch", borderRadius: 22, overflow: "hidden" }}><TeamCoverImage name={d.team.team_name} uri={d.team.cover_image} height={140} /></View>
+            <View style={{ marginTop: -56 }}><TeamLogo name={d.team.team_name} uri={d.team.logo} size={104} ring /></View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
               <Txt v="hero" style={{ fontSize: 23 }}>{d.team.team_name}</Txt>
               {d.team.rating && !d.team.rating.provisional ? <BadgeCheck size={19} color={T.surface} fill={T.primary} strokeWidth={2} accessibilityLabel="Verified team" /> : null}
@@ -189,6 +200,12 @@ export default function TeamDashboard() {
       )}
 
       <View style={{ padding: SP.page, gap: SP.xl }}>
+        {chEdit && d.can_manage ? (
+          <CricHeroesEditor kind="team" current={d.cricheroes_team_url} onClose={() => setChEdit(false)}
+            save={async (u) => { try { await api(`/teams/${id}`, { method: "PUT", body: { cricheroes_team_url: u } }); } catch (e) { throw new Error(errorText(e)); } reload(); }} />
+        ) : (
+          <CricHeroesCard kind="team" url={d.cricheroes_team_url} onEdit={d.can_manage ? () => setChEdit(true) : undefined} />
+        )}
         <DemoBanner show={d.includes_demo_data} />
         <Segmented value={tab} onChange={setTab} options={[{ v: "overview", l: "Overview" }, { v: "roster", l: `Roster (${d.roster.filter((r) => r.member_status === "active").length})` }, { v: "performance", l: "Performance" }]} />
 
@@ -239,7 +256,7 @@ export default function TeamDashboard() {
               <Section title="Team rating history"><Card><PlayerPerformanceChart values={d.rating_history} w={width - SP.lg * 4} /></Card></Section>
             ) : null}
             {d.description ? <Card><Txt v="label" color={T.muted}>About</Txt><Txt v="body" color={T.text2}>{d.description}</Txt></Card> : null}
-            <CricHeroesSection teamId={d.team.id} />
+            {d.can_manage ? <CricHeroesSection teamId={d.team.id} /> : null}
           </>
         ) : tab === "roster" ? (
           <>

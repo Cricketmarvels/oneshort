@@ -42,12 +42,15 @@ export async function registerForPush(): Promise<void> {
 }
 
 /** Pick or capture a photo and upload it. Returns the hosted URL. */
-export async function pickAndUpload(source: "camera" | "library", purpose: "profile" | "team" = "profile"): Promise<string | null> {
+export type UploadPurpose = "profile" | "team" | "team_logo" | "team_cover" | "match";
+/** Pick (or shoot) a photo, crop it for its purpose and upload it. The server resizes it and strips metadata. */
+export async function pickAndUpload(source: "camera" | "library", purpose: UploadPurpose = "profile"): Promise<string | null> {
   if (source === "camera") {
     const p = await ImagePicker.requestCameraPermissionsAsync();
     if (!p.granted) return null;
   }
-  const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.7 };
+  const wide = purpose === "team_cover" || purpose === "match";
+  const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], allowsEditing: true, aspect: wide ? [16, 9] : [1, 1], quality: 0.75 };
   const res = source === "camera" ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
   if (res.canceled || !res.assets[0]) return null;
   const a = res.assets[0];

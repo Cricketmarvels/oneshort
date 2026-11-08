@@ -34,7 +34,7 @@ export function TopBar() {
   );
 }
 
-/** LocationSelector pill: "📍 Noida (centre) · 10 km ⌄" — opens the location/radius sheet. */
+/** LocationSelector pill: "Noida (centre) · 10 km" with pin + caret — opens the location/radius sheet. */
 export function ContextLine({ text, onPress }: { text: string; onPress?: () => void }) {
   const body = (
     <>

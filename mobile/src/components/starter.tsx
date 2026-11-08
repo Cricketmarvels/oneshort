@@ -4,9 +4,9 @@
  * link cards ("Title →"), stat strip, simple screen container. Photos are bundled assets (see assets/images/CREDITS.md).
  */
 import { router } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
 import type { ComponentType, ReactNode } from "react";
 import { ImageBackground, Pressable, RefreshControl, ScrollView, View, type ViewStyle } from "react-native";
+import { PlayRIcon , type PlayRIconName } from "@/components/icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PHOTO } from "@/components/identity";
@@ -83,17 +83,17 @@ export function SectionRow({ title, action, onAction }: { title: string; action?
 }
 
 /** Starter link card: "Title →" (Explore, Profile lists). Optional icon + sub line. */
-export function LinkCard({ title, sub, icon: Icon, onPress, badge, style }: { title: string; sub?: string; icon?: IconT; onPress: () => void; badge?: ReactNode; style?: ViewStyle }) {
+export function LinkCard({ title, sub, icon, onPress, badge, style }: { title: string; sub?: string; icon?: PlayRIconName; onPress: () => void; badge?: ReactNode; style?: ViewStyle }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={sub ? `${title}. ${sub}` : title} onPress={onPress}
       style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16, minHeight: 60, borderRadius: 20, borderWidth: 1, borderColor: T.line, backgroundColor: pressed ? T.surface2 : T.surface }, style]}>
-      {Icon ? <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: T.primarySoft, alignItems: "center", justifyContent: "center" }}><Icon size={20} color={T.primary} strokeWidth={2} /></View> : null}
+      {icon ? <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: T.primarySoft, alignItems: "center", justifyContent: "center" }}><PlayRIcon name={icon} size={20} /></View> : null}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <Txt v="h3" numberOfLines={1}>{title}</Txt>
         {sub ? <Txt v="small" color={T.muted} numberOfLines={2}>{sub}</Txt> : null}
       </View>
       {badge}
-      <ChevronRight size={20} color={T.primary} strokeWidth={2.2} />
+      <PlayRIcon name="chevronRight" size={20} weight="bold" />
     </Pressable>
   );
 }

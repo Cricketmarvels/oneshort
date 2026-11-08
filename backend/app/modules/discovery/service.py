@@ -358,6 +358,7 @@ class DiscoveryService:
             data.append(
                 OpportunityOut(
                     match_id=str(m["_id"]),
+                    cover_image=m.get("cover_image"),
                     match_code=m["match_code"],
                     title=m.get("title", "Match"),
                     start_at=m["start_at"],

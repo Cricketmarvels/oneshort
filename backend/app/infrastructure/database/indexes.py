@@ -24,6 +24,10 @@ INDEXES: dict[str, list[IndexModel]] = {
         IndexModel([("email", ASCENDING)], unique=True, partialFilterExpression={"email": _STR}, name="uniq_email"),
         IndexModel([("account_status", ASCENDING)]),
     ],
+    "login_failures": [
+        IndexModel([("email", ASCENDING)], unique=True),
+        IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0),
+    ],
     "otp_codes": [
         IndexModel([("mobile_number", ASCENDING), ("purpose", ASCENDING)]),
         IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0),
@@ -105,6 +109,10 @@ INDEXES: dict[str, list[IndexModel]] = {
         IndexModel([("player_id", ASCENDING), ("is_active", ASCENDING)]),
     ],
     "user_blocks": [IndexModel([("user_id", ASCENDING), ("blocked_id", ASCENDING)], unique=True)],
+    "match_invite_links": [
+        IndexModel([("code", ASCENDING)], unique=True),
+        IndexModel([("match_id", ASCENDING), ("active", ASCENDING)]),
+    ],
     "post_hides": [IndexModel([("user_id", ASCENDING), ("post_id", ASCENDING)], unique=True)],
     "team_members": [
         IndexModel([("team_id", ASCENDING), ("user_id", ASCENDING)], unique=True),

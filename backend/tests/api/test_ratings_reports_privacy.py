@@ -224,7 +224,13 @@ async def test_dashboard_and_upload(client: httpx.AsyncClient) -> None:
     assert r.status_code == 200, r.text
     d = r.json()["data"]
     assert d["greeting_name"] == "Dash" and d["outstanding_paise"] == 0
-    png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+    import io
+
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGBA", (40, 40), (0, 140, 134, 128)).save(buf, "PNG")
+    png = buf.getvalue()
     r = await client.post(
         f"{API}/uploads/images", headers=u.h, files={"file": ("a.png", png, "image/png")}, data={"purpose": "profile"}
     )

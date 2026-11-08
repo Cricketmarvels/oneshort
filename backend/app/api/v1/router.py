@@ -16,6 +16,7 @@ from app.modules.cricheroes.router import router as cricheroes_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.discovery.router import router as discovery_router
 from app.modules.invitations.router import router as invitations_router
+from app.modules.joinlinks.router import router as joinlinks_router
 from app.modules.matches.router import router as matches_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.players.router import router as players_router
@@ -47,6 +48,7 @@ for r in (
     cricheroes_router,
     availability_router,
     discovery_router,
+    joinlinks_router,  # before matches: /matches/{id}/invite-link
     matches_router,
     invitations_router,
     settlements_router,

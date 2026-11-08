@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     otp_max_attempts: int = 5
     otp_max_sends_per_hour: int = 5
     otp_resend_cooldown_seconds: int = 30
+    login_max_failures: int = Field(default=8, description="Failed password logins per account before a lockout")
+    login_lockout_minutes: int = 15
     otp_provider: Literal["console", "msg91", "twilio"] = "console"
     msg91_auth_key: str | None = None
     msg91_template_id: str | None = None

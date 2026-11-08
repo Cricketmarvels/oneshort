@@ -49,6 +49,7 @@ def to_team_brief(team: dict[str, Any], rating: dict[str, Any] | None) -> TeamCa
         id=str(team["_id"]),
         team_name=team["team_name"],
         logo=team.get("logo"),
+        cover_image=team.get("cover_image"),
         area=team.get("area"),
         city=team.get("city"),
         rating=team_rating_brief(rating),

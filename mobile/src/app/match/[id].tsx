@@ -3,11 +3,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Calendar, MapPin, Share2, Users, Wallet } from "lucide-react-native";
-import { Alert, Image, Linking, ScrollView, Share, View } from "react-native";
+import { Alert, Linking, ScrollView, Share, View } from "react-native";
 
 import { ManagedInvitationRow } from "@/components/invites";
 import { KickerChip } from "@/components/refined";
-import { PHOTO } from "@/components/identity";
+import { MatchCoverImage, MediaEditButton } from "@/components/media";
+import { InviteRegularsCard } from "@/components/regulars";
 import { Avatar, Badge, Button, Card, Chip, ErrorBox, InlineNotice, List, LoadingSkeleton, Section, Txt } from "@/components/ui";
 import { roleCount, roleLabel } from "@/lib/format";
 import { api, errorText } from "@/lib/api";
@@ -37,7 +38,14 @@ export default function MatchDetail() {
   return (
     <ScrollView style={{ backgroundColor: T.bg }} contentContainerStyle={{ padding: SP.page, gap: SP.xl, paddingBottom: 60 }}>
       <View style={{ gap: 0 }}>
-        <Image source={PHOTO.ground} resizeMode="cover" accessibilityLabel="Cricket ground" style={{ height: 210, width: "100%", borderRadius: 22, marginBottom: 16 }} />
+        <View style={{ height: 210, borderRadius: 22, overflow: "hidden", marginBottom: 16 }}>
+          <MatchCoverImage uri={m.cover_image} title={m.title} format={m.format === "OTHER" ? "Practice" : m.format} style={{ width: "100%", height: 210 }} />
+          {manager ? (
+            <View style={{ position: "absolute", top: 10, right: 10 }}>
+              <MediaEditButton onDark label={m.cover_image ? "Change photo" : "Add match photo"} purpose="match" save={(u) => api(`/matches/${m.id}`, { method: "PUT", body: { cover_image: u } }).then(() => q.refetch())} />
+            </View>
+          ) : null}
+        </View>
         <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}><Badge status={m.match_status} label={MATCH_STATUS_LABELS[m.match_status]} /><Badge status="neutral" label={m.format === "OTHER" ? "Practice" : m.format} /></View>
         <Txt v="h1" style={{ fontSize: 25, lineHeight: 31, fontFamily: "Inter_800ExtraBold" }}>{m.title}</Txt>
         <Txt v="small" color={T.muted} style={{ marginTop: 8, fontSize: 14 }}>{formatDay(m.start_at, m.timezone)} · {timeRange(m.start_at, m.end_at, m.timezone)}</Txt>
@@ -58,15 +66,18 @@ export default function MatchDetail() {
             </View>
           </View>
         ) : null}
-        {manager ? (
-          <Button title={["published", "recruiting"].includes(m.match_status) ? "Find players for this match" : "Open request board"} size="lg" onPress={() => router.push({ pathname: "/match/players", params: { match: m.id } })} />
-        ) : m.viewer_relation === "public" && ["published", "recruiting"].includes(m.match_status) && m.composition.vacancies > 0 ? (
+        {manager && !["published", "recruiting"].includes(m.match_status) ? (
+          <Button title="Open request board" size="lg" onPress={() => router.push({ pathname: "/match/players", params: { match: m.id } })} />
+        ) : !manager && m.viewer_relation === "public" && ["published", "recruiting"].includes(m.match_status) && m.composition.vacancies > 0 ? (
           m.my_invitation_status === "pending" ? <InlineNotice>Request sent — the captain confirms spots. You'll be notified.</InlineNotice>
             : <Button title="Request to join" size="lg" loading={join.isPending} onPress={() => join.mutate()} />
         ) : null}
         {joinMsg ? <InlineNotice>{joinMsg}</InlineNotice> : null}
         {!manager ? <Txt v="small" color={T.muted}>A request is not a confirmed spot until the captain accepts it.</Txt> : null}
       </View>
+      {manager && ["published", "recruiting"].includes(m.match_status) ? (
+        <InviteRegularsCard matchId={m.id} confirmed={m.composition.confirmed_total} capacity={m.composition.capacity} />
+      ) : null}
       <Card style={{ gap: SP.md }}>
         <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}><Calendar size={18} color={T.ink} strokeWidth={1.5} /><Txt v="bodyMed">{formatDay(m.start_at, m.timezone)} · {timeRange(m.start_at, m.end_at, m.timezone)}</Txt></View>
         <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>

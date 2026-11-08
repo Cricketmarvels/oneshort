@@ -6420,7 +6420,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinIn"
+                "$ref": "#/components/schemas/app__modules__communities__schemas__JoinIn"
               }
             }
           }
@@ -13571,6 +13571,539 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/matches/{match_id}/invite-link": {
+      "post": {
+        "tags": [
+          "Invite links"
+        ],
+        "summary": "Get (or create) the squad invite link for WhatsApp groups",
+        "operationId": "invite_link_api_v1_matches__match_id__invite_link_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "rotate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Rotate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_InviteLinkOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Invite links"
+        ],
+        "summary": "Turn off the squad invite link",
+        "operationId": "revoke_invite_link_api_v1_matches__match_id__invite_link_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/join/{code}": {
+      "get": {
+        "tags": [
+          "Invite links"
+        ],
+        "summary": "Public preview of an invite link (no exact venue)",
+        "operationId": "join_preview_api_v1_join__code__get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_JoinPreviewOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Invite links"
+        ],
+        "summary": "Add myself to the team and match squad",
+        "operationId": "join_api_v1_join__code__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__modules__joinlinks__schemas__JoinIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_JoinResultOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/invite-register": {
+      "post": {
+        "tags": [
+          "Invite links"
+        ],
+        "summary": "Register via a captain's invite link (password account)",
+        "operationId": "invite_register_api_v1_auth_invite_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteRegisterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_TokenOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/matches": {
@@ -21347,6 +21880,9 @@
             "enum": [
               "profile",
               "team",
+              "team_logo",
+              "team_cover",
+              "match",
               "evidence"
             ],
             "title": "Purpose",
@@ -23847,6 +24383,42 @@
         ],
         "title": "Envelope[InvitationOut]"
       },
+      "Envelope_InviteLinkOut_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InviteLinkOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Envelope[InviteLinkOut]"
+      },
+      "Envelope_JoinPreviewOut_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/JoinPreviewOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Envelope[JoinPreviewOut]"
+      },
+      "Envelope_JoinResultOut_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/JoinResultOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Envelope[JoinResultOut]"
+      },
       "Envelope_MatchOut_": {
         "properties": {
           "data": {
@@ -25754,14 +26326,103 @@
         ],
         "title": "InviteItem"
       },
-      "JoinIn": {
+      "InviteLinkOut": {
         "properties": {
-          "accept_guidelines": {
-            "type": "boolean",
-            "title": "Accept Guidelines",
-            "description": "Must be true: the member accepts the community guidelines"
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "App path to open, e.g. /join/AbC123xYz9"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url",
+            "description": "Full link when the server knows the app's public address"
           },
           "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Ready-to-share WhatsApp group message (without the link if url is unknown)"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "uses": {
+            "type": "integer",
+            "title": "Uses"
+          },
+          "max_uses": {
+            "type": "integer",
+            "title": "Max Uses"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "joined": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Joined",
+            "description": "Names of players who joined via this link"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "path",
+          "url",
+          "message",
+          "expires_at",
+          "uses",
+          "max_uses",
+          "active",
+          "joined"
+        ],
+        "title": "InviteLinkOut"
+      },
+      "InviteRegisterIn": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 6,
+            "title": "Code"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Full Name"
+          },
+          "mobile_number": {
+            "type": "string",
+            "title": "Mobile Number"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "title": "Password"
+          },
+          "city": {
             "anyOf": [
               {
                 "type": "string",
@@ -25771,15 +26432,114 @@
                 "type": "null"
               }
             ],
-            "title": "Message"
+            "title": "City"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "accept_guidelines"
+          "code",
+          "full_name",
+          "mobile_number",
+          "email",
+          "password"
         ],
-        "title": "JoinIn"
+        "title": "InviteRegisterIn"
+      },
+      "JoinPreviewOut": {
+        "properties": {
+          "team_name": {
+            "type": "string",
+            "title": "Team Name"
+          },
+          "captain_name": {
+            "type": "string",
+            "title": "Captain Name"
+          },
+          "match_title": {
+            "type": "string",
+            "title": "Match Title"
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start At"
+          },
+          "end_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End At"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity"
+          },
+          "confirmed": {
+            "type": "integer",
+            "title": "Confirmed"
+          },
+          "spots_left": {
+            "type": "integer",
+            "title": "Spots Left"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "full",
+              "expired",
+              "closed"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_name",
+          "captain_name",
+          "match_title",
+          "start_at",
+          "end_at",
+          "timezone",
+          "area",
+          "city",
+          "format",
+          "capacity",
+          "confirmed",
+          "spots_left",
+          "status"
+        ],
+        "title": "JoinPreviewOut"
       },
       "JoinRequestIn": {
         "properties": {
@@ -25809,6 +26569,43 @@
         "additionalProperties": false,
         "type": "object",
         "title": "JoinRequestIn"
+      },
+      "JoinResultOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "joined",
+              "already_in"
+            ],
+            "title": "Status"
+          },
+          "match_id": {
+            "type": "string",
+            "title": "Match Id"
+          },
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "team_name": {
+            "type": "string",
+            "title": "Team Name"
+          },
+          "match_title": {
+            "type": "string",
+            "title": "Match Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "match_id",
+          "team_id",
+          "team_name",
+          "match_title"
+        ],
+        "title": "JoinResultOut"
       },
       "LeaderboardMeta": {
         "properties": {
@@ -26180,6 +26977,17 @@
             ],
             "title": "Team Logo"
           },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image"
+          },
           "captain": {
             "$ref": "#/components/schemas/PublicUserOut"
           },
@@ -26503,6 +27311,18 @@
                 "type": "null"
               }
             ]
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image",
+            "description": "Match photo (uploaded); null removes"
           },
           "reschedule_reason": {
             "anyOf": [
@@ -27039,6 +27859,17 @@
           "match_id": {
             "type": "string",
             "title": "Match Id"
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image"
           },
           "match_code": {
             "type": "string",
@@ -28000,17 +28831,29 @@
             "maxItems": 4,
             "title": "Preferred Timing"
           },
-          "cricheroes_url": {
+          "cricheroes_profile_url": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 500
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Cricheroes Url"
+            "title": "Cricheroes Profile Url",
+            "description": "CricHeroes player profile link (omit to keep, null to remove)"
+          },
+          "cricheroes_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Url",
+            "description": "Deprecated alias of cricheroes_profile_url"
           },
           "previous_teams": {
             "items": {
@@ -28173,6 +29016,28 @@
               }
             ],
             "title": "Cricheroes Url"
+          },
+          "cricheroes_profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Profile Url"
+          },
+          "cricheroes_player_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Player Id"
           },
           "previous_teams": {
             "items": {
@@ -28439,6 +29304,29 @@
             "type": "array",
             "title": "Achievements",
             "description": "From verified data only"
+          },
+          "cricheroes_profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Profile Url",
+            "description": "Player-supplied CricHeroes link (not verified by PlayR)"
+          },
+          "cricheroes_player_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Player Id"
           },
           "attendance": {
             "anyOf": [
@@ -28947,6 +29835,28 @@
               }
             ],
             "title": "Cricheroes Url"
+          },
+          "cricheroes_profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Profile Url"
+          },
+          "cricheroes_player_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Player Id"
           },
           "previous_teams": {
             "items": {
@@ -31870,6 +32780,17 @@
             ],
             "title": "Logo"
           },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image"
+          },
           "area": {
             "anyOf": [
               {
@@ -31969,6 +32890,29 @@
               }
             ],
             "title": "Description"
+          },
+          "cricheroes_team_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Team Url",
+            "description": "Captain-supplied CricHeroes team link"
+          },
+          "cricheroes_team_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Team Id"
           },
           "captain": {
             "$ref": "#/components/schemas/PublicUserOut"
@@ -32243,14 +33187,24 @@
           "logo": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 500
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Logo"
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image"
           },
           "description": {
             "anyOf": [
@@ -32294,6 +33248,18 @@
             "type": "array",
             "maxItems": 6,
             "title": "Preferred Formats"
+          },
+          "cricheroes_team_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Team Url",
+            "description": "Optional CricHeroes team profile link"
           }
         },
         "additionalProperties": false,
@@ -32540,6 +33506,17 @@
             ],
             "title": "Logo"
           },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image"
+          },
           "description": {
             "anyOf": [
               {
@@ -32636,6 +33613,28 @@
           "can_manage": {
             "type": "boolean",
             "title": "Can Manage"
+          },
+          "cricheroes_team_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Team Url"
+          },
+          "cricheroes_team_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Team Id"
           },
           "upcoming_matches": {
             "items": {
@@ -32890,14 +33889,25 @@
           "logo": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 500
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Logo"
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image",
+            "description": "Team cover photo (uploaded); null removes"
           },
           "description": {
             "anyOf": [
@@ -32980,6 +33990,18 @@
               }
             ],
             "title": "Preferred Formats"
+          },
+          "cricheroes_team_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Team Url",
+            "description": "Omit to keep, null to remove"
           }
         },
         "additionalProperties": false,
@@ -33165,8 +34187,7 @@
           "profile_image": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 500
+                "type": "string"
               },
               {
                 "type": "null"
@@ -33576,6 +34597,33 @@
         "type": "object",
         "title": "WithdrawIn"
       },
+      "app__modules__communities__schemas__JoinIn": {
+        "properties": {
+          "accept_guidelines": {
+            "type": "boolean",
+            "title": "Accept Guidelines",
+            "description": "Must be true: the member accepts the community guidelines"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "accept_guidelines"
+        ],
+        "title": "JoinIn"
+      },
       "app__modules__competition__schemas__DisputeIn": {
         "properties": {
           "reason": {
@@ -33678,6 +34726,23 @@
           "city"
         ],
         "title": "VenueOut"
+      },
+      "app__modules__joinlinks__schemas__JoinIn": {
+        "properties": {
+          "proposed_role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayingRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "JoinIn"
       },
       "app__modules__matches__schemas__VenueIn": {
         "properties": {

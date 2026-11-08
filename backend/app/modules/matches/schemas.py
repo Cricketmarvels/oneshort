@@ -11,6 +11,7 @@ from app.common.enums import (
     MatchStatus,
     PlayingRole,
 )
+from app.common.media import OwnMediaUrl
 from app.common.types import AwareDatetime, GeoPointIn, ObjectIdStr, StrictModel, utcnow
 from app.common.validators import LongText, ShortText, Timezone
 from app.modules.users.schemas import PublicUserOut
@@ -86,6 +87,7 @@ class MatchUpdateIn(StrictModel):
     required_roles: RequiredRoles | None = None
     estimated_expenses_paise: int | None = Field(default=None, ge=0, le=10_000_000)
     default_contribution_type: ContributionType | None = None
+    cover_image: OwnMediaUrl | None = Field(default=None, description="Match photo (uploaded); null removes")
     reschedule_reason: ShortText | None = None
 
 
@@ -131,6 +133,7 @@ class MatchOut(BaseModel):
     team_id: str
     team_name: str
     team_logo: str | None
+    cover_image: str | None = None
     captain: PublicUserOut
     title: str
     description: str | None

@@ -4,16 +4,17 @@
  * Only real API values are rendered; missing data shows a neutral fallback, never an invented number.
  */
 import type { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { Image } from "expo-image";
+import { Image, type ImageContentPosition } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { ArrowLeft, ArrowRight, Bell, Bookmark, CalendarDays, ChevronDown, MapPin, SlidersHorizontal, Trophy, Users } from "lucide-react-native";
 import type { ComponentType, ReactNode } from "react";
 import { memo, useRef } from "react";
-import { Pressable, ScrollView, TextInput, View, type ViewStyle } from "react-native";
+import { Pressable, ScrollView, TextInput, useWindowDimensions, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { PlayRIcon, type PlayRIconName, type SportsAction } from "@/components/icons";
 import { PHOTO } from "@/components/identity";
+import { MatchCoverImage, SportsActionArtwork, TeamCoverImage, TeamLogo } from "@/components/media";
 import { FilterBottomSheet } from "@/components/sheet";
 import { Avatar, Txt } from "@/components/ui";
 import { useSaved } from "@/lib/saved";
@@ -44,7 +45,7 @@ export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" 
       <Pressable accessibilityRole="button" accessibilityLabel={`Viewing as ${value}. Change`} onPress={() => sheet.current?.present()}
         style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 6, height: 40, paddingHorizontal: 16, borderRadius: R.pill, backgroundColor: pressed ? T.pressedSoft : T.primarySoft })}>
         <Txt v="smallSemi" style={{ fontSize: 14 }}>{value === "player" ? "Player" : "Captain"}</Txt>
-        <ChevronDown size={16} color={T.ink} strokeWidth={2.2} />
+        <PlayRIcon name="caret" size={15} color={T.ink} weight="bold" />
       </Pressable>
       <FilterBottomSheet ref={sheet} title="View PlayR as" snap={["44%"]}>
         <View style={{ gap: 10 }}>
@@ -70,7 +71,7 @@ export function AppHeader({ role, canCaptain, onRole, unread, avatarUri, name }:
       <RoleSwitcher value={role} canCaptain={canCaptain} onChange={onRole} />
       <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Notifications, ${unread} unread` : "Notifications"} onPress={() => router.push("/notifications")} hitSlop={4}
         style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
-        <Bell size={24} color={T.ink} strokeWidth={1.8} />
+        <PlayRIcon name="bell" size={24} color={T.ink} weight={unread ? "fill" : "regular"} />
         {unread ? <View style={{ position: "absolute", top: 8, right: 9, width: 10, height: 10, borderRadius: 5, backgroundColor: "#F2554A", borderWidth: 2, borderColor: T.bg }} /> : null}
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Your profile" onPress={() => router.push("/me")}>
@@ -81,24 +82,29 @@ export function AppHeader({ role, canCaptain, onRole, unread, avatarUri, name }:
 }
 
 // ---------------------------------------------------------------- hero
-export function SportsHeroBanner({ eyebrow, title, body, cta, onCta, photo = "bowler" }: {
-  eyebrow: string; title: string; body?: string; cta?: string; onCta?: () => void; photo?: keyof typeof PHOTO;
+export function SportsHeroBanner({ eyebrow, title, body, cta, onCta, photo = "batting", focus = { left: "58%", top: "40%" } }: {
+  eyebrow: string; title: string; body?: string; cta?: string; onCta?: () => void; photo?: keyof typeof PHOTO; focus?: ImageContentPosition;
 }) {
+  const { width } = useWindowDimensions();
+  const small = width < 390;
   return (
-    <View style={{ borderRadius: 24, overflow: "hidden", minHeight: 214, backgroundColor: T.heroInk, ...shadow(2) }}>
-      <Image source={PHOTO[photo] as number} contentFit="cover" style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "62%" }} accessibilityLabel="" />
-      <LinearGradient colors={["#063F3D", "rgba(6,63,61,0.92)", "rgba(0,107,101,0.35)", "rgba(0,107,101,0.05)"]} locations={[0, 0.42, 0.72, 1]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
-      <View style={{ padding: 22, gap: 10, maxWidth: "74%" }}>
-        <View style={{ alignSelf: "flex-start", paddingHorizontal: 12, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.14)", justifyContent: "center" }}>
+    <View style={{ borderRadius: 24, overflow: "hidden", minHeight: 220, backgroundColor: T.heroInk, ...shadow(2) }}>
+      {/* full-bleed action photo; focus keeps the player in the right half, clear of the text */}
+      <Image source={PHOTO[photo] as number} contentFit="cover" contentPosition={focus} transition={180} style={{ position: "absolute", left: "28%", right: 0, top: 0, bottom: 0 }} accessibilityLabel="Cricket action photo" />
+      <LinearGradient colors={["#063F3D", "rgba(6,63,61,0.96)", "rgba(6,63,61,0.55)", "rgba(6,63,61,0.08)"]} locations={[0, 0.36, 0.62, 1]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
+      <LinearGradient colors={["rgba(6,63,61,0)", "rgba(6,63,61,0.45)"]} start={{ x: 0.5, y: 0.55 }} end={{ x: 0.5, y: 1 }} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
+      <View style={{ padding: small ? 18 : 22, gap: 10, maxWidth: small ? "80%" : "72%" }}>
+        <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.16)" }}>
+          <PlayRIcon name="cricket" size={14} color="#FFFFFF" weight="fill" />
           <Txt v="micro" color="#FFFFFF">{eyebrow}</Txt>
         </View>
-        <Txt style={{ ...FW.display, fontSize: 28, lineHeight: 32, letterSpacing: -0.6, color: "#FFFFFF" }}>{title}</Txt>
-        {body ? <Txt v="small" color="rgba(255,255,255,0.86)" style={{ fontSize: 14 }}>{body}</Txt> : null}
+        <Txt style={{ ...FW.display, fontSize: small ? 24 : 27, lineHeight: small ? 29 : 32, letterSpacing: -0.6, color: "#FFFFFF" }}>{title}</Txt>
+        {body ? <Txt v="small" color="rgba(255,255,255,0.9)" style={{ fontSize: 14, lineHeight: 19 }}>{body}</Txt> : null}
         {cta && onCta ? (
           <Pressable accessibilityRole="button" accessibilityLabel={cta} onPress={onCta}
-            style={({ pressed }) => ({ marginTop: 6, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, height: 46, paddingHorizontal: 22, borderRadius: 23, backgroundColor: pressed ? "#CBEEE5" : "#DDF5EF" })}>
+            style={({ pressed }) => ({ marginTop: 6, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, height: 46, paddingHorizontal: 20, borderRadius: 23, backgroundColor: pressed ? "#CBEEE5" : "#DDF5EF" })}>
             <Txt v="h3" color={T.heroInk} style={{ fontSize: 15 }}>{cta}</Txt>
-            <ArrowRight size={18} color={T.heroInk} strokeWidth={2.4} />
+            <PlayRIcon name="arrow" size={18} color={T.heroInk} weight="bold" />
           </Pressable>
         ) : null}
       </View>
@@ -113,15 +119,15 @@ const PASTEL = (): Record<string, [string, string, string]> => ({
   peach: [T.tilePeach, T.tilePeach2, T.tilePeachInk],
   lilac: [T.tileLilac, T.tileLilac2, T.tileLilacInk],
 });
-export function QuickActionTile({ icon: Icon, title, sub, tone, onPress }: { icon: IconT; title: string; sub: string; tone: "mint" | "aqua" | "peach" | "lilac"; onPress: () => void }) {
+export function QuickActionTile({ action, title, sub, tone, onPress }: { action: SportsAction; title: string; sub: string; tone: "mint" | "aqua" | "peach" | "lilac"; onPress: () => void }) {
   const [a, b, ink] = PASTEL()[tone]!;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${sub}`} onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 20, overflow: "hidden", transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-      <LinearGradient colors={[a, b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16, minHeight: 112, gap: 8, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23,43,43,0.04)" }}>
-        <Icon size={30} color={ink} strokeWidth={1.8} />
+      <LinearGradient colors={[a, b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, padding: 14, minHeight: 118, gap: 8, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23,43,43,0.05)" }}>
+        <SportsActionArtwork action={action} size={54} color={ink} />
         <View style={{ gap: 2 }}>
-          <Txt v="h3" style={{ fontSize: 17 }}>{title}</Txt>
-          <Txt v="small" color={T.muted} numberOfLines={1}>{sub}</Txt>
+          <Txt v="h3" style={{ fontSize: 16 }}>{title}</Txt>
+          <Txt v="small" color={T.muted} numberOfLines={2} style={{ fontSize: 12.5, lineHeight: 17 }}>{sub}</Txt>
         </View>
       </LinearGradient>
     </Pressable>
@@ -130,8 +136,8 @@ export function QuickActionTile({ icon: Icon, title, sub, tone, onPress }: { ico
 export function QuickActionsGrid({ tiles }: { tiles: Parameters<typeof QuickActionTile>[0][] }) {
   return (
     <View style={{ gap: 12 }}>
-      <View style={{ flexDirection: "row", gap: 12 }}>{tiles.slice(0, 2).map((t) => <QuickActionTile key={t.title} {...t} />)}</View>
-      <View style={{ flexDirection: "row", gap: 12 }}>{tiles.slice(2, 4).map((t) => <QuickActionTile key={t.title} {...t} />)}</View>
+      <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>{tiles.slice(0, 2).map((t) => <QuickActionTile key={t.title} {...t} />)}</View>
+      <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>{tiles.slice(2, 4).map((t) => <QuickActionTile key={t.title} {...t} />)}</View>
     </View>
   );
 }
@@ -142,7 +148,7 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
       <Txt v="h1" style={{ fontSize: 21 }}>{title}</Txt>
       {action && onAction ? (
         <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Txt v="smallSemi" color={T.primaryDark} style={{ fontSize: 14 }}>{action}</Txt><ArrowRight size={16} color={T.primaryDark} strokeWidth={2.2} />
+          <Txt v="smallSemi" color={T.primaryDark} style={{ fontSize: 14 }}>{action}</Txt><PlayRIcon name="arrow" size={16} color={T.primaryDark} weight="bold" />
         </Pressable>
       ) : null}
     </View>
@@ -150,45 +156,62 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
 }
 
 /** Branded fallback where a real photo doesn't exist (grounds, team covers): deep-teal gradient + soft pitch lines. */
-export function BrandFallback({ style, icon: Icon = Trophy, label }: { style?: ViewStyle; icon?: IconT; label?: string }) {
+export function BrandFallback({ style, icon: Icon, label }: { style?: ViewStyle; icon?: IconT; label?: string }) {
   return (
     <LinearGradient colors={["#0B5D58", "#063F3D"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ alignItems: "center", justifyContent: "center", overflow: "hidden" }, style]}>
       <View style={{ position: "absolute", width: "70%", aspectRatio: 1, borderRadius: 999, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.10)" }} />
       <View style={{ position: "absolute", width: 22, top: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.06)" }} />
       <View style={{ position: "absolute", width: "160%", height: 40, backgroundColor: "rgba(127,224,214,0.08)", transform: [{ rotate: "-18deg" }], top: "30%" }} />
-      <Icon size={26} color="rgba(255,255,255,0.75)" strokeWidth={1.6} />
+      {Icon ? <Icon size={26} color="rgba(255,255,255,0.75)" strokeWidth={1.6} /> : <PlayRIcon name="trophy" size={26} color="rgba(255,255,255,0.75)" />}
       {label ? <Txt v="micro" color="rgba(255,255,255,0.7)" style={{ marginTop: 4, fontSize: 9.5 }}>{label}</Txt> : null}
     </LinearGradient>
   );
 }
 
 // ---------------------------------------------------------------- match card
-export const MatchDiscoveryCard = memo(function MatchDiscoveryCard({ title, format, when, distanceKm, spots, onPress }: {
-  title: string; format?: string | null; when: string; distanceKm?: number | null; spots: number; onPress: () => void;
+/** Compact match card: branded ground thumbnail, format badge, 2-line title, date · time, ~distance · area, open positions, CTA. */
+export const MatchDiscoveryCard = memo(function MatchDiscoveryCard({ title, format, date, time, distanceKm, area, spots, needs, cta = "View", cover, onPress }: {
+  title: string; format?: string | null; date: string; time: string; distanceKm?: number | null; area?: string | null; spots: number; needs?: string | null; cta?: string; cover?: string | null; onPress: () => void;
 }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${when}. ${spots} spots open`} onPress={onPress}
-      style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 14, padding: 12, borderRadius: 20, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
-      <BrandFallback style={{ width: 92, height: 92, borderRadius: 16 }} label="Ground" />
-      <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
-        {format ? <View style={{ alignSelf: "flex-start", paddingHorizontal: 7, height: 18, borderRadius: 6, backgroundColor: T.primarySoft, justifyContent: "center" }}><Txt v="micro" color={T.primaryDark} style={{ fontSize: 10, letterSpacing: 0.2 }}>{format}</Txt></View> : null}
-        <Txt v="h3" numberOfLines={2}>{title}</Txt>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><CalendarDays size={14} color={T.muted} strokeWidth={2} /><Txt v="small" color={T.ink}>{when}</Txt></View>
-          {distanceKm != null ? <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><MapPin size={14} color={T.muted} strokeWidth={2} /><Txt v="small" color={T.ink}>~{distanceKm} km</Txt></View> : null}
-        </View>
-        <AvailabilityPill text={`${spots} spot${spots === 1 ? "" : "s"} open`} />
+    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${date} ${time}. ${spots} spots open. ${cta}`} onPress={onPress}
+      style={({ pressed }) => ({ flexDirection: "row", gap: 12, padding: 12, borderRadius: 20, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
+      <View style={{ width: 84, alignSelf: "stretch", minHeight: 96, borderRadius: 16, overflow: "hidden" }}>
+        <MatchCoverImage uri={cover} title={title} format={format} style={{ width: 84, height: "100%", minHeight: 96 }} />
+        {cover && format ? <View style={{ position: "absolute", left: 6, bottom: 6, paddingHorizontal: 7, height: 18, borderRadius: 9, backgroundColor: "rgba(6,63,61,0.85)", justifyContent: "center" }}><Txt v="micro" color="#FFFFFF" style={{ fontSize: 10 }}>{format}</Txt></View> : null}
       </View>
-      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: T.primarySoft, alignItems: "center", justifyContent: "center" }}><ArrowRight size={18} color={T.primaryDark} strokeWidth={2.4} /></View>
+      <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
+        <Txt v="h3" numberOfLines={2} style={{ fontSize: 16.5, lineHeight: 21 }}>{title}</Txt>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <Meta icon="calendar" text={date} />
+          <Meta icon="clock" text={time} />
+        </View>
+        {distanceKm != null || area ? <Meta icon="pin" text={[distanceKm != null ? `~${distanceKm} km` : null, area].filter(Boolean).join(" · ")} /> : null}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 2 }}>
+          <View style={{ flexShrink: 1 }}><AvailabilityPill text={`${spots} spot${spots === 1 ? "" : "s"} open${needs ? ` · ${needs}` : ""}`} /></View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 32, paddingHorizontal: 14, borderRadius: 16, backgroundColor: T.primary }}>
+            <Txt v="smallSemi" color="#FFFFFF" style={{ fontSize: 13.5 }}>{cta}</Txt>
+          </View>
+        </View>
+      </View>
     </Pressable>
   );
 });
+
+function Meta({ icon, text }: { icon: "calendar" | "clock" | "pin"; text: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flexShrink: 1 }}>
+      <PlayRIcon name={icon} size={15} color={T.muted} weight="bold" />
+      <Txt v="small" color={T.ink} numberOfLines={1} style={{ flexShrink: 1 }}>{text}</Txt>
+    </View>
+  );
+}
 
 export function AvailabilityPill({ text }: { text: string }) {
   return (
     <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, height: 24, borderRadius: 12, backgroundColor: T.successPill }}>
       <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: T.success }} />
-      <Txt v="smallSemi" color={T.successText} style={{ fontSize: 12 }}>{text}</Txt>
+      <Txt v="smallSemi" color={T.successText} numberOfLines={1} style={{ fontSize: 12, flexShrink: 1 }}>{text}</Txt>
     </View>
   );
 }
@@ -199,7 +222,7 @@ export function DiscoveryTitle({ title }: { title: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingTop: insets.top + 10, paddingBottom: 6, minHeight: 56 }}>
       <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} hitSlop={10} style={{ width: 44, height: 44, justifyContent: "center" }}>
-        <ArrowLeft size={26} color={T.ink} strokeWidth={2.2} />
+        <PlayRIcon name="back" size={26} color={T.ink} weight="bold" />
       </Pressable>
       <Txt v="hero" accessibilityRole="header">{title}</Txt>
     </View>
@@ -224,13 +247,13 @@ export function LocationRow({ label, radius, onLocation, onFilters, activeFilter
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
       <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${radius} km. Change location`} onPress={onLocation}
         style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 8, height: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, flexShrink: 1 })}>
-        <MapPin size={17} color={T.primary} fill={T.primarySoft} strokeWidth={2.2} />
+        <PlayRIcon name="pin" size={18} weight="fill" />
         <Txt v="bodyMed" numberOfLines={1} style={{ flexShrink: 1, fontSize: 14.5 }}>{label} · {radius} km</Txt>
-        <ChevronDown size={16} color={T.ink} strokeWidth={2.2} />
+        <PlayRIcon name="caret" size={16} color={T.ink} weight="bold" />
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={activeFilters ? `Filters, ${activeFilters} active` : "Filters"} onPress={onFilters}
         style={({ pressed }) => ({ width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: activeFilters ? T.primary : T.line, ...shadow(1) })}>
-        <SlidersHorizontal size={20} color={T.ink} strokeWidth={2} />
+        <PlayRIcon name="filters" size={20} color={T.ink} />
         {activeFilters ? <View style={{ position: "absolute", top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: T.primary, alignItems: "center", justifyContent: "center" }}><Txt v="micro" color="#FFFFFF" style={{ fontSize: 9, letterSpacing: 0 }}>{activeFilters}</Txt></View> : null}
       </Pressable>
     </View>
@@ -238,11 +261,11 @@ export function LocationRow({ label, radius, onLocation, onFilters, activeFilter
 }
 
 /** Pill chip: selected = solid primary with white label; optional leading icon. */
-export function Pill({ label, active, onPress, icon: Icon }: { label: string; active?: boolean; onPress: () => void; icon?: IconT }) {
+export function Pill({ label, active, onPress, icon }: { label: string; active?: boolean; onPress: () => void; icon?: PlayRIconName }) {
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected: !!active }} accessibilityLabel={label} onPress={onPress} hitSlop={{ top: 4, bottom: 4 }}
-      style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 6, height: 40, paddingHorizontal: Icon ? 12 : 18, borderRadius: 20, backgroundColor: active ? T.primary : pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: active ? T.primary : T.line, ...(active ? shadow(2) : {}) })}>
-      {Icon ? <Icon size={16} color={active ? "#FFFFFF" : T.ink} strokeWidth={2} /> : null}
+      style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 6, height: 40, paddingHorizontal: icon ? 12 : 18, borderRadius: 20, backgroundColor: active ? T.primary : pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: active ? T.primary : T.line, ...(active ? shadow(2) : {}) })}>
+      {icon ? <PlayRIcon name={icon} size={17} color={active ? "#FFFFFF" : T.ink} /> : null}
       <Txt v="smallSemi" color={active ? "#FFFFFF" : T.ink} style={{ fontSize: 14 }}>{label}</Txt>
     </Pressable>
   );
@@ -257,7 +280,7 @@ export function SaveButton({ kind, id, name }: { kind: "player" | "team"; id: st
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected: saved }} accessibilityLabel={saved ? `Remove ${name} from saved` : `Save ${name}`} onPress={() => toggle(kind, id)} hitSlop={10}
       style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-      <Bookmark size={22} color={saved ? T.primary : T.ink} fill={saved ? T.primary : "transparent"} strokeWidth={1.8} />
+      <PlayRIcon name="bookmark" size={22} color={saved ? T.primary : T.ink} weight={saved ? "fill" : "regular"} />
     </Pressable>
   );
 }
@@ -275,7 +298,7 @@ export const PlayerDiscoveryCard = memo(function PlayerDiscoveryCard({ id, name,
       <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingRight: 30 }}>
           <Txt v="h3" numberOfLines={1} style={{ flexShrink: 1, fontSize: 17 }}>{name}</Txt>
-          {ratingText ? <Txt v="small" color={T.muted} style={{ fontSize: 13 }}><Txt style={{ color: "#F5A623" }}>★</Txt> {ratingText}</Txt> : null}
+          {ratingText ? <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}><PlayRIcon name="star" size={14} color="#F5A623" weight="fill" /><Txt v="small" color={T.muted} style={{ fontSize: 13 }}>{ratingText}</Txt></View> : null}
         </View>
         <View style={{ alignSelf: "flex-start", paddingHorizontal: 9, height: 22, borderRadius: 11, backgroundColor: T.chipNeutral, justifyContent: "center" }}><Txt v="smallSemi" style={{ fontSize: 12 }}>{role}</Txt></View>
         <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
@@ -301,8 +324,9 @@ export const PlayerDiscoveryCard = memo(function PlayerDiscoveryCard({ id, name,
 
 // ---------------------------------------------------------------- team card
 export type TeamState = "recruiting" | "pending" | "mine" | "invited" | "full" | "member";
-export const TeamDiscoveryCard = memo(function TeamDiscoveryCard({ id, name, ratingText, meta, need, state, onOpen, onJoin, joining }: {
+export const TeamDiscoveryCard = memo(function TeamDiscoveryCard({ id, name, ratingText, meta, need, state, onOpen, onJoin, joining, logo, cover }: {
   id: string; name: string; ratingText?: string | null; meta: string; need?: string | null; state: TeamState; onOpen: () => void; onJoin?: () => void; joining?: boolean;
+  logo?: string | null; cover?: string | null;
 }) {
   const action = state === "mine" ? "Manage Team" : state === "pending" ? "Request Pending" : state === "invited" ? "View invitation" : state === "recruiting" && onJoin ? "Request to join" : "View Team";
   const primary = state === "recruiting" && !!onJoin;
@@ -310,20 +334,20 @@ export const TeamDiscoveryCard = memo(function TeamDiscoveryCard({ id, name, rat
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${name}. ${meta}${need ? `. ${need}` : ""}`} onPress={onOpen}
       style={({ pressed }) => ({ borderRadius: 22, overflow: "hidden", backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
-      <BrandFallback style={{ height: 104 }} icon={Users} />
-      <View style={{ position: "absolute", top: 70, left: 14, borderRadius: 34, borderWidth: 3, borderColor: T.surface }}><Avatar name={name} size={60} /></View>
+      <TeamCoverImage name={name} uri={cover} height={104} />
+      <View style={{ position: "absolute", top: 70, left: 14 }}><TeamLogo name={name} uri={logo} size={66} ring /></View>
       <View style={{ paddingTop: 10, paddingLeft: 86, paddingRight: 12, paddingBottom: 14, gap: 4 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingRight: 32 }}>
           <Txt v="h3" numberOfLines={1} style={{ fontSize: 17, flexShrink: 1 }}>{name}</Txt>
         </View>
-        {ratingText ? <Txt v="small" color={T.muted}><Txt style={{ color: "#F5A623" }}>★</Txt> {ratingText}</Txt> : null}
+        {ratingText ? <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}><PlayRIcon name="star" size={14} color="#F5A623" weight="fill" /><Txt v="small" color={T.muted}>{ratingText}</Txt></View> : null}
         <Txt v="small" color={T.muted} numberOfLines={1} style={{ fontSize: 13 }}>{meta}</Txt>
         <View style={{ flexDirection: stack ? "column" : "row", alignItems: stack ? "stretch" : "center", justifyContent: "space-between", gap: 10, marginTop: 6, marginLeft: -72 }}>
           {need ? <View style={{ alignSelf: "flex-start", flexShrink: 1, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, backgroundColor: state === "full" ? T.chipNeutral : T.successPill }}><Txt v="smallSemi" color={state === "full" ? T.muted : T.successText}>{need}</Txt></View> : <View />}
           <Pressable accessibilityRole="button" accessibilityLabel={action} disabled={state === "pending" || joining} onPress={primary ? onJoin : onOpen}
             style={({ pressed }) => ({ alignSelf: stack ? "flex-end" : "auto", flexDirection: "row", alignItems: "center", gap: 6, height: 40, paddingHorizontal: 18, borderRadius: 20, borderWidth: primary ? 0 : 1.5, borderColor: T.line, backgroundColor: primary ? (pressed ? T.primaryPressed : T.primary) : state === "pending" ? T.surface2 : T.surface })}>
             <Txt v="h3" color={primary ? "#FFFFFF" : state === "pending" ? T.muted : T.primaryDark} style={{ fontSize: 14 }}>{joining ? "Sending…" : action}</Txt>
-            {!primary && state !== "pending" ? <ArrowRight size={16} color={T.primaryDark} strokeWidth={2.4} /> : null}
+            {!primary && state !== "pending" ? <PlayRIcon name="arrow" size={16} color={T.primaryDark} weight="bold" /> : null}
           </Pressable>
         </View>
       </View>

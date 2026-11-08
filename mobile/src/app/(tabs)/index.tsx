@@ -7,12 +7,13 @@ import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import type { S } from "@cm/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { CalendarPlus, ChevronDown, IndianRupee, LandPlot, MapPin, Shield, Trophy, UserRoundSearch, UsersRound } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { FlatList, Pressable, RefreshControl, ScrollView, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ago, LocationOptions } from "@/components/cricket";
+import { CricHeroesCard } from "@/components/cricheroes-link";
+import { PlayRIcon } from "@/components/icons";
 import { InvitationCard } from "@/components/invites";
 import { AppHeader, AvailabilityPill, MatchDiscoveryCard, QuickActionsGrid, SectionHeader, SportsHeroBanner } from "@/components/premium";
 import { RacketHome } from "@/components/racket";
@@ -45,6 +46,16 @@ function Panel({ children, onPress, label }: { children: React.ReactNode; onPres
       style={({ pressed }) => ({ backgroundColor: pressed ? T.surface2 : T.surface, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: T.line, gap: 8, ...shadow(1) })}>
       {children}
     </Pressable>
+  );
+}
+
+/** Real opportunity → compact match card (date, time, distance, area, open spots, roles still needed). */
+function GameCard({ o }: { o: Opp }) {
+  const needs = Object.entries(o.roles_needed ?? {}).filter(([, n]) => n > 0).map(([r, n]) => roleCount(r, n).toLowerCase()).join(", ");
+  return (
+    <MatchDiscoveryCard title={o.title} format={fmt(o.format)} date={when(o.start_at, { weekday: "short", day: "numeric", month: "short" })} time={when(o.start_at, { hour: "numeric", minute: "2-digit" })}
+      distanceKm={o.approx_distance_km} area={o.area ?? o.city} spots={o.vacancies} needs={needs || null} cta={o.my_status ? "View" : "Join"} cover={o.cover_image}
+      onPress={() => router.push({ pathname: "/match/[id]", params: { id: o.match_id } })} />
   );
 }
 
@@ -84,35 +95,35 @@ function CricketHome() {
   const openSpots = teamMatches.reduce((n, m) => n + m.composition.vacancies, 0);
 
   const playerTiles = [
-    { icon: UsersRound, title: "Find Players", sub: "Join nearby games", tone: "mint" as const, onPress: () => router.push("/find/players") },
-    { icon: UserRoundSearch, title: "Find Teams", sub: "Teams near you", tone: "aqua" as const, onPress: () => router.push("/find/teams") },
-    { icon: LandPlot, title: "Book Ground", sub: "Grounds near you", tone: "peach" as const, onPress: () => router.push("/grounds") },
-    { icon: IndianRupee, title: "Split Fees", sub: "Settle match expenses", tone: "lilac" as const, onPress: () => router.push("/payments") },
+    { action: "findPlayers" as const, title: "Find Players", sub: "Cricketers near you", tone: "mint" as const, onPress: () => router.push("/find/players") },
+    { action: "findTeams" as const, title: "Find Teams", sub: "Squads near you", tone: "aqua" as const, onPress: () => router.push("/find/teams") },
+    { action: "bookGround" as const, title: "Book Ground", sub: "Grounds near you", tone: "peach" as const, onPress: () => router.push("/grounds") },
+    { action: "splitFees" as const, title: "Split Fees", sub: "Track who has paid", tone: "lilac" as const, onPress: () => router.push("/payments") },
   ];
   const captainTiles = [
-    { icon: CalendarPlus, title: "Create Match", sub: "Date, venue, squad", tone: "mint" as const, onPress: () => router.push(team ? { pathname: "/match/new", params: { team: team.id } } : "/match/new") },
-    { icon: UserRoundSearch, title: "Find Players", sub: "Fill by role & time", tone: "aqua" as const, onPress: () => router.push(teamMatches[0] ? { pathname: "/match/players", params: { match: teamMatches[0].id } } : "/match/players") },
-    { icon: Shield, title: "Manage Team", sub: "Roster & requests", tone: "peach" as const, onPress: () => team && router.push({ pathname: "/team/[id]", params: { id: team.id } }) },
-    { icon: Trophy, title: "Challenge", sub: "Play a nearby team", tone: "lilac" as const, onPress: () => team && router.push({ pathname: "/challenge/new", params: { from: team.id } }) },
+    { action: "createMatch" as const, title: "Create Match", sub: "Date, venue, squad", tone: "mint" as const, onPress: () => router.push(team ? { pathname: "/match/new", params: { team: team.id } } : "/match/new") },
+    { action: "findPlayers" as const, title: "Find Players", sub: "Fill by role & time", tone: "aqua" as const, onPress: () => router.push(teamMatches[0] ? { pathname: "/match/players", params: { match: teamMatches[0].id } } : "/match/players") },
+    { action: "manageTeam" as const, title: "Manage Team", sub: "Roster & requests", tone: "peach" as const, onPress: () => team && router.push({ pathname: "/team/[id]", params: { id: team.id } }) },
+    { action: "challenge" as const, title: "Challenge", sub: "Play a nearby team", tone: "lilac" as const, onPress: () => team && router.push({ pathname: "/challenge/new", params: { from: team.id } }) },
   ];
 
   return (
     <>
       <ScrollView style={{ flex: 1, backgroundColor: T.bg }} showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: SP.page, paddingTop: insets.top + 8, paddingBottom: 32, gap: 22 }}
+        contentContainerStyle={{ paddingHorizontal: SP.page, paddingTop: insets.top + 8, paddingBottom: 56, gap: 22 }}
         refreshControl={<RefreshControl refreshing={home.isRefetching} onRefresh={refresh} tintColor={T.primary} />}>
         <View style={{ gap: 14 }}>
           <AppHeader role={ctx} canCaptain={isCaptain} onRole={(v) => (isCaptain ? ctxStore.set(v) : undefined)} unread={unread.data?.meta.unread} avatarUri={user?.profile_image} name={user?.full_name ?? name} />
-          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10 }}>
-            <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-              <Txt v="h1" numberOfLines={1} style={{ fontSize: 24, lineHeight: 30 }}>{greeting()}, {name} 👋</Txt>
-              <Pressable accessibilityRole="button" accessibilityLabel={`Location ${area}. Change`} onPress={() => locSheet.current?.present()} hitSlop={8} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <MapPin size={17} color={T.primary} fill={T.primarySoft} strokeWidth={2.2} />
+          <View style={{ gap: 6 }}>
+            <Txt v="h1" style={{ fontSize: width < 390 ? 21 : 23, lineHeight: width < 390 ? 27 : 29 }}>{greeting()}, {name}</Txt>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Pressable accessibilityRole="button" accessibilityLabel={`Location ${area}. Change`} onPress={() => locSheet.current?.present()} hitSlop={8} style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <PlayRIcon name="pin" size={18} weight="fill" />
                 <Txt v="bodyMed" numberOfLines={1} style={{ flexShrink: 1, fontSize: 15 }}>{area}</Txt>
-                <ChevronDown size={16} color={T.ink} strokeWidth={2.2} />
+                <PlayRIcon name="caret" size={15} color={T.ink} weight="bold" />
               </Pressable>
+              <SportSwitcher compact />
             </View>
-            <SportSwitcher compact />
           </View>
         </View>
 
@@ -121,7 +132,7 @@ function CricketHome() {
             body={opps.isPending ? "Checking games near you…" : games.length ? `${games.length} game${games.length === 1 ? " needs" : "s need"} players within ${radius} km` : `No open games within ${radius} km yet — start one`}
             cta={games.length ? "Find a Game" : "Create Match"} onCta={() => router.push(games.length ? "/quick-match" : "/match/new")} />
         ) : (
-          <SportsHeroBanner photo="night" eyebrow="CAPTAIN HUB" title={team ? team.team_name : "Your team"}
+          <SportsHeroBanner photo="ground" focus={{ left: "55%", top: "45%" }} eyebrow="CAPTAIN HUB" title={team ? team.team_name : "Your team"}
             body={teamMatches.length ? `${teamMatches.length} upcoming match${teamMatches.length === 1 ? "" : "es"} · ${openSpots} open spot${openSpots === 1 ? "" : "s"}` : "No upcoming matches — create one"}
             cta={teamMatches.length && openSpots ? "Fill Squad" : "Create Match"}
             onCta={() => router.push(teamMatches[0] && openSpots ? { pathname: "/match/players", params: { match: teamMatches[0].id } } : team ? { pathname: "/match/new", params: { team: team.id } } : "/match/new")} />
@@ -132,6 +143,7 @@ function CricketHome() {
           </ScrollView>
         ) : null}
 
+        {ctx === "captain" && team?.cricheroes_team_url ? <CricHeroesCard kind="team" url={team.cricheroes_team_url} compact /> : null}
         <QuickActionsGrid tiles={ctx === "player" ? playerTiles : captainTiles} />
 
         {inviteCards.length ? (
@@ -164,12 +176,15 @@ function CricketHome() {
                 return (
                   <Panel key={m.id} label={m.title} onPress={() => router.push({ pathname: "/match/[id]", params: { id: m.id } })}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Txt v="h3" numberOfLines={1} style={{ flex: 1 }}>{m.title}</Txt>
+                      <Txt v="h3" numberOfLines={2} style={{ flex: 1, fontSize: 16.5, lineHeight: 21 }}>{m.title}</Txt>
                       <Txt v="smallSemi" color={T.muted}>{m.composition.confirmed_total}/{m.composition.capacity}</Txt>
                     </View>
                     <Txt v="small" color={T.muted}>{when(m.start_at)}</Txt>
-                    {gaps.length ? <AvailabilityPill text={`Need ${gaps.map(([r, n]) => roleCount(r, n).toLowerCase()).join(", ")}`} /> : <Txt v="small" color={T.successText}>Required roles filled</Txt>}
-                    <Button title="Find players" size="sm" onPress={() => router.push({ pathname: "/match/players", params: { match: m.id } })} />
+                    {gaps.length ? <AvailabilityPill text={`Need ${gaps.map(([r, n]) => roleCount(r, n).toLowerCase()).join(", ")}`} /> : m.composition.vacancies ? <AvailabilityPill text={`${m.composition.vacancies} spot${m.composition.vacancies === 1 ? "" : "s"} open`} /> : <Txt v="small" color={T.successText}>Squad full</Txt>}
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <Button title="Invite regulars" size="sm" onPress={() => router.push({ pathname: "/match/[id]", params: { id: m.id } })} style={{ flex: 1 }} />
+                      <Button title="Find players" size="sm" variant="secondary" onPress={() => router.push({ pathname: "/match/players", params: { match: m.id } })} style={{ flex: 1 }} />
+                    </View>
                   </Panel>
                 );
               }) : (
@@ -182,14 +197,14 @@ function CricketHome() {
             <SectionHeader title="Games near you" action="View all" onAction={() => router.push("/quick-match")} />
             {games.length > 1 ? (
               <FlatList horizontal data={games.slice(0, 6)} keyExtractor={(o) => o.match_id} showsHorizontalScrollIndicator={false}
-                style={{ marginHorizontal: -SP.page }} contentContainerStyle={{ paddingHorizontal: SP.page, gap: 12 }} snapToInterval={width * 0.84 + 12} decelerationRate="fast"
+                style={{ marginHorizontal: -SP.page }} contentContainerStyle={{ paddingHorizontal: SP.page, gap: 12 }} snapToInterval={Math.min(width * 0.86, 360) + 12} decelerationRate="fast"
                 renderItem={({ item: o }) => (
-                  <View style={{ width: width * 0.84 }}>
-                    <MatchDiscoveryCard title={o.title} format={fmt(o.format)} when={when(o.start_at, { weekday: "short", hour: "numeric", minute: "2-digit" })} distanceKm={o.approx_distance_km} spots={o.vacancies} onPress={() => router.push({ pathname: "/match/[id]", params: { id: o.match_id } })} />
+                  <View style={{ width: Math.min(width * 0.86, 360) }}>
+                    <GameCard o={o} />
                   </View>
                 )} />
             ) : (
-              <MatchDiscoveryCard title={games[0]!.title} format={fmt(games[0]!.format)} when={when(games[0]!.start_at, { weekday: "short", hour: "numeric", minute: "2-digit" })} distanceKm={games[0]!.approx_distance_km} spots={games[0]!.vacancies} onPress={() => router.push({ pathname: "/match/[id]", params: { id: games[0]!.match_id } })} />
+              <GameCard o={games[0]!} />
             )}
           </View>
         ) : null}

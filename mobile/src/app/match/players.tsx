@@ -10,9 +10,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { CheckCircle2, Circle, MapPin, ShieldCheck, Star } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Linking, Pressable, ScrollView, View } from "react-native";
 
 import { ChatButtons } from "@/components/invites";
+import { shareText, useInviteLink } from "@/components/regulars";
 import { FillBar, KickerChip, RadarSearch, RoleStepper, SectionHeader } from "@/components/refined";
 import { Avatar, Badge, Button, Chip, EmptyState, ErrorBox, InlineNotice, LoadingSkeleton, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
@@ -124,6 +125,7 @@ export default function FindPlayersRequest() {
           onInvite={() => invite.mutate()} inviting={invite.isPending} notice={notice} radius={radius} />
       ) : (
         <>
+          {mode === "match" && match ? <RegularsFirst matchId={match.id} /> : null}
           <View style={{ gap: 6 }}>
             <KickerChip label="CAPTAIN · PLAYER REQUEST" />
             <Txt v="hero">Who do you need?</Txt>
@@ -192,7 +194,7 @@ export default function FindPlayersRequest() {
             <SectionHeader title="Distance & rating" />
             <View style={{ flexDirection: "row", gap: 8 }}>{RADII.map((r) => <Chip key={r} label={`${r} km`} active={radius === r} onPress={() => setRadius(r)} />)}</View>
             <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-              {([null, 3, 4] as const).map((r) => <Chip key={String(r)} label={r ? `${r}★ and up` : "Any rating"} active={minRating === r} onPress={() => setMinRating(r)} />)}
+              {([null, 3, 4] as const).map((r) => <Chip key={String(r)} label={r ? `${r}+ stars` : "Any rating"} active={minRating === r} onPress={() => setMinRating(r)} />)}
             </View>
             <Txt v="small" color={T.muted}>Rating filters hide players who haven't been rated yet.</Txt>
           </View>
@@ -337,6 +339,18 @@ function RequestBoard({ match }: { match: Match }) {
           <Button title="Reopen request" variant="secondary" loading={move.isPending} onPress={() => move.mutate("recruiting")} />
         ) : null}
       </View>
+    </View>
+  );
+}
+
+/** Nudge: share the squad link with regulars before searching strangers. */
+function RegularsFirst({ matchId }: { matchId: string }) {
+  const l = useInviteLink(matchId);
+  return (
+    <View style={{ gap: 8, padding: 14, borderRadius: R.card, backgroundColor: T.primarySoft }}>
+      <Txt v="h3">Asked your regulars yet?</Txt>
+      <Txt v="small" color={T.muted}>Share the squad link in your WhatsApp group first — regulars add themselves. Then search for the spots that are left.{l.data?.joined.length ? ` ${l.data.joined.length} joined via link so far.` : ""}</Txt>
+      {l.data ? <Button title="Share squad link on WhatsApp" size="sm" onPress={() => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(shareText(l.data!))}`)} /> : null}
     </View>
   );
 }

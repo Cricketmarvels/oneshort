@@ -11,12 +11,12 @@ import { kitFor } from "@/components/art";
 import { Txt } from "@/components/ui";
 import { F, R, shadow, SP, T } from "@/theme";
 
-export const PHOTO: Record<"ground" | "stadium" | "night" | "crowd" | "bowler", ImageSourcePropType> = {
+export const PHOTO: Record<"ground" | "stadium" | "crowd" | "bowler" | "batting", ImageSourcePropType> = {
   ground: require("../../assets/images/club-ground.jpg"),
   stadium: require("../../assets/images/stadium-crowd.jpg"),
-  night: require("../../assets/images/stadium-night.jpg"),
   crowd: require("../../assets/images/street-india.jpg"),
   bowler: require("../../assets/images/bowler.jpg"),
+  batting: require("../../assets/images/batting-action.jpg"), // CC BY-SA 3.0, see assets/images/CREDITS.md
 };
 
 function lines(name: string): string[] {

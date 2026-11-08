@@ -11,6 +11,8 @@ import { LandPlot, MapPinned, Swords } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
 
+import { GroundCoverImage } from "@/components/media";
+
 import { LocationOptions } from "@/components/cricket";
 import { ContextLine } from "@/components/layout";
 import { FilterBottomSheet } from "@/components/sheet";
@@ -28,10 +30,7 @@ function GroundCard({ g, onPress, selected }: { g: Ground; onPress: () => void; 
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${g.name}, ${g.area}${g.distance_km != null ? `, about ${g.distance_km} kilometres` : ""}`} onPress={onPress}
       style={({ pressed }) => ({ padding: 16, borderRadius: 20, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: selected ? 2 : 1, borderColor: selected ? T.aqua : T.line })}>
-      <View style={{ height: 96, borderRadius: 14, marginBottom: 12, backgroundColor: T.primarySoft, alignItems: "center", justifyContent: "center", gap: 4 }} accessibilityLabel="No venue photos yet">
-        <LandPlot size={30} color={T.primary} strokeWidth={1.6} />
-        <Txt v="small" color={T.primary} style={{ fontSize: 11.5 }}>No photos from this venue yet</Txt>
-      </View>
+      <GroundCoverImage name={g.name} uri={null} style={{ height: 96, borderRadius: 14, marginBottom: 12 }} />
       <Txt v="h3" style={{ fontSize: 17 }}>{g.name}</Txt>
       <Txt v="small" color={T.muted} style={{ marginTop: 6, fontSize: 14 }}>Cricket ground{g.distance_km != null ? ` · ~${g.distance_km} km` : ""} · {[g.area, g.city].filter(Boolean).join(", ")}</Txt>
       <Txt v="h3" color={T.primary} style={{ marginTop: 10, fontSize: 14 }}>Contact venue</Txt>

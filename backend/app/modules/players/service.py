@@ -7,6 +7,7 @@ from app.common.enums import Role
 from app.common.types import GeoPointOut, utcnow
 from app.core.container import Container
 from app.core.exceptions import NotFound
+from app.modules.cricheroes.urls import safe_profile_url
 from app.modules.players.schemas import PlayerProfileIn, PlayerPublicOut, PlayerSelfOut, PlayerStats
 
 DEFAULT_RELIABILITY = 70.0
@@ -37,7 +38,12 @@ class PlayerService:
 
     async def upsert_me(self, user: CurrentUser, data: PlayerProfileIn) -> PlayerSelfOut:
         now = utcnow()
-        fields = data.model_dump(mode="json", exclude={"home_location"})
+        fields = data.model_dump(mode="json", exclude={"home_location", "cricheroes_url", "cricheroes_profile_url"})
+        # CricHeroes link: only touched when sent (omit = keep, null = remove), so other edits never wipe it.
+        sent = data.model_fields_set
+        if "cricheroes_profile_url" in sent or "cricheroes_url" in sent:
+            link = data.cricheroes_profile_url if "cricheroes_profile_url" in sent else data.cricheroes_url
+            fields["cricheroes_url"], fields["cricheroes_player_id"] = safe_profile_url(link, "player")
         if data.home_location is not None:
             fields["home_location"] = data.home_location.to_geojson()
         fields["city"] = user.doc.get("city")
@@ -98,6 +104,9 @@ class PlayerService:
 
     @staticmethod
     def _public(prof: dict[str, Any], user_doc: dict[str, Any]) -> PlayerPublicOut:
+        ch_url, ch_id = safe_profile_url(
+            prof.get("cricheroes_url"), "player"
+        )  # legacy values must pass the strict rules
         return PlayerPublicOut(
             user_id=str(prof["user_id"]),
             full_name=user_doc.get("full_name", "Player"),
@@ -111,7 +120,9 @@ class PlayerService:
             preferred_formats=prof.get("preferred_formats", []),
             preferred_days=prof.get("preferred_days", []),
             preferred_timing=prof.get("preferred_timing", []),
-            cricheroes_url=prof.get("cricheroes_url"),
+            cricheroes_url=ch_url,
+            cricheroes_profile_url=ch_url,
+            cricheroes_player_id=ch_id,
             previous_teams=prof.get("previous_teams", []),
             bio=prof.get("bio"),
             locality=prof.get("locality"),

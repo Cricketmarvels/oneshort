@@ -25,6 +25,7 @@ class TeamCard(BaseModel):
     id: str
     team_name: str
     logo: str | None
+    cover_image: str | None = None
     area: str | None
     city: str | None
     rating: RatingBrief | None = Field(description="None until the team has a verified result")
@@ -268,6 +269,10 @@ class PlayerRatingOut(BaseModel):
     methodology: str
     includes_demo_data: bool
     achievements: list[AchievementOut] = Field(default_factory=list, description="From verified data only")
+    cricheroes_profile_url: str | None = Field(
+        default=None, description="Player-supplied CricHeroes link (not verified by PlayR)"
+    )
+    cricheroes_player_id: str | None = None
     attendance: AttendanceOut | None = Field(default=None, description="Pickup-game attendance (rate needs 3+ marked)")
 
 
@@ -422,6 +427,8 @@ class ContributionOut(BaseModel):
 class TeamDashboardOut(BaseModel):
     team: TeamCard
     description: str | None
+    cricheroes_team_url: str | None = Field(default=None, description="Captain-supplied CricHeroes team link")
+    cricheroes_team_id: str | None = None
     captain: PublicUserOut
     can_manage: bool
     is_captain: bool

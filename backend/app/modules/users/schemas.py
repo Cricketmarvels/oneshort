@@ -4,8 +4,9 @@ from typing import Any, Literal
 from pydantic import BaseModel, EmailStr, Field
 
 from app.common.enums import NotificationType
+from app.common.media import OwnMediaUrl
 from app.common.types import StrictModel
-from app.common.validators import Name, ShortText, Timezone, Url
+from app.common.validators import Name, ShortText, Timezone
 
 
 class NotificationPrefs(BaseModel):
@@ -59,7 +60,7 @@ class PublicUserOut(BaseModel):
 class UpdateMeIn(StrictModel):
     full_name: Name | None = None
     email: EmailStr | None = None
-    profile_image: Url | None = None
+    profile_image: OwnMediaUrl | None = None
     city: ShortText | None = None
     timezone: Timezone | None = None
     notification_prefs: NotificationPrefs | None = None

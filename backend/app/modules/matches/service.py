@@ -125,6 +125,7 @@ class MatchAccess:
             team_id=str(match["team_id"]),
             team_name=(team or {}).get("team_name", "Team"),
             team_logo=(team or {}).get("logo"),
+            cover_image=match.get("cover_image"),
             captain=public_user(captain),
             title=match.get("title", "Match"),
             description=match.get("description"),

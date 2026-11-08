@@ -51,7 +51,7 @@ export default function FixtureDetail() {
     <ScrollView style={{ backgroundColor: T.bg }} contentContainerStyle={{ paddingBottom: 60 }}>
       <Stack.Screen options={{ title: "Match centre", headerTitleAlign: "center", headerRight: () => <ShareButton message={`${f.home_team.team_name} vs ${f.away_team.team_name}${r ? ` — ${r.summary}` : ""} · PlayR`} /> }} />
       <View style={{ paddingHorizontal: SP.page, paddingTop: SP.sm }}>
-        <PhotoHero photo="night" height={232}>
+        <PhotoHero photo="stadium" height={232}>
           <View style={{ flex: 1, padding: 16, justifyContent: "space-between" }}>
             <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
               <View style={{ paddingHorizontal: 10, paddingVertical: 3, borderRadius: R.pill, backgroundColor: T.limeAccent }}><Txt v="smallSemi" style={{ fontSize: 11.5 }}>{formatLabel(f.format)} · {f.overs} overs</Txt></View>

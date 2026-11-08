@@ -2,11 +2,13 @@
 import type { S } from "@cm/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Bell, CalendarDays, CalendarRange, ReceiptIndianRupee, Settings, Shield, Trophy, UserRound } from "lucide-react-native";
 import { View } from "react-native";
 
 import { SportSwitcher } from "@/components/sports";
+import { CricHeroesCard, CricHeroesEditor } from "@/components/cricheroes-link";
 import { LinkCard, StarterScreen, StatStrip } from "@/components/starter";
+import { savePlayerCricHeroes } from "@/lib/cricheroes";
+import { useState } from "react";
 import { Avatar, Txt } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -25,6 +27,7 @@ export default function Me() {
   const p = r.data;
   const captain = !!home.data?.managed_team_ids.length && ctx !== "player";
   const verified = !!p && p.verified_matches > 0;
+  const [chEdit, setChEdit] = useState(false);
   return (
     <StarterScreen safeTop refreshing={r.isRefetching} onRefresh={() => void r.refetch()}>
       <View style={{ alignItems: "flex-end", marginBottom: -40 }}><SportSwitcher /></View>
@@ -38,15 +41,20 @@ export default function Me() {
         { value: String(p?.verified_matches ?? 0), label: "Matches" },
         { value: String(p?.career?.wickets ?? 0), label: "Wkts" },
       ]} />
+      {chEdit ? (
+        <CricHeroesEditor kind="player" current={p?.cricheroes_profile_url} save={async (u) => { await savePlayerCricHeroes(u); await r.refetch(); }} onClose={() => setChEdit(false)} />
+      ) : (
+        <CricHeroesCard kind="player" url={p?.cricheroes_profile_url} onEdit={() => setChEdit(true)} compact />
+      )}
       <View style={{ gap: 12 }}>
-        <LinkCard icon={CalendarDays} title="My Games & History" onPress={() => router.push("/games")} />
-        <LinkCard icon={Trophy} title="Leaderboard" onPress={() => router.push("/leaderboard")} />
-        <LinkCard icon={UserRound} title="My player profile" onPress={() => user && router.push({ pathname: "/player/[id]", params: { id: user.id } })} />
-        <LinkCard icon={CalendarRange} title="Availability" sub="When captains can find you" onPress={() => router.push("/availability")} />
-        <LinkCard icon={Shield} title="My teams" onPress={() => router.push("/teams")} />
-        <LinkCard icon={ReceiptIndianRupee} title="Payments & Split Fees" onPress={() => router.push("/payments")} />
-        <LinkCard icon={Bell} title="Notifications" onPress={() => router.push("/notifications")} />
-        <LinkCard icon={Settings} title="Settings" sub="Appearance (light/dark), WhatsApp, privacy, blocked people, log out" onPress={() => router.push("/profile")} />
+        <LinkCard icon="calendar" title="My Games & History" onPress={() => router.push("/games")} />
+        <LinkCard icon="trophy" title="Leaderboard" onPress={() => router.push("/leaderboard")} />
+        <LinkCard icon="profile" title="My player profile" onPress={() => user && router.push({ pathname: "/player/[id]", params: { id: user.id } })} />
+        <LinkCard icon="week" title="Availability" sub="When captains can find you" onPress={() => router.push("/availability")} />
+        <LinkCard icon="shield" title="My teams" onPress={() => router.push("/teams")} />
+        <LinkCard icon="receipt" title="Payments & Split Fees" onPress={() => router.push("/payments")} />
+        <LinkCard icon="bell" title="Notifications" onPress={() => router.push("/notifications")} />
+        <LinkCard icon="settings" title="Settings" sub="Appearance (light/dark), WhatsApp, privacy, blocked people, log out" onPress={() => router.push("/profile")} />
       </View>
       <Txt v="small" color={T.muted}>Stats come only from captain-verified matches.</Txt>
     </StarterScreen>

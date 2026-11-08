@@ -12,6 +12,7 @@ from app.common.types import utcnow
 from app.core.container import Container
 from app.core.exceptions import BusinessRuleViolation, Conflict, NotFound, ValidationFailed
 from app.modules.captains.service import CaptainService
+from app.modules.cricheroes.urls import safe_profile_url
 from app.modules.teams.policy import can_manage_team, ensure_team_captain, ensure_team_manager
 from app.modules.teams.schemas import (
     AddMemberIn,
@@ -63,6 +64,7 @@ class TeamService:
             "team_name": data.team_name,
             "slug": re.sub(r"[^a-z0-9]+", "-", data.team_name.lower()).strip("-"),
             "logo": data.logo,
+            "cover_image": data.cover_image,
             "description": data.description,
             "location": data.location.to_geojson(),
             "area": data.area,
@@ -70,6 +72,8 @@ class TeamService:
             "category": data.category.value,
             "looking_for_opponents": data.looking_for_opponents,
             "preferred_formats": [f.value for f in data.preferred_formats],
+            "cricheroes_team_url": data.cricheroes_team_url,
+            "cricheroes_team_id": safe_profile_url(data.cricheroes_team_url, "team")[1],
             "captain_id": user.id,
             "admin_ids": [],
             "member_count": 1,
@@ -112,6 +116,10 @@ class TeamService:
         fields = data.model_dump(exclude_unset=True, mode="json", exclude={"location"})
         if data.location is not None:
             fields["location"] = data.location.to_geojson()
+        if "cricheroes_team_url" in fields:  # null removes the link
+            fields["cricheroes_team_url"], fields["cricheroes_team_id"] = safe_profile_url(
+                fields["cricheroes_team_url"], "team"
+            )
         if not fields:
             raise ValidationFailed("Nothing to update")
         fields["updated_at"] = utcnow()
@@ -149,6 +157,7 @@ class TeamService:
             id=str(team["_id"]),
             team_name=team["team_name"],
             logo=team.get("logo"),
+            cover_image=team.get("cover_image"),
             description=team.get("description"),
             area=team.get("area"),
             city=team.get("city"),
@@ -162,6 +171,8 @@ class TeamService:
             can_manage=can_manage_team(team, user.id),
             looking_for_opponents=team.get("looking_for_opponents", True),
             preferred_formats=team.get("preferred_formats") or [],
+            cricheroes_team_url=safe_profile_url(team.get("cricheroes_team_url"), "team")[0],
+            cricheroes_team_id=safe_profile_url(team.get("cricheroes_team_url"), "team")[1],
             upcoming_matches=upcoming,
             created_at=team["created_at"],
         )

@@ -10,6 +10,8 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { CricHeroesField, cricHeroesError } from "@/components/cricheroes-link";
+import { PlayRIcon } from "@/components/icons";
 import { KickerChip } from "@/components/refined";
 import { ChoiceRow, H } from "@/components/starter";
 import { Button, Chip, Field, InlineNotice, Txt } from "@/components/ui";
@@ -38,6 +40,7 @@ export default function Onboarding() {
   const [role, setRole] = useState<string | null>(null);
   const [days, setDays] = useState<string[]>(["sat", "sun"]);
   const [times, setTimes] = useState<string[]>([]);
+  const [chUrl, setChUrl] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   const finish = () => { done(); router.replace(playAs !== "player" ? "/teams" : "/"); };
@@ -54,6 +57,7 @@ export default function Onboarding() {
   const saveProfile = useMutation({
     mutationFn: () => api("/players/me", { method: "PUT", body: {
       primary_role: role, preferred_days: days, preferred_timing: times,
+      ...(chUrl.trim() ? { cricheroes_profile_url: chUrl.trim() } : {}),
       ...(area ? { locality: area.label.split(",")[0], home_location: { lat: area.lat, lng: area.lng } } : {}),
     } }),
     onSuccess: finish,
@@ -73,9 +77,9 @@ export default function Onboarding() {
         {step === 1 ? (
           <View style={{ gap: 12 }} accessibilityRole="radiogroup">
             <H title="Your Role" sub="How do you want to use PlayR?" />
-            <ChoiceRow lead={<Txt style={{ fontSize: 35, lineHeight: 42 }}>🏃</Txt>} title="Player" body="Find games, join teams and play regularly" selected={playAs === "player"} onPress={() => setPlayAs("player")} />
-            <ChoiceRow lead={<Txt style={{ fontSize: 35, lineHeight: 42 }}>🏆</Txt>} title="Captain" body="Create teams, manage squads and organise matches" selected={playAs === "captain"} onPress={() => setPlayAs("captain")} />
-            <ChoiceRow lead={<Txt style={{ fontSize: 35, lineHeight: 42 }}>🤝</Txt>} title="Both" body="Play for others and run your own team" selected={playAs === "both"} onPress={() => setPlayAs("both")} />
+            <ChoiceRow lead={<RoleIcon name="cricket" />} title="Player" body="Find games, join teams and play regularly" selected={playAs === "player"} onPress={() => setPlayAs("player")} />
+            <ChoiceRow lead={<RoleIcon name="shield" />} title="Captain" body="Create teams, manage squads and organise matches" selected={playAs === "captain"} onPress={() => setPlayAs("captain")} />
+            <ChoiceRow lead={<RoleIcon name="users" />} title="Both" body="Play for others and run your own team" selected={playAs === "both"} onPress={() => setPlayAs("both")} />
             <Txt v="small" color={T.muted}>One account either way — switch between Player and Captain on Home.</Txt>
           </View>
         ) : step === 2 ? (
@@ -103,6 +107,7 @@ export default function Onboarding() {
             </View>
           </View>
         )}
+        {step === 3 ? <CricHeroesField kind="player" value={chUrl} onChange={setChUrl} /> : null}
         {err ? <InlineNotice tone="warning">{err}</InlineNotice> : null}
       </ScrollView>
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: SP.page, paddingBottom: Math.max(insets.bottom, 20), backgroundColor: T.bg, gap: 6 }}>
@@ -112,11 +117,15 @@ export default function Onboarding() {
           <Button title="Continue" size="lg" loading={saveName.isPending} onPress={() => saveName.mutate()} />
         ) : (
           <>
-            <Button title={playAs === "player" ? "Finish" : "Finish & create your team"} size="lg" disabled={!role} loading={saveProfile.isPending} onPress={() => saveProfile.mutate()} />
+            <Button title={playAs === "player" ? "Finish" : "Finish & create your team"} size="lg" disabled={!role || !!cricHeroesError(chUrl, "player")} loading={saveProfile.isPending} onPress={() => saveProfile.mutate()} />
             <Button title="Skip for now" variant="ghost" onPress={finish} />
           </>
         )}
       </View>
     </KeyboardAvoidingView>
   );
+}
+
+function RoleIcon({ name }: { name: "cricket" | "shield" | "users" }) {
+  return <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: T.primarySoft, alignItems: "center", justifyContent: "center" }}><PlayRIcon name={name} size={26} /></View>;
 }

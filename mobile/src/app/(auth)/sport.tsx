@@ -5,11 +5,11 @@ import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ChoiceRow, H } from "@/components/starter";
+import { SportIcon } from "@/components/sports";
 import { Button, Txt } from "@/components/ui";
 import { SPORT_ORDER, SPORTS, type SportId, useSport } from "@/lib/sports";
 import { SP, T } from "@/theme";
 
-const EMOJI: Record<SportId, string> = { cricket: "🏏", badminton: "🏸", pickleball: "🥎" };
 
 export default function SelectSport() {
   const insets = useSafeAreaInsets();
@@ -22,7 +22,7 @@ export default function SelectSport() {
         <View accessibilityRole="radiogroup" style={{ gap: 12 }}>
           {SPORT_ORDER.map((s) => (
             <ChoiceRow key={s} selected={picked === s} onPress={() => setPicked(s)} title={SPORTS[s].name} body={SPORTS[s].tagline}
-              lead={<Txt style={{ fontSize: 33, lineHeight: 40 }} accessibilityElementsHidden>{EMOJI[s]}</Txt>} />
+              lead={<SportIcon sport={s} size={48} active={picked === s} />} />
           ))}
         </View>
         <Txt v="small" color={T.muted} style={{ marginTop: 6 }}>More sports coming soon.</Txt>

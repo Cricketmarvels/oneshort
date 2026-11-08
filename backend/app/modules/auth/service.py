@@ -174,11 +174,36 @@ class AuthService:
         return await self._issue_tokens(user, user_agent, family_id=None)
 
     async def password_login(self, email: str, password: str, user_agent: str | None) -> TokenOut:
+        # Per-account lockout (on top of the per-IP rate limit) so rotating IPs can't keep guessing one password.
+        # Keyed by the email as typed, so it behaves the same whether or not the account exists.
+        key = email.strip().lower()
+        fails = self.c.mongo["login_failures"]
+        window = timedelta(minutes=self.s.login_lockout_minutes)
+        rec = await fails.find_one({"email": key})
+        if rec and rec.get("count", 0) >= self.s.login_max_failures and ensure_utc(rec["last_at"]) > utcnow() - window:
+            raise RateLimited(
+                f"Too many failed attempts. Try again in {self.s.login_lockout_minutes} minutes "
+                "or reset your password.",
+                code="LOGIN_LOCKED",
+            )
         user = await self.users.by_email(email)
         # Same error whether the account exists or not.
         if not user or not user.get("password_hash") or not verify_secret(password, user["password_hash"]):
+            now = utcnow()
+            stale = rec is not None and ensure_utc(rec["last_at"]) <= now - window
+            if rec and not stale:
+                await fails.update_one(
+                    {"email": key}, {"$inc": {"count": 1}, "$set": {"last_at": now, "expires_at": now + window}}
+                )
+            else:
+                await fails.update_one(
+                    {"email": key}, {"$set": {"count": 1, "last_at": now, "expires_at": now + window}}, upsert=True
+                )
             raise Unauthorized("Invalid email or password", code="INVALID_CREDENTIALS")
-        if not user.get("mobile_verified"):
+        await fails.delete_one({"email": key})
+        # Players who joined through a captain's invite link can sign in with their password before their
+        # mobile is verified (it stays marked unverified until they complete an OTP).
+        if not user.get("mobile_verified") and user.get("verified_via") != "captain_invite":
             raise Forbidden("Verify your mobile number first", code="MOBILE_NOT_VERIFIED")
         self._ensure_can_login(user)
         return await self._issue_tokens(user, user_agent, family_id=None)

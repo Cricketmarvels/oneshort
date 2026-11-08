@@ -187,7 +187,7 @@ export function FindPlayers() {
               style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 13, padding: 16, borderRadius: 20, borderWidth: 1, borderColor: T.line, backgroundColor: pressed ? T.surface2 : T.surface })}>
               <Avatar name={p.user.full_name} uri={p.user.profile_image} size={48} />
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Txt v="h3" numberOfLines={1}>{p.user.full_name}{p.rating && p.verified_matches ? <Txt v="small" color={T.muted}>{"  "}★ {rating(p.rating.rating)}</Txt> : null}</Txt>
+                <Txt v="h3" numberOfLines={1}>{p.user.full_name}{p.rating && p.verified_matches ? <Txt v="small" color={T.muted}>{"  "}{rating(p.rating.rating)}</Txt> : null}</Txt>
                 <Txt v="small" color={T.muted} style={{ marginTop: 5, fontSize: 14 }} numberOfLines={1}>{roleLabel(p.primary_role)} · {p.verified_matches ? `${p.verified_matches} verified match${p.verified_matches === 1 ? "" : "es"}` : "New player"}</Txt>
                 <Txt v="small" color={T.primary} style={{ marginTop: 5, fontSize: 12 }} numberOfLines={1}>~{p.distance_km} km{p.locality ? ` · ${p.locality}` : ""}{p.available_this_week ? " · Available this week" : ""}</Txt>
               </View>

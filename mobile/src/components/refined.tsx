@@ -9,6 +9,7 @@ import type { ComponentType, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, View, type ViewStyle } from "react-native";
 
+import { PlayRIcon } from "@/components/icons";
 import { Txt } from "@/components/ui";
 import { R, SP, T } from "@/theme";
 
@@ -376,7 +377,7 @@ export function AchievementBadge({ title, description, earned, progress, target 
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: R.card, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }} accessibilityLabel={`${title}. ${description}. ${earned ? "Earned" : `${progress} of ${target}`}`}>
       <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: earned ? T.primarySoft : T.surface2, borderWidth: earned ? 0 : 1, borderColor: T.line, alignItems: "center", justifyContent: "center" }}>
-        <Txt v="h3" color={earned ? T.primaryDark : T.faint}>{earned ? "★" : "☆"}</Txt>
+        <PlayRIcon name="star" size={22} color={earned ? T.primaryDark : T.faint} weight={earned ? "fill" : "regular"} />
       </View>
       <View style={{ flex: 1, gap: 4 }}>
         <Txt v="h3" color={earned ? T.ink : T.muted}>{title}</Txt>

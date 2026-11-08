@@ -74,11 +74,12 @@ def _events(payload: dict[str, Any]) -> list[dict[str, Any]]:
 async def receive(request: Request, c: ContainerDep) -> dict[str, bool]:
     raw = await request.body()
     secret = c.settings.whatsapp_meta_app_secret
-    if secret:
-        sig = request.headers.get("x-hub-signature-256", "")
-        good = "sha256=" + hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(sig, good):
-            raise Forbidden("Bad signature")
+    if not secret:  # never accept unsigned events: anyone could post fake delivery/inbound data
+        raise Forbidden("Webhook signing secret is not configured", code="WEBHOOK_NOT_CONFIGURED")
+    sig = request.headers.get("x-hub-signature-256", "")
+    good = "sha256=" + hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(sig, good):
+        raise Forbidden("Bad signature")
     try:
         events = _events(json.loads(raw or b"{}"))
     except (ValueError, AttributeError):

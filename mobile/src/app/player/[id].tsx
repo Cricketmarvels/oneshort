@@ -16,6 +16,8 @@ import { useHome, useManagedTeam } from "@/lib/hooks";
 import { InviteToMatch } from "@/components/find";
 import { AchievementBadge, KickerChip, SectionHeader } from "@/components/refined";
 import { FilterBottomSheet } from "@/components/sheet";
+import { CricHeroesCard, CricHeroesEditor } from "@/components/cricheroes-link";
+import { savePlayerCricHeroes } from "@/lib/cricheroes";
 import type { PlayerRating, RatingHistory } from "@/lib/types";
 import { R, shadow, SP, T } from "@/theme";
 
@@ -50,6 +52,7 @@ export default function PlayerProfile() {
   const [disc, setDisc] = useState<"batting" | "bowling" | "fielding">("batting");
   const [showHistory, setShowHistory] = useState(false);
   const inviteSheet = useRef<BottomSheetModal>(null);
+  const [chEdit, setChEdit] = useState(false);
   const home = useHome();
   const isCaptain = !!home.data?.managed_team_ids.length;
   const q = useQuery({ queryKey: ["rating", id], queryFn: () => api<PlayerRating>(`/ratings/players/${id}`) });
@@ -104,6 +107,11 @@ export default function PlayerProfile() {
         {!me && (myTeam || isCaptain) ? (
           <Button title="Invite to a match" size="lg" onPress={() => inviteSheet.current?.present()} />
         ) : null}
+        {chEdit && me ? (
+          <CricHeroesEditor kind="player" current={p.cricheroes_profile_url} save={async (u) => { await savePlayerCricHeroes(u); await q.refetch(); }} onClose={() => setChEdit(false)} />
+        ) : (
+          <CricHeroesCard kind="player" url={p.cricheroes_profile_url} onEdit={me ? () => setChEdit(true) : undefined} />
+        )}
         {p.achievements?.length ? (
           <View style={{ gap: SP.sm }}>
             <SectionHeader title="Achievements" action="How they're earned" onAction={() => router.push("/about-ratings")} />

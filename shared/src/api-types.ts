@@ -1719,6 +1719,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/matches/{match_id}/invite-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get (or create) the squad invite link for WhatsApp groups */
+        post: operations["invite_link_api_v1_matches__match_id__invite_link_post"];
+        /** Turn off the squad invite link */
+        delete: operations["revoke_invite_link_api_v1_matches__match_id__invite_link_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/join/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public preview of an invite link (no exact venue) */
+        get: operations["join_preview_api_v1_join__code__get"];
+        put?: never;
+        /** Add myself to the team and match squad */
+        post: operations["join_api_v1_join__code__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/invite-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register via a captain's invite link (password account) */
+        post: operations["invite_register_api_v1_auth_invite_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/matches": {
         parameters: {
             query?: never;
@@ -2990,7 +3043,7 @@ export interface components {
              * @default profile
              * @enum {string}
              */
-            purpose: "profile" | "team" | "evidence";
+            purpose: "profile" | "team" | "team_logo" | "team_cover" | "match" | "evidence";
         };
         /** BowlingIn */
         BowlingIn: {
@@ -3791,6 +3844,18 @@ export interface components {
         Envelope_InvitationOut_: {
             data: components["schemas"]["InvitationOut"];
         };
+        /** Envelope[InviteLinkOut] */
+        Envelope_InviteLinkOut_: {
+            data: components["schemas"]["InviteLinkOut"];
+        };
+        /** Envelope[JoinPreviewOut] */
+        Envelope_JoinPreviewOut_: {
+            data: components["schemas"]["JoinPreviewOut"];
+        };
+        /** Envelope[JoinResultOut] */
+        Envelope_JoinResultOut_: {
+            data: components["schemas"]["JoinResultOut"];
+        };
         /** Envelope[MatchOut] */
         Envelope_MatchOut_: {
             data: components["schemas"]["MatchOut"];
@@ -4416,21 +4481,119 @@ export interface components {
             contribution_type?: components["schemas"]["ContributionType"] | null;
             proposed_role?: components["schemas"]["PlayingRole"] | null;
         };
-        /** JoinIn */
-        JoinIn: {
+        /** InviteLinkOut */
+        InviteLinkOut: {
+            /** Code */
+            code: string;
             /**
-             * Accept Guidelines
-             * @description Must be true: the member accepts the community guidelines
+             * Path
+             * @description App path to open, e.g. /join/AbC123xYz9
              */
-            accept_guidelines: boolean;
-            /** Message */
-            message?: string | null;
+            path: string;
+            /**
+             * Url
+             * @description Full link when the server knows the app's public address
+             */
+            url: string | null;
+            /**
+             * Message
+             * @description Ready-to-share WhatsApp group message (without the link if url is unknown)
+             */
+            message: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Uses */
+            uses: number;
+            /** Max Uses */
+            max_uses: number;
+            /** Active */
+            active: boolean;
+            /**
+             * Joined
+             * @description Names of players who joined via this link
+             */
+            joined: string[];
+        };
+        /** InviteRegisterIn */
+        InviteRegisterIn: {
+            /** Code */
+            code: string;
+            /** Full Name */
+            full_name: string;
+            /** Mobile Number */
+            mobile_number: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
+            /** City */
+            city?: string | null;
+        };
+        /** JoinPreviewOut */
+        JoinPreviewOut: {
+            /** Team Name */
+            team_name: string;
+            /** Captain Name */
+            captain_name: string;
+            /** Match Title */
+            match_title: string;
+            /**
+             * Start At
+             * Format: date-time
+             */
+            start_at: string;
+            /**
+             * End At
+             * Format: date-time
+             */
+            end_at: string;
+            /** Timezone */
+            timezone: string;
+            /** Area */
+            area: string | null;
+            /** City */
+            city: string | null;
+            /** Format */
+            format: string;
+            /** Capacity */
+            capacity: number;
+            /** Confirmed */
+            confirmed: number;
+            /** Spots Left */
+            spots_left: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "full" | "expired" | "closed";
         };
         /** JoinRequestIn */
         JoinRequestIn: {
             proposed_role?: components["schemas"]["PlayingRole"] | null;
             /** Message */
             message?: string | null;
+        };
+        /** JoinResultOut */
+        JoinResultOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "joined" | "already_in";
+            /** Match Id */
+            match_id: string;
+            /** Team Id */
+            team_id: string;
+            /** Team Name */
+            team_name: string;
+            /** Match Title */
+            match_title: string;
         };
         /** LeaderboardMeta */
         LeaderboardMeta: {
@@ -4588,6 +4751,8 @@ export interface components {
             team_name: string;
             /** Team Logo */
             team_logo: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
             captain: components["schemas"]["PublicUserOut"];
             /** Title */
             title: string;
@@ -4669,6 +4834,11 @@ export interface components {
             /** Estimated Expenses Paise */
             estimated_expenses_paise?: number | null;
             default_contribution_type?: components["schemas"]["ContributionType"] | null;
+            /**
+             * Cover Image
+             * @description Match photo (uploaded); null removes
+             */
+            cover_image?: string | null;
             /** Reschedule Reason */
             reschedule_reason?: string | null;
         };
@@ -4854,6 +5024,8 @@ export interface components {
         OpportunityOut: {
             /** Match Id */
             match_id: string;
+            /** Cover Image */
+            cover_image?: string | null;
             /** Match Code */
             match_code: string;
             /** Title */
@@ -5164,7 +5336,15 @@ export interface components {
             preferred_days?: components["schemas"]["Weekday"][];
             /** Preferred Timing */
             preferred_timing?: components["schemas"]["TimeOfDay"][];
-            /** Cricheroes Url */
+            /**
+             * Cricheroes Profile Url
+             * @description CricHeroes player profile link (omit to keep, null to remove)
+             */
+            cricheroes_profile_url?: string | null;
+            /**
+             * Cricheroes Url
+             * @description Deprecated alias of cricheroes_profile_url
+             */
             cricheroes_url?: string | null;
             /** Previous Teams */
             previous_teams?: string[];
@@ -5208,6 +5388,10 @@ export interface components {
             preferred_timing: components["schemas"]["TimeOfDay"][];
             /** Cricheroes Url */
             cricheroes_url: string | null;
+            /** Cricheroes Profile Url */
+            cricheroes_profile_url?: string | null;
+            /** Cricheroes Player Id */
+            cricheroes_player_id?: string | null;
             /** Previous Teams */
             previous_teams: string[];
             /** Bio */
@@ -5297,6 +5481,13 @@ export interface components {
              * @description From verified data only
              */
             achievements?: components["schemas"]["AchievementOut"][];
+            /**
+             * Cricheroes Profile Url
+             * @description Player-supplied CricHeroes link (not verified by PlayR)
+             */
+            cricheroes_profile_url?: string | null;
+            /** Cricheroes Player Id */
+            cricheroes_player_id?: string | null;
             /** @description Pickup-game attendance (rate needs 3+ marked) */
             attendance?: components["schemas"]["AttendanceOut"] | null;
         };
@@ -5458,6 +5649,10 @@ export interface components {
             preferred_timing: components["schemas"]["TimeOfDay"][];
             /** Cricheroes Url */
             cricheroes_url: string | null;
+            /** Cricheroes Profile Url */
+            cricheroes_profile_url?: string | null;
+            /** Cricheroes Player Id */
+            cricheroes_player_id?: string | null;
             /** Previous Teams */
             previous_teams: string[];
             /** Bio */
@@ -6426,6 +6621,8 @@ export interface components {
             team_name: string;
             /** Logo */
             logo: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
             /** Area */
             area: string | null;
             /** City */
@@ -6446,6 +6643,13 @@ export interface components {
             team: components["schemas"]["TeamCard"];
             /** Description */
             description: string | null;
+            /**
+             * Cricheroes Team Url
+             * @description Captain-supplied CricHeroes team link
+             */
+            cricheroes_team_url?: string | null;
+            /** Cricheroes Team Id */
+            cricheroes_team_id?: string | null;
             captain: components["schemas"]["PublicUserOut"];
             /** Can Manage */
             can_manage: boolean;
@@ -6527,6 +6731,8 @@ export interface components {
             team_name: string;
             /** Logo */
             logo?: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
             /** Description */
             description?: string | null;
             location: components["schemas"]["GeoPointIn"];
@@ -6546,6 +6752,11 @@ export interface components {
             looking_for_opponents: boolean;
             /** Preferred Formats */
             preferred_formats?: components["schemas"]["FixtureFormat"][];
+            /**
+             * Cricheroes Team Url
+             * @description Optional CricHeroes team profile link
+             */
+            cricheroes_team_url?: string | null;
         };
         /** TeamLeaderboardEntry */
         TeamLeaderboardEntry: {
@@ -6615,6 +6826,8 @@ export interface components {
             team_name: string;
             /** Logo */
             logo: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
             /** Description */
             description: string | null;
             /** Area */
@@ -6645,6 +6858,10 @@ export interface components {
             preferred_formats?: components["schemas"]["FixtureFormat"][];
             /** Can Manage */
             can_manage: boolean;
+            /** Cricheroes Team Url */
+            cricheroes_team_url?: string | null;
+            /** Cricheroes Team Id */
+            cricheroes_team_id?: string | null;
             /** Upcoming Matches */
             upcoming_matches: components["schemas"]["UpcomingMatchBrief"][];
             /**
@@ -6724,6 +6941,11 @@ export interface components {
             team_name?: string | null;
             /** Logo */
             logo?: string | null;
+            /**
+             * Cover Image
+             * @description Team cover photo (uploaded); null removes
+             */
+            cover_image?: string | null;
             /** Description */
             description?: string | null;
             location?: components["schemas"]["GeoPointIn"] | null;
@@ -6736,6 +6958,11 @@ export interface components {
             looking_for_opponents?: boolean | null;
             /** Preferred Formats */
             preferred_formats?: components["schemas"]["FixtureFormat"][] | null;
+            /**
+             * Cricheroes Team Url
+             * @description Omit to keep, null to remove
+             */
+            cricheroes_team_url?: string | null;
         };
         /**
          * TimeOfDay
@@ -6949,6 +7176,16 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** JoinIn */
+        app__modules__communities__schemas__JoinIn: {
+            /**
+             * Accept Guidelines
+             * @description Must be true: the member accepts the community guidelines
+             */
+            accept_guidelines: boolean;
+            /** Message */
+            message?: string | null;
+        };
         /** DisputeIn */
         app__modules__competition__schemas__DisputeIn: {
             /** Reason */
@@ -6973,6 +7210,10 @@ export interface components {
             area: string | null;
             /** City */
             city: string | null;
+        };
+        /** JoinIn */
+        app__modules__joinlinks__schemas__JoinIn: {
+            proposed_role?: components["schemas"]["PlayingRole"] | null;
         };
         /** VenueIn */
         app__modules__matches__schemas__VenueIn: {
@@ -11617,7 +11858,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["JoinIn"];
+                "application/json": components["schemas"]["app__modules__communities__schemas__JoinIn"];
             };
         };
         responses: {
@@ -16850,6 +17091,437 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeamSearchOut"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    invite_link_api_v1_matches__match_id__invite_link_post: {
+        parameters: {
+            query?: {
+                rotate?: boolean;
+            };
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_InviteLinkOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    revoke_invite_link_api_v1_matches__match_id__invite_link_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    join_preview_api_v1_join__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_JoinPreviewOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    join_api_v1_join__code__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__modules__joinlinks__schemas__JoinIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_JoinResultOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    invite_register_api_v1_auth_invite_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteRegisterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_TokenOut_"];
                 };
             };
             /** @description Bad request */

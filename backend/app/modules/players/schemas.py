@@ -13,16 +13,16 @@ from app.common.enums import (
     Weekday,
 )
 from app.common.types import GeoPointIn, GeoPointOut, StrictModel
-from app.common.validators import LongText, ShortText, Url
+from app.common.validators import LongText, ShortText
+from app.modules.cricheroes.urls import normalize_profile_url
 
 
 def _cricheroes(v: str) -> str:
-    if "cricheroes" not in v.lower():
-        raise ValueError("must be a CricHeroes profile URL")
-    return v
+    """Strict: https, exact cricheroes.com host, /player-profile/<id>/… — returns the normalised link."""
+    return normalize_profile_url(v, "player")[0]
 
 
-CricHeroesUrl = Annotated[Url, AfterValidator(_cricheroes)]
+CricHeroesUrl = Annotated[str, AfterValidator(_cricheroes)]
 
 
 class PlayerProfileIn(StrictModel):
@@ -34,7 +34,10 @@ class PlayerProfileIn(StrictModel):
     preferred_formats: list[MatchFormat] = Field(default_factory=list, max_length=4)
     preferred_days: list[Weekday] = Field(default_factory=list, max_length=7)
     preferred_timing: list[TimeOfDay] = Field(default_factory=list, max_length=4)
-    cricheroes_url: CricHeroesUrl | None = None
+    cricheroes_profile_url: CricHeroesUrl | None = Field(
+        default=None, description="CricHeroes player profile link (omit to keep, null to remove)"
+    )
+    cricheroes_url: CricHeroesUrl | None = Field(default=None, description="Deprecated alias of cricheroes_profile_url")
     previous_teams: list[ShortText] = Field(default_factory=list, max_length=10)
     bio: LongText | None = None
     locality: ShortText | None = Field(default=None, description="Neighbourhood shown publicly, e.g. 'Sector 18'")
@@ -75,6 +78,8 @@ class PlayerPublicOut(BaseModel):
     preferred_days: list[Weekday]
     preferred_timing: list[TimeOfDay]
     cricheroes_url: str | None
+    cricheroes_profile_url: str | None = None
+    cricheroes_player_id: str | None = None
     previous_teams: list[str]
     bio: str | None
     locality: str | None = None

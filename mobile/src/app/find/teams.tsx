@@ -7,10 +7,10 @@
 import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Users } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
 
+import { PlayRIcon } from "@/components/icons";
 import { LocationOptions } from "@/components/cricket";
 import { DiscoveryTitle, LocationRow, Pill, PillRow, SearchField, TeamDiscoveryCard, type TeamState } from "@/components/premium";
 import { FilterBottomSheet } from "@/components/sheet";
@@ -92,7 +92,7 @@ export default function FindTeamsScreen() {
           </View>
         }
         ListEmptyComponent={res.isPending || res.isError ? undefined : (
-          <EmptyState icon={<Users size={22} color={T.primaryDark} strokeWidth={ICON.stroke} />} title={mode === "all" ? "No teams found" : "No teams need players right now"} body="Try a wider radius, or add your availability so captains can find you." action="Add my availability" onAction={() => router.push("/availability")} />
+          <EmptyState icon={<PlayRIcon name="users" size={22} color={T.primaryDark} />} title={mode === "all" ? "No teams found" : "No teams need players right now"} body="Try a wider radius, or add your availability so captains can find you." action="Add my availability" onAction={() => router.push("/availability")} />
         )}
         ListFooterComponent={rows.length ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Create a player request" onPress={() => router.push("/availability")}
@@ -111,6 +111,8 @@ export default function FindTeamsScreen() {
             <TeamDiscoveryCard
               id={t.team.id}
               name={t.team.team_name}
+              logo={t.team.logo}
+              cover={t.team.cover_image}
               ratingText={t.team.rating && t.team.matches ? `${rating(t.team.rating.rating)} (${t.team.matches})` : null}
               meta={[format, t.team.area ?? t.team.city, `~${t.distance_km} km`].filter(Boolean).join(" · ") + (t.next_open_match_at ? ` · ${when(t.next_open_match_at, { weekday: "short", hour: "numeric" })}` : "")}
               need={need}
