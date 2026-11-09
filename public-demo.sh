@@ -32,8 +32,10 @@ if ! pgrep -f "port 27018" >/dev/null; then
   mongod --replSet rs0 --port 27018 --bind_ip 127.0.0.1 --dbpath "$D/mongo" --logpath "$D/mongod.log" </dev/null >/dev/null 2>&1 &
   sleep 3
 fi
+# Tunnels first: the API needs the public web address for links it puts in messages (invite/join links).
+if [ "$RELOAD" = 1 ]; then WEB=$(cat "$D/tunnel-web.url"); EXPO=$(cat "$D/tunnel-expo.url"); else WEB=$(tunnel 4173 web); EXPO=$(tunnel 8081 expo); fi
 pkill -f "uvicorn app.main:create_app" || true; sleep 1
-(cd "$ROOT/backend" && exec nohup uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log \
+(cd "$ROOT/backend" && APP_BASE_URL="$WEB" exec nohup uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log \
   --proxy-headers --forwarded-allow-ips 127.0.0.1) </dev/null >> "$D/api.log" 2>&1 &
 wait_for http://127.0.0.1:8000/health/ready
 
@@ -43,7 +45,6 @@ wait_for http://127.0.0.1:8000/health/ready
 (cd "$ROOT/frontend" && npx vite build --mode tunnel --base /classic/ --outDir "$D/web-classic" --emptyOutDir >/dev/null)
 (exec nohup node "$ROOT/scripts/serve-web.mjs") </dev/null >> "$D/web.log" 2>&1 &
 wait_for http://127.0.0.1:4173/
-if [ "$RELOAD" = 1 ]; then WEB=$(cat "$D/tunnel-web.url"); EXPO=$(cat "$D/tunnel-expo.url"); else WEB=$(tunnel 4173 web); EXPO=$(tunnel 8081 expo); fi
 (cd "$ROOT/mobile" && EXPO_PUBLIC_API_URL="$WEB/api/v1" EXPO_PUBLIC_DEFAULT_LOGIN=email EXPO_PACKAGER_PROXY_URL="$EXPO" CI=1 \
   exec nohup npx expo start --port 8081 --clear) </dev/null > "$D/expo.log" 2>&1 &
 wait_for http://127.0.0.1:8081/status
