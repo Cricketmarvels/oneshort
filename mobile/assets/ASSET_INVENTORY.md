@@ -19,6 +19,12 @@ The `MAP` in `icons.tsx` is typed `Record<PlayRIconName, …>`, so adding a name
 | `ARTWORK` registry in `src/components/media.tsx` | **Empty.** Awaiting licensed artwork (see section 5). | — | `SportsActionArtwork` uses an entry here when one exists, otherwise the in-house pictogram |
 | `CricketBanner` (team cover fallback), match fallback tile, `TeamLogo` monogram | Generated in code (gradients and shapes) | Owned by PlayR | Team cards, team page, match cards and match page |
 
+## 2a. Link-preview card
+
+| Asset | Source | Licence | Where |
+|---|---|---|---|
+| `mobile/public/og/playr-card.png` (1200×630) | Made for PlayR with Pillow: brand teal gradient and wordmark, no sports artwork | Owned by PlayR. Text is set in Inter (SIL OFL 1.1). | `og:image` for every web page, including WhatsApp previews of join links (added by `scripts/serve-web.mjs`) |
+
 ## 3. Bundled photography (`assets/images/`)
 
 Full attribution is in `assets/images/CREDITS.md`.

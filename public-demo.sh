@@ -43,7 +43,7 @@ wait_for http://127.0.0.1:8000/health/ready
 (cd "$ROOT/mobile" && EXPO_PUBLIC_API_URL=/api/v1 EXPO_PUBLIC_DEFAULT_LOGIN=email EXPO_PUBLIC_USE_DEFAULT_LOCATION=true \
   npx expo export --platform web --output-dir "$D/web-app" >/dev/null)
 (cd "$ROOT/frontend" && npx vite build --mode tunnel --base /classic/ --outDir "$D/web-classic" --emptyOutDir >/dev/null)
-(exec nohup node "$ROOT/scripts/serve-web.mjs") </dev/null >> "$D/web.log" 2>&1 &
+(PUBLIC_URL="$WEB" exec nohup node "$ROOT/scripts/serve-web.mjs") </dev/null >> "$D/web.log" 2>&1 &
 wait_for http://127.0.0.1:4173/
 (cd "$ROOT/mobile" && EXPO_PUBLIC_API_URL="$WEB/api/v1" EXPO_PUBLIC_DEFAULT_LOGIN=email EXPO_PACKAGER_PROXY_URL="$EXPO" CI=1 \
   exec nohup npx expo start --port 8081 --clear) </dev/null > "$D/expo.log" 2>&1 &

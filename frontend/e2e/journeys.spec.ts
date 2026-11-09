@@ -1,9 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
 
 /** Logs in through the real OTP screen; the dev adapter shows the code on screen. */
-async function loginWithOtp(page: Page, mobile10: string) {
+async function loginWithOtp(page: Page, mobile: string) {
   await page.goto("/login");
-  await page.getByLabel("Mobile number").fill(mobile10);
+  await page.getByLabel("Mobile number").fill(mobile);
   await page.getByRole("button", { name: "Send OTP" }).click();
   await expect(page.getByText("Development mode")).toBeVisible();
   const code = (await page.locator("p:has-text('Development mode') button").innerText()).trim();
@@ -43,7 +43,7 @@ test("new player: register → OTP → agreement → onboarding → home", async
 
 test("captain: find nearby players for a seeded match", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "one login per seeded captain (OTP cooldown)");
-  await loginWithOtp(page, "9900000001");
+  await loginWithOtp(page, "+447700900001");
   await page.goto("/discover/players");
   const select = page.getByLabel("Search for a match");
   const value = await select.locator("option", { hasText: "Sunday Morning T20" }).first().getAttribute("value");
@@ -72,7 +72,7 @@ test("captain: find nearby players for a seeded match", async ({ page }, info) =
 
 test("player: payment dashboard and invitations", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "one login per seeded player (OTP cooldown)");
-  await loginWithOtp(page, "9900000002");
+  await loginWithOtp(page, "+447700900002");
   await page.goto("/invitations");
   await expect(page.getByRole("tab", { name: /Received/ })).toBeVisible();
   await expect(page.getByText("Nets & fielding drills").first()).toBeVisible();

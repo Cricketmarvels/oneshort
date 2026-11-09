@@ -6,9 +6,11 @@ same validation and business rules as production traffic. Refuses to run in prod
     uv run python -m scripts.seed_data --reset
 
 Demo logins (OTP is returned by the dev adapter; the web app shows it automatically):
-    Captain : +91 99000 00001  (Rahul Menon, captain of Sector 18 Kings)
-    Player  : +91 99000 00002  (Arjun Rao, opening batsman)
-    Admin   : +91 99000 00099  (Moderation admin)
+    Captain : +44 7700 900001  (Rahul Menon, captain of Sector 18 Kings)
+    Player  : +44 7700 900002  (Arjun Rao, opening batsman)
+    Admin   : +44 7700 900099  (Moderation admin)
+All seeded numbers are in Ofcom's reserved drama range (see scripts/demo_numbers.py), so they can't reach a real
+person. Type the full number, with +44, at login.
 """
 
 import argparse
@@ -24,6 +26,7 @@ from bson import ObjectId
 from app.core.config import get_settings
 from app.core.container import build_container
 from app.main import create_app
+from scripts.demo_numbers import demo_mobile
 
 API = "/api/v1"
 IST_OFFSET = timedelta(hours=5, minutes=30)
@@ -335,11 +338,11 @@ async def seed(reset: bool) -> None:
         )
 
         print("→ users")
-        await s.user("rahul", "Rahul Menon", "+919900000001", "Sector 18", "all_rounder", captain=True)
-        await s.user("arjun", "Arjun Rao", "+919900000002", "Sector 50", "batsman")
-        await s.user("priya_cap", "Imran Khan", "+919900000003", "Sector 62", "bowler", captain=True)
-        await s.user("kiran_cap", "Kiran Tyagi", "+919900000004", "Sector 137", "wicketkeeper", captain=True)
-        await s.user("admin", "Moderation Admin", "+919900000099", "Sector 58", "batsman")
+        await s.user("rahul", "Rahul Menon", demo_mobile(1), "Sector 18", "all_rounder", captain=True)
+        await s.user("arjun", "Arjun Rao", demo_mobile(2), "Sector 50", "batsman")
+        await s.user("priya_cap", "Imran Khan", demo_mobile(3), "Sector 62", "bowler", captain=True)
+        await s.user("kiran_cap", "Kiran Tyagi", demo_mobile(4), "Sector 137", "wicketkeeper", captain=True)
+        await s.user("admin", "Moderation Admin", demo_mobile(99), "Sector 58", "batsman")
         await container.mongo["users"].update_one({"_id": ObjectId(s.ids["admin"])}, {"$addToSet": {"roles": "admin"}})
         areas = [a for a in AREAS if a not in AREA_CITY]
         players: list[tuple[str, str]] = []
@@ -353,7 +356,7 @@ async def seed(reset: bool) -> None:
             area = areas[i % len(areas)]
             role = ROLES[i % 4] if i % 4 != 2 or i % 8 == 2 else "batsman"  # fewer keepers
             key = f"p{i:02d}"
-            await s.user(key, name, f"+91981{i:07d}", area, role)
+            await s.user(key, name, demo_mobile(100 + i), area, role)
             players.append((key, area))
         print("→ availability")
         for key, area in [("arjun", "Sector 50"), *players]:
@@ -617,9 +620,9 @@ async def seed(reset: bool) -> None:
 
     await container.mongo.close()
     print("\n✓ Seed complete.")
-    print("  Captain login : +919900000001 (Rahul Menon)")
-    print("  Player login  : +919900000002 (Arjun Rao)")
-    print("  Admin login   : +919900000099")
+    print(f"  Captain login : {demo_mobile(1)} (Rahul Menon)")
+    print(f"  Player login  : {demo_mobile(2)} (Arjun Rao)")
+    print(f"  Admin login   : {demo_mobile(99)}")
     print("  OTP codes are shown by the dev adapter (OTP_PROVIDER=console).")
 
 
@@ -656,7 +659,7 @@ async def competition_demo(
         ),
     ):
         cap = f"{key}_cap"
-        await s.user(cap, cap_name, f"+91982{n:07d}", area, "all_rounder", captain=True)
+        await s.user(cap, cap_name, demo_mobile(200 + n), area, "all_rounder", captain=True)
         n += 1
         await s.team(key, cap, team_name, area, "friendly", desc)
         members = []
@@ -667,7 +670,7 @@ async def competition_demo(
                     used.add(name)
                     break
             mk = f"{key}_{i}"
-            await s.user(mk, name, f"+91982{n:07d}", area, ROLES[i % 4] if i % 4 != 2 else "batsman")
+            await s.user(mk, name, demo_mobile(200 + n), area, ROLES[i % 4] if i % 4 != 2 else "batsman")
             n += 1
             members.append(mk)
         await s.add_members(key, cap, members)

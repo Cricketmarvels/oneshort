@@ -29,7 +29,7 @@ EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:8000/api/v1 npx expo start   # Android 
 ```
 `platform/dev.sh` starts Mongo, the API and the web app together.
 
-**Demo logins** (the OTP is shown on screen in dev): captain `9900000001`, player `9900000002`, admin `9900000099`.
+**Demo logins** (the OTP is shown on screen in dev): captain `+447700900001`, player `+447700900002`, admin `+447700900099` (fictional range; type the full number).
 
 **Tests:** `cd backend && uv run pytest` · `cd frontend && npm test && npm run test:e2e` · `cd mobile && npx jest`.
 

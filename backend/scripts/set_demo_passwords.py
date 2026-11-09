@@ -18,8 +18,9 @@ from pathlib import Path
 from app.core.config import get_settings
 from app.core.security import hash_secret
 from app.infrastructure.database.mongo import Mongo
+from scripts.demo_numbers import ADMIN, CAPTAIN, PLAYER
 
-DEMO_MOBILES = {"+919900000001": "Captain", "+919900000002": "Player", "+919900000099": "Admin"}
+DEMO_MOBILES = {CAPTAIN: "Captain", PLAYER: "Player", ADMIN: "Admin"}
 OUT = Path(__file__).resolve().parents[2] / ".data" / "demo-logins.txt"
 
 

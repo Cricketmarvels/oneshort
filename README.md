@@ -15,7 +15,7 @@
 ./dev.sh                                              # Mongo RS :27018 + API :8000 + web :5173
 (cd backend && uv run python -m scripts.seed_data --reset)
 ```
-Open http://localhost:5173 and log in with **9900000001** (captain) or **9900000002** (player). In development the OTP is shown on screen. API docs are at http://localhost:8000/docs.
+Open http://localhost:5173 and log in with **+447700900001** (captain) or **+447700900002** (player); seeded numbers are fictional, so type the full number with +44. In development the OTP is shown on screen. API docs are at http://localhost:8000/docs.
 
 ## Tests
 ```bash
