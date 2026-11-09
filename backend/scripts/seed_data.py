@@ -158,7 +158,13 @@ class Seeder:
             json={"mobile_number": mobile, "code": reg["otp"]["dev_otp"], "purpose": "register"},
         )
         self.tokens[key], self.ids[key] = tok["access_token"], tok["user"]["id"]
-        await self.call("POST", "/agreements/acceptance", key, json={"version": 1, "accepted": True})
+        cur = (await self.call("GET", "/agreements/current", key))["version"]
+        await self.call(
+            "POST",
+            "/agreements/acceptance",
+            key,
+            json={"version": cur, "accepted": True, "age_confirmed": True, "privacy_acknowledged": True},
+        )
         lat, lng = AREAS[area]
         jitter = lambda: random.uniform(-0.008, 0.008)  # noqa: E731 - homes spread around the area
         # No profile_image: the app shows branded initials until the player uploads a photo.

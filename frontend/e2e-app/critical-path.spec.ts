@@ -43,8 +43,12 @@ async function emailLogin(page: Page, email: string, password = PASSWORD) {
 async function acceptAgreementIfShown(page: Page) {
   const agree = page.getByRole("switch", { name: /I agree to the Platform User Agreement/ });
   if (await agree.waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false)) {
+    const accept = page.getByRole("button", { name: "Accept and continue" });
     await agree.click();
-    await page.getByRole("button", { name: "Accept and continue" }).click();
+    await expect(accept).toBeDisabled(); // privacy consent and age confirmation are separate, required steps
+    await page.getByRole("switch", { name: "I consent under the Privacy Notice" }).click();
+    await page.getByRole("switch", { name: "I am 18 or older" }).click();
+    await accept.click();
   }
 }
 
@@ -176,4 +180,22 @@ test("someone outside the match can't open its fee page", async ({ page }) => {
   await emailLogin(page, TEAM_CAPTAIN);
   await page.goto(`/fee?ledger=${state.matchUrl!.split("/").pop()}&title=x`);
   await expect(page.getByText("Only match participants can view fees")).toBeVisible();
+});
+
+test("Terms and Privacy Notice are public, and a player can make a privacy request", async ({ page }) => {
+  await page.goto("/legal/privacy");
+  await expect(page.getByText("PlayR Privacy Notice").first()).toBeVisible();
+  await expect(page.getByText(/Data Protection Board of India/).first()).toBeVisible();
+  await page.getByText("Read the Terms of Use").click();
+  await expect(page.getByText("PlayR Terms of Use").first()).toBeVisible();
+
+  await emailLogin(page, newbie.email, newbie.password);
+  await page.goto("/privacy");
+  await page.getByRole("button", { name: "Nominate someone" }).click();
+  await page.getByLabel("Nominee's full name").fill("Asha Sharma");
+  await page.getByLabel("Nominee's phone or email").fill("asha@example.in");
+  await page.getByLabel("Details").fill("Please record my sister as my nominee.");
+  await page.getByRole("button", { name: "Send request" }).click();
+  await expect(page.getByText(/Request PR-[0-9A-F]{8} received/)).toBeVisible();
+  await expect(page.getByText(/Nominate someone · PR-/)).toBeVisible();
 });

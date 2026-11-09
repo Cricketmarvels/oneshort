@@ -158,6 +158,24 @@ class UserService:
                 {"user_id": uid, "revoked_at": None}, {"$set": {"revoked_at": now}}, session=s
             )
             await m["devices"].delete_many({"user_id": uid}, session=s)
+            # Erase what the person wrote or set up (DPDP Act s.12): content others can see is replaced, private
+            # records are deleted. Ratings, fee records and audit entries stay, pseudonymised as "Deleted player".
+            await m["community_posts"].update_many(
+                {"author_id": uid},
+                {"$set": {"body": "", "poll": None, "removed": True, "removed_reason": "author_deleted"}},
+                session=s,
+            )
+            await m["chat_messages"].update_many({"sender_id": uid}, {"$set": {"body": "[message deleted]"}}, session=s)
+            await m["play_requests"].update_many({"from_user_id": uid}, {"$set": {"message": None}}, session=s)
+            await m["notifications"].delete_many({"user_id": uid}, session=s)
+            await m["racket_profiles"].delete_many({"user_id": uid}, session=s)
+            await m["captain_profiles"].update_many({"user_id": uid}, {"$unset": {"bio": ""}}, session=s)
+            await m["community_members"].update_many({"user_id": uid}, {"$set": {"status": "left"}}, session=s)
+            await m["privacy_requests"].update_many(
+                {"user_id": uid, "status": {"$in": ["open", "in_progress"]}},
+                {"$set": {"status": "closed", "resolution": "Account deleted", "resolved_at": now}},
+                session=s,
+            )
             await self.c.audit.log(
                 actor_id=uid,
                 action="account.deleted",

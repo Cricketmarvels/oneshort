@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.modules.admin.router import router as admin_router
+from app.modules.agreements.router import legal_router
 from app.modules.agreements.router import router as agreements_router
 from app.modules.assistant.router import router as assistant_router
 from app.modules.auth.router import router as auth_router
@@ -20,6 +21,8 @@ from app.modules.joinlinks.router import router as joinlinks_router
 from app.modules.matches.router import router as matches_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.players.router import router as players_router
+from app.modules.privacy.router import admin_router as privacy_admin_router
+from app.modules.privacy.router import router as privacy_router
 from app.modules.racket.router import router as racket_router
 from app.modules.ratings.router import router as ratings_router
 from app.modules.reports.router import router as reports_router
@@ -35,6 +38,9 @@ for r in (
     auth_router,
     users_router,
     agreements_router,
+    legal_router,
+    privacy_router,
+    privacy_admin_router,
     assistant_router,
     competition_router,  # before players/teams: /players/leaderboard, /teams/leaderboard etc.
     communities_router,

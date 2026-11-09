@@ -108,7 +108,7 @@ async def register(
     user = TestUser(d["user"]["id"], d["access_token"], d["refresh_token"], mobile, name)
     if agree:
         cur = (await client.get("/api/v1/agreements/current")).json()["data"]["version"]
-        r = await client.post("/api/v1/agreements/acceptance", headers=user.h, json={"version": cur, "accepted": True})
+        r = await client.post("/api/v1/agreements/acceptance", headers=user.h, json={"version": cur, "accepted": True, "age_confirmed": True, "privacy_acknowledged": True})
         assert r.status_code == 200, r.text
     return user
 

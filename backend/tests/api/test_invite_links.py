@@ -58,7 +58,7 @@ async def test_invite_link_register_join_and_revoke(client: httpx.AsyncClient) -
 
     # accept the agreement if required, create a player profile, then join
     cur = (await client.get(f"{API}/agreements/current")).json()["data"]["version"]
-    await client.post(f"{API}/agreements/acceptance", headers=h, json={"version": cur, "accepted": True})
+    await client.post(f"{API}/agreements/acceptance", headers=h, json={"version": cur, "accepted": True, "age_confirmed": True, "privacy_acknowledged": True})
     assert (await client.put(f"{API}/players/me", headers=h, json={"primary_role": "bowler"})).status_code == 200
     j = await client.post(f"{API}/join/{code}", headers=h, json={})
     assert j.status_code == 200, j.text

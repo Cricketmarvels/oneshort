@@ -81,10 +81,6 @@ export default function Profile() {
     void prof.refetch();
     Alert.alert("Home area updated", "Others only ever see an approximate distance.");
   };
-  const del = () => Alert.alert("Delete account?", "Removes your personal data. This can't be undone.", [
-    { text: "Cancel", style: "cancel" },
-    { text: "Delete", style: "destructive", onPress: async () => { await api("/users/me", { method: "DELETE", body: { confirm: "DELETE" } }); await signOut(); } },
-  ]);
   return (
     <ScrollView style={{ backgroundColor: T.paper }} contentContainerStyle={{ paddingBottom: 60 }}>
       <View>
@@ -175,8 +171,8 @@ export default function Profile() {
             </Card>
           </Section>
         ) : null}
+        <Button title="Privacy & data" variant="secondary" onPress={() => router.push("/privacy")} />
         <Button title="Log out" variant="secondary" icon={<LogOut size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => void signOut()} />
-        <Button title="Delete account" variant="ghost" onPress={del} />
       </View>
     </ScrollView>
   );

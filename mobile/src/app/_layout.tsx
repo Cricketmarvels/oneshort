@@ -47,12 +47,13 @@ function Gate() {
   if (!ready || !sport.ready || !pending.ready) return <Loading />;
   const inAuth = seg[0] === "(auth)";
   const onJoin = (seg as string[])[0] === "join"; // captain invite links are reachable before login
+  const onLegal = (seg as string[])[0] === "legal"; // Terms and Privacy Notice are public, and readable mid-consent
   const onSport = inAuth && ["sport", "welcome"].includes((seg as string[])[1] ?? "");
-  if (!user && !sport.sport && !onSport && !onJoin) return <Redirect href="/welcome" />;
+  if (!user && !sport.sport && !onSport && !onJoin && !onLegal) return <Redirect href="/welcome" />;
   const onSim = (seg as string[])[0] === "whatsapp-sim"; // WhatsApp simulator (test mode) is reachable before login
-  if (!user && !inAuth && !onSim && !onJoin) return <Redirect href="/login" />;
+  if (!user && !inAuth && !onSim && !onJoin && !onLegal) return <Redirect href="/login" />;
   if (user && inAuth) return <Redirect href="/" />;
-  if (user && !user.agreement.satisfied && seg[0] !== "agreement") return <Redirect href="/agreement" />;
+  if (user && !user.agreement.satisfied && seg[0] !== "agreement" && !onLegal) return <Redirect href="/agreement" />;
   if (user && user.agreement.satisfied && seg[0] === "agreement") return <Redirect href={pending.code ? { pathname: "/join/[code]", params: { code: pending.code } } : "/"} />;
   if (user && user.agreement.satisfied && pending.code && !onJoin) return <Redirect href={{ pathname: "/join/[code]", params: { code: pending.code } }} />;
   return (

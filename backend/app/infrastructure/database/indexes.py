@@ -215,7 +215,13 @@ INDEXES: dict[str, list[IndexModel]] = {
         IndexModel([("created_at", ASCENDING)], expireAfterSeconds=86400, name="ttl_24h"),
         IndexModel([("to", ASCENDING), ("created_at", DESCENDING)]),
     ],
-    "whatsapp_events": [IndexModel([("received_at", ASCENDING)], expireAfterSeconds=30 * 86400, name="ttl_30d")],
+    # Processing logs: kept at least one year (DPDP Rules, 2025), then deleted.
+    "whatsapp_events": [IndexModel([("received_at", ASCENDING)], expireAfterSeconds=400 * 86400, name="ttl_400d")],
+    "privacy_requests": [
+        IndexModel([("user_id", ASCENDING), ("created_at", DESCENDING)]),
+        IndexModel([("status", ASCENDING), ("legal_deadline", ASCENDING)]),
+        IndexModel([("reference", ASCENDING)], unique=True),
+    ],
     "chat_messages": [IndexModel([("invitation_id", ASCENDING), ("created_at", ASCENDING)])],
     "racket_profiles": [
         IndexModel([("user_id", ASCENDING), ("sport", ASCENDING)], unique=True, name="uniq_user_sport"),
@@ -292,6 +298,10 @@ VALIDATORS: dict[str, dict[str, Any]] = {
 }
 
 
+# (collection, index name) dropped at startup before INDEXES are created.
+RETIRED_INDEXES: list[tuple[str, str]] = [("whatsapp_events", "ttl_30d")]  # now ttl_400d (log retention >= 1 year)
+
+
 async def ensure_indexes(mongo: Mongo) -> None:
     existing = set(await mongo.db.list_collection_names())
     for name, validator in VALIDATORS.items():
@@ -302,5 +312,8 @@ async def ensure_indexes(mongo: Mongo) -> None:
                 pass
         else:
             await mongo.db.command({"collMod": name, "validator": validator})
+    for coll, index in RETIRED_INDEXES:  # replaced indexes whose key pattern is reused with new options
+        if coll in existing and index in await mongo[coll].index_information():
+            await mongo[coll].drop_index(index)
     for name, models in INDEXES.items():
         await mongo[name].create_indexes(models)

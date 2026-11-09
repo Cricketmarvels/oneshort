@@ -261,6 +261,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/legal/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Terms of Use (public) */
+        get: operations["public_terms_api_v1_legal_terms_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/legal/privacy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Privacy Notice (public) */
+        get: operations["public_privacy_api_v1_legal_privacy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/privacy/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make a privacy request */
+        post: operations["create_request_api_v1_privacy_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/privacy/requests/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My privacy requests */
+        get: operations["my_requests_api_v1_privacy_requests_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/privacy-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Privacy request queue */
+        get: operations["queue_api_v1_admin_privacy_requests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/privacy-requests/{request_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Update a privacy request */
+        post: operations["resolve_api_v1_admin_privacy_requests__request_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/search/smart": {
         parameters: {
             query?: never;
@@ -2711,6 +2813,16 @@ export interface components {
             version: number;
             /** Accepted */
             accepted: boolean;
+            /**
+             * Age Confirmed
+             * @default false
+             */
+            age_confirmed: boolean;
+            /**
+             * Privacy Acknowledged
+             * @default false
+             */
+            privacy_acknowledged: boolean;
         };
         /** AcceptanceOut */
         AcceptanceOut: {
@@ -2782,6 +2894,54 @@ export interface components {
             /** Amount Paise */
             amount_paise: number;
         };
+        /** AdminPrivacyRequestOut */
+        AdminPrivacyRequestOut: {
+            /** Id */
+            id: string;
+            /** Reference */
+            reference: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "access" | "correction" | "erasure" | "withdraw_consent" | "nomination" | "grievance";
+            /** Details */
+            details: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "in_progress" | "resolved" | "rejected" | "closed";
+            /** Resolution */
+            resolution: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Respond By
+             * Format: date-time
+             * @description Internal target (30 days)
+             */
+            respond_by: string;
+            /**
+             * Legal Deadline
+             * Format: date-time
+             * @description Latest response date under the DPDP Rules (90 days)
+             */
+            legal_deadline: string;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** User Id */
+            user_id: string;
+            /** Nominee */
+            nominee: {
+                [key: string]: unknown;
+            } | null;
+            /** Overdue */
+            overdue: boolean;
+        };
         /** AdminReportOut */
         AdminReportOut: {
             /** Id */
@@ -2850,6 +3010,13 @@ export interface components {
              * Format: date-time
              */
             published_at: string;
+            /** Effective Date */
+            effective_date?: string | null;
+            /**
+             * Privacy Version
+             * @default 1
+             */
+            privacy_version: number;
         };
         /** AgreementSection */
         AgreementSection: {
@@ -3856,6 +4023,10 @@ export interface components {
         Envelope_JoinResultOut_: {
             data: components["schemas"]["JoinResultOut"];
         };
+        /** Envelope[LegalDocOut] */
+        Envelope_LegalDocOut_: {
+            data: components["schemas"]["LegalDocOut"];
+        };
         /** Envelope[MatchOut] */
         Envelope_MatchOut_: {
             data: components["schemas"]["MatchOut"];
@@ -3899,6 +4070,10 @@ export interface components {
         /** Envelope[PostOut] */
         Envelope_PostOut_: {
             data: components["schemas"]["PostOut"];
+        };
+        /** Envelope[PrivacyRequestOut] */
+        Envelope_PrivacyRequestOut_: {
+            data: components["schemas"]["PrivacyRequestOut"];
         };
         /** Envelope[RacketProfileOut] */
         Envelope_RacketProfileOut_: {
@@ -3975,6 +4150,11 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** Envelope[list[AdminPrivacyRequestOut]] */
+        Envelope_list_AdminPrivacyRequestOut__: {
+            /** Data */
+            data: components["schemas"]["AdminPrivacyRequestOut"][];
+        };
         /** Envelope[list[AvailabilityOut]] */
         Envelope_list_AvailabilityOut__: {
             /** Data */
@@ -4049,6 +4229,11 @@ export interface components {
         Envelope_list_PlayRequestOut__: {
             /** Data */
             data: components["schemas"]["PlayRequestOut"][];
+        };
+        /** Envelope[list[PrivacyRequestOut]] */
+        Envelope_list_PrivacyRequestOut__: {
+            /** Data */
+            data: components["schemas"]["PrivacyRequestOut"][];
         };
         /** Envelope[list[RateableOut]] */
         Envelope_list_RateableOut__: {
@@ -4625,6 +4810,19 @@ export interface components {
             includes_demo_data: boolean;
             /** Method */
             method: string;
+        };
+        /** LegalDocOut */
+        LegalDocOut: {
+            /** Kind */
+            kind: string;
+            /** Version */
+            version: number;
+            /** Title */
+            title: string;
+            /** Effective Date */
+            effective_date: string;
+            /** Sections */
+            sections: components["schemas"]["AgreementSection"][];
         };
         /** MarkPaidIn */
         MarkPaidIn: {
@@ -5790,6 +5988,60 @@ export interface components {
              */
             approx_distance_km?: number | null;
         };
+        /** PrivacyRequestIn */
+        PrivacyRequestIn: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "access" | "correction" | "erasure" | "withdraw_consent" | "nomination" | "grievance";
+            /** Details */
+            details: string;
+            /** Nominee Name */
+            nominee_name?: string | null;
+            /** Nominee Contact */
+            nominee_contact?: string | null;
+        };
+        /** PrivacyRequestOut */
+        PrivacyRequestOut: {
+            /** Id */
+            id: string;
+            /** Reference */
+            reference: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "access" | "correction" | "erasure" | "withdraw_consent" | "nomination" | "grievance";
+            /** Details */
+            details: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "in_progress" | "resolved" | "rejected" | "closed";
+            /** Resolution */
+            resolution: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Respond By
+             * Format: date-time
+             * @description Internal target (30 days)
+             */
+            respond_by: string;
+            /**
+             * Legal Deadline
+             * Format: date-time
+             * @description Latest response date under the DPDP Rules (90 days)
+             */
+            legal_deadline: string;
+            /** Resolved At */
+            resolved_at: string | null;
+        };
         /** ProposalEntry */
         ProposalEntry: {
             /** By Team Id */
@@ -6193,16 +6445,6 @@ export interface components {
             code: string;
             /** New Password */
             new_password: string;
-        };
-        /** ResolveIn */
-        ResolveIn: {
-            /**
-             * Action
-             * @enum {string}
-             */
-            action: "confirm" | "void";
-            /** Reason */
-            reason: string;
         };
         /** RespondIn */
         RespondIn: {
@@ -7191,6 +7433,16 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ResolveIn */
+        app__modules__competition__schemas__ResolveIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "confirm" | "void";
+            /** Reason */
+            reason: string;
+        };
         /** VenueIn */
         app__modules__competition__schemas__VenueIn: {
             /** Name */
@@ -7247,6 +7499,16 @@ export interface components {
              * @description True when the full address is hidden from this viewer
              */
             restricted: boolean;
+        };
+        /** ResolveIn */
+        app__modules__privacy__router__ResolveIn: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_progress" | "resolved" | "rejected";
+            /** Resolution */
+            resolution: string;
         };
         /** DisputeIn */
         app__modules__settlements__schemas__DisputeIn: {
@@ -8642,6 +8904,516 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Envelope_MyAgreementsOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    public_terms_api_v1_legal_terms_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_LegalDocOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    public_privacy_api_v1_legal_privacy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_LegalDocOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_request_api_v1_privacy_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivacyRequestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_PrivacyRequestOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    my_requests_api_v1_privacy_requests_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_list_PrivacyRequestOut__"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    queue_api_v1_admin_privacy_requests_get: {
+        parameters: {
+            query?: {
+                status?: ("open" | "in_progress" | "resolved" | "rejected" | "closed") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_list_AdminPrivacyRequestOut__"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    resolve_api_v1_admin_privacy_requests__request_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__modules__privacy__router__ResolveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_PrivacyRequestOut_"];
                 };
             };
             /** @description Bad request */
@@ -11075,7 +11847,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ResolveIn"];
+                "application/json": components["schemas"]["app__modules__competition__schemas__ResolveIn"];
             };
         };
         responses: {

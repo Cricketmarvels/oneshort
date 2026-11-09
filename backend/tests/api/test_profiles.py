@@ -8,7 +8,7 @@ API = "/api/v1"
 async def test_agreement_flow(client: httpx.AsyncClient) -> None:
     u = await register(client, agree=False)
     cur = (await client.get(f"{API}/agreements/current")).json()["data"]
-    assert cur["version"] == 1 and len(cur["sections"]) >= 9
+    assert cur["version"] == 2 and len(cur["sections"]) >= 12
     r = await client.post(
         f"{API}/agreements/acceptance", headers=u.h, json={"version": cur["version"], "accepted": False}
     )
@@ -16,11 +16,11 @@ async def test_agreement_flow(client: httpx.AsyncClient) -> None:
     r = await client.post(f"{API}/agreements/acceptance", headers=u.h, json={"version": 99, "accepted": True})
     assert r.json()["error"]["code"] == "AGREEMENT_VERSION_MISMATCH"
     r = await client.post(
-        f"{API}/agreements/acceptance", headers=u.h, json={"version": cur["version"], "accepted": True}
+        f"{API}/agreements/acceptance", headers=u.h, json={"version": cur["version"], "accepted": True, "age_confirmed": True, "privacy_acknowledged": True}
     )
     assert r.status_code == 200 and r.json()["data"]["satisfied"] is True
     mine = (await client.get(f"{API}/agreements/me", headers=u.h)).json()["data"]
-    assert mine["acceptances"][0]["agreement_version"] == 1
+    assert mine["acceptances"][0]["agreement_version"] == 2
     me = (await client.get(f"{API}/users/me", headers=u.h)).json()["data"]
     assert me["agreement"]["satisfied"] is True
 

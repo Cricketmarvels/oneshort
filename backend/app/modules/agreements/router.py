@@ -8,10 +8,12 @@ from app.modules.agreements.service import (
     AcceptIn,
     AgreementOut,
     AgreementService,
+    LegalDocOut,
     MyAgreementsOut,
 )
 
 router = APIRouter(prefix="/agreements", tags=["Agreements"], responses=ERROR_RESPONSES)
+legal_router = APIRouter(prefix="/legal", tags=["Legal"], responses=ERROR_RESPONSES)
 
 
 def service(c: ContainerDep) -> AgreementService:
@@ -35,3 +37,13 @@ async def accept(data: AcceptIn, request: Request, user: UserDep, svc: Svc) -> E
 @router.get("/me", response_model=Envelope[MyAgreementsOut], summary="My agreement acceptances")
 async def mine(user: UserDep, svc: Svc) -> Envelope[MyAgreementsOut]:
     return ok(await svc.mine(user))
+
+
+@legal_router.get("/terms", response_model=Envelope[LegalDocOut], summary="Terms of Use (public)")
+async def public_terms(svc: Svc) -> Envelope[LegalDocOut]:
+    return ok(svc.legal_doc("terms"))
+
+
+@legal_router.get("/privacy", response_model=Envelope[LegalDocOut], summary="Privacy Notice (public)")
+async def public_privacy(svc: Svc) -> Envelope[LegalDocOut]:
+    return ok(svc.legal_doc("privacy"))

@@ -16,8 +16,10 @@ export function AgreementPage() {
   const setUser = useAuth((s) => s.setUser);
   const user = useAuth((s) => s.user);
   const [checked, setChecked] = useState(false);
+  const [priv, setPriv] = useState(false);
+  const [adult, setAdult] = useState(false);
   const q = useQuery({ queryKey: ["agreement", "current"], queryFn: agreements.current });
-  const accept = useAction(async (v: number) => { await agreements.accept(v); return me.get(); }, {
+  const accept = useAction(async (v: number) => { await agreements.accept(v, { age_confirmed: adult, privacy_acknowledged: priv }); return me.get(); }, {
     success: "Thanks! You're all set.",
     onSuccess: (u) => { setUser(u); nav(u.has_player_profile ? "/" : "/onboarding/player", { replace: true }); },
   });
@@ -48,9 +50,17 @@ export function AgreementPage() {
             </Card>
             <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 ring-1 ring-sand-300">
               <input type="checkbox" className="mt-1 size-5 accent-brand-700" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-              <span className="text-sm text-ink-700">I have read and agree to the Platform User Agreement, including the conduct, safety, financial and liability terms.</span>
+              <span className="text-sm text-ink-700">I have read and agree to the PlayR Terms of Use.</span>
             </label>
-            <Button className="mt-4" block size="lg" disabled={!checked} loading={accept.isPending} onClick={() => accept.mutate(a.version)}>Accept and continue</Button>
+            <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 ring-1 ring-sand-300">
+              <input type="checkbox" className="mt-1 size-5 accent-brand-700" checked={priv} onChange={(e) => setPriv(e.target.checked)} />
+              <span className="text-sm text-ink-700">I have read the <a className="font-semibold text-brand-700 underline" href="/legal/privacy" target="_blank" rel="noreferrer">Privacy Notice</a> and consent to PlayR using my data as it describes.</span>
+            </label>
+            <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 ring-1 ring-sand-300">
+              <input type="checkbox" className="mt-1 size-5 accent-brand-700" checked={adult} onChange={(e) => setAdult(e.target.checked)} />
+              <span className="text-sm text-ink-700">I am 18 or older.</span>
+            </label>
+            <Button className="mt-4" block size="lg" disabled={!checked || !priv || !adult} loading={accept.isPending} onClick={() => accept.mutate(a.version)}>Accept and continue</Button>
           </>
         )}
       </QueryState>

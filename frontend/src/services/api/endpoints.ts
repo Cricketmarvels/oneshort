@@ -46,7 +46,8 @@ export const useCaptain = (id: string) =>
 // ------------------------------------------------------------------ agreements
 export const agreements = {
   current: () => api<S<"AgreementOut">>({ url: "/agreements/current" }),
-  accept: (version: number) => api<S<"MyAgreementsOut">>({ method: "POST", url: "/agreements/acceptance", data: { version, accepted: true } }),
+  accept: (version: number, consent: { age_confirmed: boolean; privacy_acknowledged: boolean }) =>
+    api<S<"MyAgreementsOut">>({ method: "POST", url: "/agreements/acceptance", data: { version, accepted: true, ...consent } }),
   mine: () => api<S<"MyAgreementsOut">>({ url: "/agreements/me" }),
 };
 

@@ -129,6 +129,15 @@ class Settings(BaseSettings):
     # Agreement
     agreement_required: bool = True
 
+    # Legal identity shown in the Terms and Privacy Notice (DPDP Act 2023 / IT Rules 2021).
+    # Required in production; placeholders are shown elsewhere so drafts are obvious.
+    legal_entity_name: str | None = None  # registered company name that operates PlayR (the Data Fiduciary)
+    legal_entity_address: str | None = None  # registered office address
+    grievance_officer_name: str | None = None
+    grievance_email: str | None = None  # privacy and grievance requests
+    legal_jurisdiction: str = "Noida, Uttar Pradesh"  # courts for disputes
+    legal_effective_date: str = "9 November 2026"
+
     @model_validator(mode="after")
     def _validate_production(self) -> "Settings":
         if self.app_env == "production":
@@ -141,6 +150,11 @@ class Settings(BaseSettings):
                 problems.append("OTP_PROVIDER=console is not allowed in production")
             if self.debug:
                 problems.append("DEBUG must be false in production")
+            for field in ("legal_entity_name", "legal_entity_address", "grievance_officer_name", "grievance_email"):
+                if not getattr(self, field):
+                    problems.append(
+                        f"{field.upper()} is required in production (shown in the Terms and Privacy Notice)"
+                    )
             if problems:
                 raise ValueError("; ".join(problems))
         return self
