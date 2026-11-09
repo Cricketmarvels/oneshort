@@ -1,6 +1,6 @@
 name: CI
 on:
-  push: { branches: [main] }
+  push: { branches: [main, develop] }
   pull_request:
 
 jobs:
@@ -64,3 +64,21 @@ jobs:
       - run: npx tsc --noEmit
       - run: npx jest
       - run: npx expo-doctor
+
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Python dependency vulnerabilities (blocking)
+        working-directory: backend
+        run: uv export --frozen --no-dev --format requirements.txt > /tmp/reqs.txt && uvx pip-audit -r /tmp/reqs.txt --disable-pip
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: Mobile production dependencies (blocking at high)
+        working-directory: mobile
+        run: npm ci --ignore-scripts && npm audit --omit=dev --audit-level=high
+      - name: Full npm audit (informational)
+        working-directory: mobile
+        continue-on-error: true
+        run: npm audit || true

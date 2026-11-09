@@ -1,11 +1,11 @@
 import type { S } from "@cm/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { router } from "expo-router";
 import { Bell, CalendarDays, Mail, Megaphone, MessageCircle, ShieldAlert, Swords, TrendingUp, Trophy, Users } from "lucide-react-native";
 import { type ReactNode, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 import { NotificationItem } from "@/components/cricket";
+import { openNotification } from "@/lib/notify-nav";
 import { EmptyState, ErrorBox, List, LoadingSkeleton, Section, TextLink, Txt } from "@/components/ui";
 import { api } from "@/lib/api";
 import { SP, T } from "@/theme";
@@ -34,13 +34,7 @@ function iconFor(t: string): [ReactNode, string] {
 }
 
 function open(n: N) {
-  const d = n.data as Record<string, string | undefined>;
-  if (d.invitation_id && (n.type === "chat_message" || n.type === "invitation_accepted")) return router.push({ pathname: "/chat/[id]", params: { id: d.invitation_id } });
-  if (d.fixture_id) return router.push({ pathname: "/fixture/[id]", params: { id: d.fixture_id } });
-  if (d.challenge_id) return router.push({ pathname: "/challenge/[id]", params: { id: d.challenge_id } });
-  if (d.community_id) return router.push({ pathname: "/community/[id]", params: { id: d.community_id } });
-  if (d.team_id) return router.push({ pathname: "/team/[id]", params: { id: d.team_id } });
-  if (d.match_id) return router.push({ pathname: "/match/[id]", params: { id: d.match_id } });
+  openNotification(n.type, n.data as Record<string, string | undefined>); // same map as push taps
 }
 
 function group(at: string) {

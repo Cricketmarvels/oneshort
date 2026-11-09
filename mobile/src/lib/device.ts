@@ -1,6 +1,7 @@
 import * as Device from "expo-device";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -27,7 +28,8 @@ export async function currentLocation(): Promise<{ lat: number; lng: number } | 
 
 /**
  * Registers the native FCM/APNs device token with the backend (FCM adapter).
- * Push delivery stays inactive until FCM credentials are configured server-side.
+ * Remote push needs a development/production build with an EAS project id; Expo Go has no remote
+ * push, so registration quietly skips there instead of storing undeliverable native tokens.
  */
 export async function registerForPush(): Promise<void> {
   if (!Device.isDevice) return;
@@ -37,8 +39,12 @@ export async function registerForPush(): Promise<void> {
   const perm = await Notifications.requestPermissionsAsync();
   const granted = Platform.OS === "ios" ? perm.ios?.status === Notifications.IosAuthorizationStatus.AUTHORIZED || perm.granted : perm.granted;
   if (!granted) return;
-  const token = await Notifications.getDevicePushTokenAsync();
-  await api("/users/me/devices", { method: "POST", body: { platform: Platform.OS === "ios" ? "ios" : "android", push_token: String(token.data) } }).catch(() => undefined);
+  const projectId: string | undefined =
+    (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId ??
+    (Constants as { easConfig?: { projectId?: string } }).easConfig?.projectId;
+  if (!projectId) return; // Expo Go / no EAS project yet: remote push unavailable on this install
+  const token = await Notifications.getExpoPushTokenAsync({ projectId });
+  await api("/users/me/devices", { method: "POST", body: { platform: Platform.OS === "ios" ? "ios" : "android", push_token: token.data } }).catch(() => undefined);
 }
 
 /** Pick or capture a photo and upload it. Returns the hosted URL. */

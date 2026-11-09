@@ -39,6 +39,17 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F5F6F0",
+          "image": "./assets/icon.png",
+          "imageWidth": 160,
+          "dark": {
+            "backgroundColor": "#0D1716"
+          }
+        }
+      ],
       "expo-router",
       "expo-secure-store",
       [
@@ -54,7 +65,13 @@
           "cameraPermission": "Take a profile photo."
         }
       ],
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "color": "#008C86",
+          "defaultChannel": "default"
+        }
+      ],
       "expo-font",
       "expo-image",
       [

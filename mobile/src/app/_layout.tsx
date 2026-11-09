@@ -17,6 +17,7 @@ import { registerForPush } from "@/lib/device";
 import { applyTheme, FW, scheme, type Scheme, T } from "@/theme";
 import { useAppearance } from "@/lib/appearance";
 import { usePendingJoin } from "@/lib/joinlink";
+import { usePushNavigation } from "@/lib/push";
 
 /** Stack header options — built at render time so they follow the current theme. */
 const makeHeader = () => ({
@@ -38,6 +39,7 @@ function Gate() {
   const pending = usePendingJoin();
   useEffect(() => { void sport.load(); void pending.load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (user) void registerForPush(); }, [user]);
+  usePushNavigation(!!user && user.agreement.satisfied); // push taps navigate once signed in (parked until then)
   // keep the device selection and the profile in step: a fresh pre-login choice wins; otherwise adopt the profile's
   useEffect(() => {
     if (!user || !sport.ready) return;

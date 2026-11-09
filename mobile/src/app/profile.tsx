@@ -172,6 +172,7 @@ export default function Profile() {
           </Section>
         ) : null}
         <Button title="Privacy & data" variant="secondary" onPress={() => router.push("/privacy")} />
+        <Button title="Signed-in devices" variant="secondary" onPress={() => router.push("/sessions")} />
         <Button title="Log out" variant="secondary" icon={<LogOut size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => void signOut()} />
       </View>
     </ScrollView>
