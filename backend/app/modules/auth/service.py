@@ -93,13 +93,20 @@ class AuthService:
             expose = False  # a real channel delivered it; never echo the code
         else:
             await self.c.otp_sender.send(mobile, code)
-            expose = self.c.otp_sender.exposes_code and self.s.is_dev_like and self.s.dev_otp_in_response
+            expose = self.c.otp_sender.exposes_code and (
+                (self.s.is_dev_like and self.s.dev_otp_in_response)
+                or (purpose == "register" and self._is_tester_number(mobile))
+            )
         return OtpSentOut(
             sent=True,
             expires_in=self.s.otp_ttl_seconds,
             resend_after=self.s.otp_resend_cooldown_seconds,
             dev_otp=code if expose else None,
         )
+
+    def _is_tester_number(self, mobile: str) -> bool:
+        p = self.s.tester_signup_prefix
+        return p is not None and self.s.app_env != "production" and mobile.startswith(p)
 
     async def _consume_otp(self, mobile: str, purpose: str, code: str) -> None:
         doc = await self.otps.find_one_and_update(
@@ -117,6 +124,10 @@ class AuthService:
 
     # --------------------------------------------------------- registration
     async def register(self, data: RegisterIn, ip: str | None = None) -> RegisterOut:
+        if self._is_tester_number(data.mobile_number) and not data.password:
+            raise BusinessRuleViolation(
+                "Set a password so you can log back in with your email.", code="PASSWORD_REQUIRED"
+            )
         existing = await self.users.by_mobile(data.mobile_number)
         if existing and (existing.get("mobile_verified") or existing.get("verified_via")):
             # verified_via (e.g. captain_invite) accounts can sign in before OTP verification, so letting a

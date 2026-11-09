@@ -3140,6 +3140,11 @@ export interface components {
              * @default false
              */
             whatsapp_simulator: boolean;
+            /**
+             * Tester Signup Prefix
+             * @description Test mode: sign up with a number starting with this; the code shows on screen
+             */
+            tester_signup_prefix?: string | null;
         };
         /** AvailabilityIn */
         AvailabilityIn: {

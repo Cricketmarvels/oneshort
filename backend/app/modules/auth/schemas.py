@@ -33,6 +33,9 @@ class AuthOptionsOut(BaseModel):
     whatsapp_simulator: bool = Field(
         default=False, description="Test mode: WhatsApp messages go to the in-app simulator"
     )
+    tester_signup_prefix: str | None = Field(
+        default=None, description="Test mode: sign up with a number starting with this; the code shows on screen"
+    )
 
 
 class OtpSentOut(BaseModel):

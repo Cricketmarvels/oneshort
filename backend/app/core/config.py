@@ -136,6 +136,10 @@ class Settings(BaseSettings):
     # Dev OTP adapter: return the code in the API response (dev/test only). Set false whenever the
     # dev server is reachable by others (e.g. a public tunnel); codes are then never shown or logged.
     dev_otp_in_response: bool = True
+    # Friends/beta testing without SMS: NEW accounts on numbers with this prefix (use the reserved fictional
+    # range "+447700900") see their sign-up code on screen and must set a password to log back in.
+    # Login codes are never shown, so testers can't enter each other's accounts. Refused in production.
+    tester_signup_prefix: str | None = None
 
     # CricHeroes team data. Only "disabled" exists: there is no public API and scraping is
     # prohibited by their terms. See app/infrastructure/integrations/cricheroes.py.
@@ -165,6 +169,8 @@ class Settings(BaseSettings):
                 problems.append("OTP_PROVIDER=console is not allowed in production")
             if self.debug:
                 problems.append("DEBUG must be false in production")
+            if self.tester_signup_prefix:
+                problems.append("TESTER_SIGNUP_PREFIX must not be set in production")
             for field in ("legal_entity_name", "legal_entity_address", "grievance_officer_name", "grievance_email"):
                 if not getattr(self, field):
                     problems.append(

@@ -36,6 +36,7 @@ export default function Login() {
   const opts = useQuery({ queryKey: ["auth-options"], queryFn: () => api<S<"AuthOptionsOut">>("/auth/options"), staleTime: 60_000 });
   const waReady = !!opts.data?.whatsapp_otp;
   const simulator = !!opts.data?.whatsapp_simulator;
+  const testerPrefix = opts.data?.tester_signup_prefix ?? null; // friends-testing mode (never in production)
   const simCode = useSimCode((x) => x.code);
   const clearSim = useSimCode((x) => x.setCode);
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function Login() {
     setBusy(true);
     try {
       if (mode === "register") {
-        const r = await api<S<"RegisterOut">>("/auth/register", { method: "POST", body: { full_name: f.name, mobile_number: mobile, email: f.email, city: f.city, otp_channel: via } });
+        const r = await api<S<"RegisterOut">>("/auth/register", { method: "POST", body: { full_name: f.name, mobile_number: mobile, email: f.email, city: f.city, otp_channel: via, ...(f.password ? { password: f.password } : {}) } });
         setDev(r.otp.dev_otp ?? null);
       } else {
         const r = await api<S<"OtpSentOut">>("/auth/send-otp", { method: "POST", body: { mobile_number: mobile, purpose: "login", channel: via } });
@@ -155,6 +156,14 @@ export default function Login() {
                 <Field label="Full name" value={f.name} onChangeText={(name) => setF({ ...f, name })} autoComplete="name" />
                 <Field label="Email" value={f.email} onChangeText={(email) => setF({ ...f, email })} keyboardType="email-address" autoCapitalize="none" />
                 <Field label="City" value={f.city} onChangeText={(city) => setF({ ...f, city })} />
+                <Field label="Password" value={f.password} onChangeText={(password) => setF({ ...f, password })} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword"
+                  hint={testerPrefix ? "Needed to log back in with your email" : "Optional · lets you also log in with email"} />
+                {testerPrefix ? (
+                  <View style={{ padding: 12, borderRadius: 14, backgroundColor: T.primarySoft, gap: 2 }}>
+                    <Txt v="smallSemi" color={T.primaryDark}>Testing PlayR?</Txt>
+                    <Txt v="small" color={T.primaryDark}>Use a test number like {testerPrefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3")}123. Your code shows on screen.</Txt>
+                  </View>
+                ) : null}
               </>}
               <Field label="Mobile number" value={f.mobile} onChangeText={(m) => setF({ ...f, mobile: m })} keyboardType="phone-pad" placeholder="+91  98765 43210" hint={mode === "login" ? "Indian mobile number (+91)" : undefined} error={err} />
               {mode === "login" && errCode === "ACCOUNT_NOT_FOUND" ? (

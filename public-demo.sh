@@ -13,14 +13,18 @@ tunnel() { # $1 port, $2 name -> prints URL
   for _ in $(seq 1 60); do u=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$D/tunnel-$2.log" | head -1 || true); [ -n "$u" ] && { echo "$u" > "$D/tunnel-$2.url"; echo "$u"; return; }; sleep 1; done
   echo "tunnel $2 failed" >&2; exit 1
 }
-stop_public() { pkill -f "cloudflared tunnel --no-autoupdate" || true; stop_apps; }
+stop_public() { pkill -f "cloudflared tunnel --no-autoupdate" || true; pkill -f "playr.yml run" || true; stop_apps; }
+# Fixed addresses when scripts/cloudflare-setup.sh has been run (named tunnel on your domain)
+NAMED=0; [ -f "$D/named-tunnel.env" ] && { . "$D/named-tunnel.env"; NAMED=1; }
 stop_apps() { pkill -f "vite preview" || true; pkill -f "serve-web.mjs" || true; pkill -f "expo start" || true; }
 [ "${1:-}" = "stop" ] && { stop_public; echo "stopped"; exit 0; }
 RELOAD=0
 if [ "${1:-}" = "reload" ]; then
   RELOAD=1
-  pgrep -f "cloudflared tunnel --no-autoupdate" >/dev/null && [ -f "$D/tunnel-web.url" ] && [ -f "$D/tunnel-expo.url" ] \
-    || { echo "No running tunnels to reuse; run ./public-demo.sh first"; exit 1; }
+  if [ "$NAMED" = 0 ]; then
+    pgrep -f "cloudflared tunnel --no-autoupdate" >/dev/null && [ -f "$D/tunnel-web.url" ] && [ -f "$D/tunnel-expo.url" ] \
+      || { echo "No running tunnels to reuse; run ./public-demo.sh first"; exit 1; }
+  fi
 fi
 
 grep -q '^DEV_OTP_IN_RESPONSE=false' "$ROOT/backend/.env" || { echo "Set DEV_OTP_IN_RESPONSE=false in backend/.env first"; exit 1; }
@@ -33,7 +37,11 @@ if ! pgrep -f "port 27018" >/dev/null; then
   sleep 3
 fi
 # Tunnels first: the API needs the public web address for links it puts in messages (invite/join links).
-if [ "$RELOAD" = 1 ]; then WEB=$(cat "$D/tunnel-web.url"); EXPO=$(cat "$D/tunnel-expo.url"); else WEB=$(tunnel 4173 web); EXPO=$(tunnel 8081 expo); fi
+if [ "$NAMED" = 1 ]; then
+  WEB="https://$WEB_HOST"; EXPO="https://$EXPO_HOST"
+  pgrep -f "playr.yml run" >/dev/null || \
+    (nohup cloudflared tunnel --no-autoupdate --config "$HOME/.cloudflared/playr.yml" run "$TUNNEL_NAME" </dev/null > "$D/tunnel-named.log" 2>&1 &)
+elif [ "$RELOAD" = 1 ]; then WEB=$(cat "$D/tunnel-web.url"); EXPO=$(cat "$D/tunnel-expo.url"); else WEB=$(tunnel 4173 web); EXPO=$(tunnel 8081 expo); fi
 pkill -f "uvicorn app.main:create_app" || true; sleep 1
 (cd "$ROOT/backend" && APP_BASE_URL="$WEB" exec nohup uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log \
   --proxy-headers --forwarded-allow-ips 127.0.0.1) </dev/null >> "$D/api.log" 2>&1 &
