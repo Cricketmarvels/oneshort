@@ -61,7 +61,7 @@ class SmartSearch:
         self.lb = LeaderboardService(c)
 
     async def search(self, user: CurrentUser, data: SearchIn) -> SearchOut:
-        use_ai = self.c.ai.enabled and self.c.limiter.hit(f"ai-search:{user.id}", AI_SEARCHES_PER_MINUTE)
+        use_ai = self.c.ai.enabled and await self.c.limiter.allow(f"ai-search:{user.id}", AI_SEARCHES_PER_MINUTE)
         if self.c.ai.enabled and not use_ai:
             log.info("assistant.ai_throttled")
         intent: Intent | None = None

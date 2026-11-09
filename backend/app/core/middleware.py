@@ -63,7 +63,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class InMemoryRateLimiter:
-    """Sliding-window limiter. Swap for a Redis implementation when running >1 instance."""
+    """Sliding-window limiter, per process. Use RATE_LIMITER_BACKEND=mongo when running >1 instance."""
 
     def __init__(self) -> None:
         self._hits: dict[str, deque[float]] = defaultdict(deque)
@@ -81,9 +81,37 @@ class InMemoryRateLimiter:
     def reset(self) -> None:
         self._hits.clear()
 
+    async def allow(self, key: str, limit: int, window_s: float = 60.0) -> bool:
+        return self.hit(key, limit, window_s)
+
+
+class MongoRateLimiter:
+    """Fixed-window counter shared by every API instance (one upsert per request). Windows expire by TTL."""
+
+    def __init__(self, mongo: Any) -> None:
+        self.col = mongo["rate_limits"]
+
+    async def allow(self, key: str, limit: int, window_s: float = 60.0) -> bool:
+        from datetime import timedelta
+
+        from app.common.types import utcnow
+
+        now = utcnow()
+        window = int(now.timestamp() // window_s)
+        doc = await self.col.find_one_and_update(
+            {"_id": f"{key}:{window}"},
+            {"$inc": {"n": 1}, "$setOnInsert": {"expires_at": now + timedelta(seconds=window_s * 2)}},
+            upsert=True,
+            return_document=True,
+        )
+        return int(doc["n"]) <= limit
+
+    def reset(self) -> None:  # interface parity for tests; windows expire on their own
+        return None
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: Any, settings: Settings, limiter: InMemoryRateLimiter) -> None:
+    def __init__(self, app: Any, settings: Settings, limiter: "InMemoryRateLimiter | MongoRateLimiter") -> None:
         super().__init__(app)
         self.settings = settings
         self.limiter = limiter
@@ -94,7 +122,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         is_auth = "/auth/" in path
         group = "auth" if is_auth else "default"
         limit = self.settings.rate_limit_auth_per_minute if is_auth else self.settings.rate_limit_default_per_minute
-        if request.method != "OPTIONS" and not self.limiter.hit(f"{group}:{ip}", limit):
+        if request.method != "OPTIONS" and not await self.limiter.allow(f"{group}:{ip}", limit):
             return JSONResponse(
                 status_code=429,
                 content={

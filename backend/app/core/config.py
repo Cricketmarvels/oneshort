@@ -59,6 +59,17 @@ class Settings(BaseSettings):
     otp_resend_cooldown_seconds: int = 30
     login_max_failures: int = Field(default=8, description="Failed password logins per account before a lockout")
     login_lockout_minutes: int = 15
+    # OTP spend budgets — enforced only for senders that cost money (see app/modules/auth/abuse.py)
+    otp_allowed_prefixes: list[str] = Field(default_factory=lambda: ["+91"])
+    otp_max_sends_per_day: int = 10
+    otp_ip_max_sends_per_hour: int = 20
+    otp_daily_budget: int = Field(
+        default=1000, description="Global paid OTP sends per 24h; refuses at 100%, alerts at 80%"
+    )
+    session_absolute_days: int = Field(
+        default=90, description="A refresh-token family older than this must log in again"
+    )
+    rate_limiter_backend: Literal["memory", "mongo"] = "memory"  # "mongo" shares limits across API instances
     otp_provider: Literal["console", "msg91", "twilio"] = "console"
     msg91_auth_key: str | None = None
     msg91_template_id: str | None = None
@@ -112,7 +123,8 @@ class Settings(BaseSettings):
     cloudinary_url: str | None = None
 
     # Push / email
-    push_provider: Literal["none", "fcm"] = "none"
+    push_provider: Literal["none", "expo", "fcm"] = "none"  # "expo" = Expo Push Service (FCM/APNs keys live in EAS)
+    expo_push_access_token: str | None = None  # only if push security is enabled on the Expo account
     fcm_project_id: str | None = None
     fcm_service_account_json: str | None = None
     email_provider: Literal["console", "smtp"] = "console"

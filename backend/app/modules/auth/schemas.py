@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
@@ -70,6 +71,14 @@ class TokenOut(BaseModel):
     token_type: Literal["bearer"] = "bearer"  # noqa: S105 - token scheme name, not a secret
     expires_in: int
     user: UserOut
+
+
+class SessionOut(BaseModel):
+    id: str = Field(description="Device session (refresh-token family) id")
+    user_agent: str
+    started_at: datetime
+    last_used_at: datetime
+    current: bool = Field(description="True for the session making this request")
 
 
 class RegisterOut(BaseModel):

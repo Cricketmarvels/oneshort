@@ -25,6 +25,8 @@ def settings() -> Settings:
         app_env="test",
         mongodb_uri=os.environ.get("TEST_MONGODB_URI", "mongodb://127.0.0.1:27018/?replicaSet=rs0"),
         mongodb_db=TEST_DB,
+        otp_daily_budget=1_000_000,  # the whole suite shares one 24h window; budget logic is tested explicitly
+        otp_ip_max_sends_per_hour=1_000_000,  # the ASGI test client shares one IP
         scheduler_enabled=False,
         rate_limit_auth_per_minute=100_000,
         rate_limit_default_per_minute=100_000,
@@ -108,7 +110,11 @@ async def register(
     user = TestUser(d["user"]["id"], d["access_token"], d["refresh_token"], mobile, name)
     if agree:
         cur = (await client.get("/api/v1/agreements/current")).json()["data"]["version"]
-        r = await client.post("/api/v1/agreements/acceptance", headers=user.h, json={"version": cur, "accepted": True, "age_confirmed": True, "privacy_acknowledged": True})
+        r = await client.post(
+            "/api/v1/agreements/acceptance",
+            headers=user.h,
+            json={"version": cur, "accepted": True, "age_confirmed": True, "privacy_acknowledged": True},
+        )
         assert r.status_code == 200, r.text
     return user
 

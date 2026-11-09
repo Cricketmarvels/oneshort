@@ -56,12 +56,14 @@ async def purge_old_availability(c: Container) -> int:
 
 async def run_once(c: Container) -> None:
     from app.modules.invitations.service import InvitationService
+    from app.modules.notifications.service import check_push_receipts
 
     expired = await InvitationService(c).expire_due()
     reminded = await send_reminders(c)
     purged = await purge_old_availability(c)
-    if expired or reminded or purged:
-        log.info("scheduler.tick", expired=expired, reminders=reminded, purged=purged)
+    receipts = await check_push_receipts(c)
+    if expired or reminded or purged or receipts:
+        log.info("scheduler.tick", expired=expired, reminders=reminded, purged=purged, push_receipts=receipts)
 
 
 async def run_scheduler(c: Container) -> None:

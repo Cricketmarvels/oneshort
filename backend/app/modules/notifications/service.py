@@ -4,6 +4,7 @@ Delivery failures of secondary channels never fail the business operation.
 """
 
 import asyncio
+from datetime import timedelta
 from typing import Any
 
 from bson import ObjectId
@@ -105,7 +106,15 @@ class NotificationService:
             )
             if self.push.configured and push_targets:
                 tokens = [d["push_token"] async for d in self.mongo["devices"].find({"user_id": {"$in": push_targets}})]
-                await self.push.send(tokens, title, body, stringify(data))
+                if tokens:
+                    res = await self.push.send(tokens, title, body, stringify({**data, "type": ntype.value}))
+                    if res.invalid_tokens:  # DeviceNotRegistered or a non-push token: forget it
+                        await self.mongo["devices"].delete_many({"push_token": {"$in": res.invalid_tokens}})
+                    if res.receipts:  # Expo confirms FCM/APNs hand-off later; the scheduler checks these
+                        now_r = utcnow()
+                        await self.mongo["push_receipts"].insert_many(
+                            [{"receipt_id": rid, "push_token": tok, "created_at": now_r} for rid, tok in res.receipts]
+                        )
         except Exception as exc:  # noqa: BLE001 - secondary channels must not break the flow
             log.warning("notification.secondary_channel_failed", error=type(exc).__name__)
         if wa_targets and self.whatsapp.configured:
@@ -151,3 +160,30 @@ class NotificationService:
     async def mark_all_read(self, user_id: ObjectId) -> int:
         res = await self.col.update_many({"user_id": user_id, "read_at": None}, {"$set": {"read_at": utcnow()}})
         return res.modified_count
+
+
+async def check_push_receipts(c: Any) -> int:
+    """Scheduler task: confirm Expo hand-off to FCM/APNs. DeviceNotRegistered receipts delete the token;
+    other errors are logged. Receipts are checked once Expo has had time to process (15 min)."""
+    get_receipts = getattr(c.push, "get_receipts", None)
+    if not callable(get_receipts):
+        return 0
+    cutoff = utcnow() - timedelta(minutes=15)
+    pending = [r async for r in c.mongo["push_receipts"].find({"created_at": {"$lt": cutoff}}).limit(300)]
+    if not pending:
+        return 0
+    by_id = {r["receipt_id"]: r for r in pending}
+    results = await get_receipts(list(by_id))
+    dead: list[str] = []
+    done_ids: list[str] = []
+    for rid, (status, error) in results.items():
+        done_ids.append(rid)
+        if status == "error":
+            if error == "DeviceNotRegistered":
+                dead.append(by_id[rid]["push_token"])
+            log.warning("push.receipt_error", error=error or "unknown")
+    if dead:
+        await c.mongo["devices"].delete_many({"push_token": {"$in": dead}})
+    if done_ids:
+        await c.mongo["push_receipts"].delete_many({"receipt_id": {"$in": done_ids}})
+    return len(done_ids)

@@ -41,7 +41,9 @@ def generate_refresh_token() -> str:
     return secrets.token_urlsafe(48)
 
 
-def create_access_token(settings: Settings, user_id: str, roles: list[str]) -> tuple[str, int]:
+def create_access_token(
+    settings: Settings, user_id: str, roles: list[str], extra: dict[str, Any] | None = None
+) -> tuple[str, int]:
     now = datetime.now(UTC)
     ttl = timedelta(minutes=settings.access_token_ttl_minutes)
     payload: dict[str, Any] = {
@@ -52,6 +54,7 @@ def create_access_token(settings: Settings, user_id: str, roles: list[str]) -> t
         "iat": int(now.timestamp()),
         "exp": int((now + ttl).timestamp()),
         "iss": settings.jwt_issuer,
+        **(extra or {}),
     }
     token = jwt.encode(payload, settings.jwt_secret, algorithm=_ALGORITHM)
     return token, int(ttl.total_seconds())

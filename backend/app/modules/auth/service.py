@@ -33,7 +33,8 @@ from app.core.security import (
     verify_secret,
 )
 from app.infrastructure.integrations.whatsapp import failure_reason
-from app.modules.auth.schemas import OtpChannel, OtpPurpose, OtpSentOut, RegisterIn, RegisterOut, TokenOut
+from app.modules.auth.abuse import enforce_send_budgets
+from app.modules.auth.schemas import OtpChannel, OtpPurpose, OtpSentOut, RegisterIn, RegisterOut, SessionOut, TokenOut
 from app.modules.users.repository import UserRepository
 from app.modules.users.service import UserService
 
@@ -47,7 +48,10 @@ class AuthService:
         self.tokens = c.mongo["refresh_tokens"]
 
     # ---------------------------------------------------------------- OTP
-    async def _issue_otp(self, mobile: str, purpose: OtpPurpose, channel: OtpChannel = "sms") -> OtpSentOut:
+    async def _issue_otp(
+        self, mobile: str, purpose: OtpPurpose, channel: OtpChannel = "sms", ip: str | None = None
+    ) -> OtpSentOut:
+        await enforce_send_budgets(self.c, mobile, ip, channel)
         if channel == "whatsapp" and not self.c.whatsapp.configured:
             raise AppError(
                 "WhatsApp codes aren't available yet. Use SMS instead.", code="WHATSAPP_UNAVAILABLE", status_code=422
@@ -76,7 +80,7 @@ class AuthService:
                 "created_at": now,
             }
         )
-        await self.otps.insert_one({"kind": "send_log", "mobile_number": mobile, "created_at": now})
+        await self.otps.insert_one({"kind": "send_log", "mobile_number": mobile, "ip": ip, "created_at": now})
         if channel == "whatsapp":
             status = await self.c.whatsapp.send(
                 mobile,
@@ -112,7 +116,7 @@ class AuthService:
         await self.otps.delete_one({"_id": doc["_id"]})
 
     # --------------------------------------------------------- registration
-    async def register(self, data: RegisterIn) -> RegisterOut:
+    async def register(self, data: RegisterIn, ip: str | None = None) -> RegisterOut:
         existing = await self.users.by_mobile(data.mobile_number)
         if existing and (existing.get("mobile_verified") or existing.get("verified_via")):
             # verified_via (e.g. captain_invite) accounts can sign in before OTP verification, so letting a
@@ -145,10 +149,12 @@ class AuthService:
             if other:
                 raise BusinessRuleViolation("This email is already registered.", code="ACCOUNT_EXISTS")
             doc = await self.users.insert({**fields, "created_at": now})
-        otp = await self._issue_otp(data.mobile_number, "register", data.otp_channel)
+        otp = await self._issue_otp(data.mobile_number, "register", data.otp_channel, ip)
         return RegisterOut(user_id=str(doc["_id"]), otp=otp)
 
-    async def send_otp(self, mobile: str, purpose: OtpPurpose, channel: OtpChannel = "sms") -> OtpSentOut:
+    async def send_otp(
+        self, mobile: str, purpose: OtpPurpose, channel: OtpChannel = "sms", ip: str | None = None
+    ) -> OtpSentOut:
         user = await self.users.by_mobile(mobile)
         if purpose in ("login", "reset_password"):
             # A started-but-unverified registration may finish via a login code: the code proves the number,
@@ -159,7 +165,7 @@ class AuthService:
             self._ensure_can_login(user)
         if purpose == "register" and (not user or user.get("mobile_verified")):
             raise BusinessRuleViolation("Start registration first", code="REGISTRATION_REQUIRED")
-        return await self._issue_otp(mobile, purpose, channel)
+        return await self._issue_otp(mobile, purpose, channel, ip)
 
     async def verify_otp(self, mobile: str, code: str, purpose: str, user_agent: str | None) -> TokenOut:
         await self._consume_otp(mobile, purpose, code)
@@ -251,14 +257,15 @@ class AuthService:
 
     # --------------------------------------------------------------- tokens
     async def _issue_tokens(self, user: dict[str, Any], user_agent: str | None, family_id: str | None) -> TokenOut:
-        access, ttl = create_access_token(self.s, str(user["_id"]), user.get("roles", []))
+        fam = family_id or uuid.uuid4().hex  # device session id; carried in the access token as "fam"
+        access, ttl = create_access_token(self.s, str(user["_id"]), user.get("roles", []), extra={"fam": fam})
         refresh = generate_refresh_token()
         now = utcnow()
         await self.tokens.insert_one(
             {
                 "_id": uuid.uuid4().hex,
                 "user_id": user["_id"],
-                "family_id": family_id or uuid.uuid4().hex,
+                "family_id": fam,
                 "token_hash": sha256(refresh),
                 "revoked_at": None,
                 "replaced_by": None,
@@ -284,6 +291,10 @@ class AuthService:
             raise Unauthorized("Refresh token reuse detected; please log in again", code="REFRESH_REUSED")
         if ensure_utc(doc["expires_at"]) <= utcnow():
             raise Unauthorized("Refresh token expired", code="REFRESH_EXPIRED")
+        first = await self.tokens.find_one({"family_id": doc["family_id"]}, sort=[("created_at", 1)])
+        if first and utcnow() - ensure_utc(first["created_at"]) > timedelta(days=self.s.session_absolute_days):
+            await self._revoke_family(doc["family_id"])
+            raise Unauthorized("Session expired. Please log in again.", code="SESSION_EXPIRED")
         # Atomic claim: only one concurrent refresh may rotate this token.
         claimed = await self.tokens.update_one(
             {"_id": doc["_id"], "revoked_at": None}, {"$set": {"revoked_at": utcnow()}}
@@ -298,6 +309,48 @@ class AuthService:
         out = await self._issue_tokens(user, user_agent, family_id=doc["family_id"])
         await self.tokens.update_one({"_id": doc["_id"]}, {"$set": {"replaced_by": sha256(out.refresh_token)}})
         return out
+
+    async def list_sessions(self, user_id: ObjectId, current_family: str | None) -> list[SessionOut]:
+        """One row per signed-in device: a family of rotating refresh tokens."""
+        now = utcnow()
+        pipe: list[dict[str, Any]] = [
+            {"$match": {"user_id": user_id, "revoked_at": None, "expires_at": {"$gt": now}}},
+            {
+                "$group": {
+                    "_id": "$family_id",
+                    "started_at": {"$min": "$created_at"},
+                    "last_used_at": {"$max": "$created_at"},
+                    "user_agent": {"$first": "$user_agent"},
+                }
+            },
+            {"$sort": {"last_used_at": -1}},
+            {"$limit": 50},
+        ]
+        rows = [r async for r in await self.tokens.aggregate(pipe)]
+        return [
+            SessionOut(
+                id=r["_id"],
+                user_agent=r.get("user_agent") or "",
+                started_at=r["started_at"],
+                last_used_at=r["last_used_at"],
+                current=r["_id"] == current_family,
+            )
+            for r in rows
+        ]
+
+    async def revoke_session(self, user_id: ObjectId, family_id: str) -> None:
+        res = await self.tokens.update_many(
+            {"family_id": family_id, "user_id": user_id, "revoked_at": None}, {"$set": {"revoked_at": utcnow()}}
+        )
+        if res.matched_count == 0:
+            raise NotFound("Session not found")
+
+    async def logout_all(self, user: Any) -> None:
+        """Revoke every refresh token AND invalidate access tokens already issued (checked via iat)."""
+        now = utcnow()
+        await self.tokens.update_many({"user_id": user.id, "revoked_at": None}, {"$set": {"revoked_at": now}})
+        await self.c.mongo["users"].update_one({"_id": user.id}, {"$set": {"sessions_valid_after": now}})
+        await self.c.audit.log(actor_id=user.id, action="auth.logout_all", entity_type="user", entity_id=user.id)
 
     async def logout(self, refresh_token: str) -> None:
         doc = await self.tokens.find_one({"token_hash": sha256(refresh_token)})

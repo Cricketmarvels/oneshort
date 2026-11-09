@@ -36,12 +36,14 @@ INDEXES: dict[str, list[IndexModel]] = {
     "otp_codes": [
         IndexModel([("mobile_number", ASCENDING), ("purpose", ASCENDING)]),
         IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0),
+        # send logs feed the daily abuse budgets, so they live 24h (auth review H1)
         IndexModel(
             [("created_at", ASCENDING)],
-            expireAfterSeconds=3600,
-            name="otp_send_log_ttl",
+            expireAfterSeconds=86400,
+            name="otp_send_log_ttl_24h",
             partialFilterExpression={"kind": "send_log"},
         ),
+        IndexModel([("kind", ASCENDING), ("created_at", ASCENDING)], name="otp_budget_counts"),
     ],
     "refresh_tokens": [
         IndexModel([("token_hash", ASCENDING)], unique=True),
@@ -217,6 +219,11 @@ INDEXES: dict[str, list[IndexModel]] = {
     ],
     # Processing logs: kept at least one year (DPDP Rules, 2025), then deleted.
     "whatsapp_events": [IndexModel([("received_at", ASCENDING)], expireAfterSeconds=400 * 86400, name="ttl_400d")],
+    "rate_limits": [IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0)],
+    "push_receipts": [
+        IndexModel([("created_at", ASCENDING)], expireAfterSeconds=7 * 86400, name="ttl_7d"),
+        IndexModel([("receipt_id", ASCENDING)]),
+    ],
     "privacy_requests": [
         IndexModel([("user_id", ASCENDING), ("created_at", DESCENDING)]),
         IndexModel([("status", ASCENDING), ("legal_deadline", ASCENDING)]),
@@ -299,7 +306,10 @@ VALIDATORS: dict[str, dict[str, Any]] = {
 
 
 # (collection, index name) dropped at startup before INDEXES are created.
-RETIRED_INDEXES: list[tuple[str, str]] = [("whatsapp_events", "ttl_30d")]  # now ttl_400d (log retention >= 1 year)
+RETIRED_INDEXES: list[tuple[str, str]] = [
+    ("whatsapp_events", "ttl_30d"),  # now ttl_400d (log retention >= 1 year)
+    ("otp_codes", "otp_send_log_ttl"),  # now otp_send_log_ttl_24h (daily OTP budgets)
+]
 
 
 async def ensure_indexes(mongo: Mongo) -> None:

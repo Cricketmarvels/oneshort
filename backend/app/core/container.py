@@ -7,7 +7,7 @@ so tests can swap any adapter by replacing an attribute on the container.
 from dataclasses import dataclass, field
 
 from app.core.config import Settings
-from app.core.middleware import InMemoryRateLimiter
+from app.core.middleware import InMemoryRateLimiter, MongoRateLimiter
 from app.infrastructure.database.mongo import Mongo
 from app.infrastructure.integrations.ai import AIAssistant, build_ai_assistant
 from app.infrastructure.integrations.cricheroes import CricHeroesSource, build_cricheroes_source
@@ -31,7 +31,7 @@ class Container:
     ai: AIAssistant
     cricheroes: CricHeroesSource
     whatsapp: WhatsAppSender = field(default_factory=lambda: DisabledWhatsApp())
-    limiter: InMemoryRateLimiter = field(default_factory=InMemoryRateLimiter)
+    limiter: InMemoryRateLimiter | MongoRateLimiter = field(default_factory=InMemoryRateLimiter)
 
     @property
     def audit(self) -> AuditService:
@@ -60,4 +60,5 @@ def build_container(settings: Settings) -> Container:
         ai=build_ai_assistant(settings),
         cricheroes=build_cricheroes_source(settings),
         whatsapp=build_whatsapp_sender(settings, mongo),
+        limiter=MongoRateLimiter(mongo) if settings.rate_limiter_backend == "mongo" else InMemoryRateLimiter(),
     )

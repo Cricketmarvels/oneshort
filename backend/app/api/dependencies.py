@@ -8,7 +8,7 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.common.enums import AccountStatus, Role
-from app.common.types import utcnow
+from app.common.types import ensure_utc, utcnow
 from app.core.container import Container
 from app.core.exceptions import AgreementRequired, Forbidden, Unauthorized
 from app.core.observability import tag_user
@@ -33,6 +33,7 @@ class CurrentUser:
     full_name: str
     doc: dict[str, Any]
     request_id: str | None = None
+    session_family: str | None = None
 
     @property
     def is_admin(self) -> bool:
@@ -65,6 +66,10 @@ async def get_current_user(
             status = AccountStatus.ACTIVE
         else:
             raise Forbidden("Your account is suspended", code="ACCOUNT_SUSPENDED")
+    valid_after = user.get("sessions_valid_after")
+    if valid_after is not None and int(payload.get("iat", 0)) < int(ensure_utc(valid_after).timestamp()):
+        # "Sign out everywhere": access tokens minted before the cut-off die immediately, not at expiry.
+        raise Unauthorized("You were signed out on this device", code="TOKEN_REVOKED")
     tag_user(str(uid))  # error reports carry the internal id only
     return CurrentUser(
         id=uid,
@@ -73,6 +78,7 @@ async def get_current_user(
         full_name=user.get("full_name", ""),
         doc=user,
         request_id=getattr(request.state, "request_id", None),
+        session_family=payload.get("fam"),
     )
 
 

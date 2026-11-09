@@ -16,7 +16,9 @@ async def test_agreement_flow(client: httpx.AsyncClient) -> None:
     r = await client.post(f"{API}/agreements/acceptance", headers=u.h, json={"version": 99, "accepted": True})
     assert r.json()["error"]["code"] == "AGREEMENT_VERSION_MISMATCH"
     r = await client.post(
-        f"{API}/agreements/acceptance", headers=u.h, json={"version": cur["version"], "accepted": True, "age_confirmed": True, "privacy_acknowledged": True}
+        f"{API}/agreements/acceptance",
+        headers=u.h,
+        json={"version": cur["version"], "accepted": True, "age_confirmed": True, "privacy_acknowledged": True},
     )
     assert r.status_code == 200 and r.json()["data"]["satisfied"] is True
     mine = (await client.get(f"{API}/agreements/me", headers=u.h)).json()["data"]
