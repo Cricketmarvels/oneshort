@@ -104,6 +104,7 @@ export default function FindPlayersScreen() {
             ratingText={p.rating && p.verified_matches ? `${rating(p.rating.rating)} (${p.verified_matches})` : null}
             meta={`~${p.distance_km} km${p.locality ? ` · ${p.locality}` : ""}`}
             available={p.available_this_week}
+            cricheroes={p.has_cricheroes}
             canInvite={!!myTeam}
             invite={invites[p.user.id] ?? "idle"}
             onOpen={() => open(p.user.id)}

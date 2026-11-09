@@ -8,7 +8,14 @@ from app.common.types import GeoPointOut, utcnow
 from app.core.container import Container
 from app.core.exceptions import NotFound
 from app.modules.cricheroes.urls import safe_profile_url
-from app.modules.players.schemas import PlayerProfileIn, PlayerPublicOut, PlayerSelfOut, PlayerStats
+from app.modules.players.schemas import (
+    CricHeroesIn,
+    CricHeroesStatsOut,
+    PlayerProfileIn,
+    PlayerPublicOut,
+    PlayerSelfOut,
+    PlayerStats,
+)
 
 DEFAULT_RELIABILITY = 70.0
 
@@ -26,6 +33,11 @@ def stats_out(raw: dict[str, Any] | None) -> PlayerStats:
         invitations_responded=responded,
         response_rate=round(responded / received, 2) if received else None,
     )
+
+
+def cricheroes_stats_out(raw: dict[str, Any] | None) -> CricHeroesStatsOut | None:
+    """Stored self-reported CricHeroes numbers for display (None when the player added none)."""
+    return CricHeroesStatsOut(**raw) if raw else None
 
 
 class PlayerService:
@@ -70,6 +82,32 @@ class PlayerService:
             {"player_id": user.id}, {"$set": {"visibility": data.availability_visibility.value}}
         )
         await self.c.mongo["users"].update_one({"_id": user.id}, {"$addToSet": {"roles": Role.PLAYER.value}})
+        return await self.me(user)
+
+    async def update_cricheroes(self, user: CurrentUser, data: CricHeroesIn) -> PlayerSelfOut:
+        """Link and self-reported stats only; the rest of the profile is untouched."""
+        if not await self.col.find_one({"user_id": user.id}, {"_id": 1}):
+            raise NotFound("Create your player profile first", code="PLAYER_PROFILE_REQUIRED")
+        sent = data.model_fields_set
+        now = utcnow()
+        set_: dict[str, Any] = {"updated_at": now}
+        unset: dict[str, str] = {}
+        if "profile_url" in sent:
+            set_["cricheroes_url"], set_["cricheroes_player_id"] = safe_profile_url(data.profile_url, "player")
+        if "stats" in sent:
+            if data.stats is None or data.stats.is_empty():
+                unset["cricheroes_stats"] = ""
+            else:
+                set_["cricheroes_stats"] = {**data.stats.model_dump(exclude_none=True), "updated_at": now}
+        await self.col.update_one({"user_id": user.id}, {"$set": set_, **({"$unset": unset} if unset else {})})
+        await self.c.audit.log(
+            actor_id=user.id,
+            action="player.cricheroes_updated",
+            entity_type="user",
+            entity_id=user.id,
+            new_value={"fields": sorted(sent)},
+            request_id=user.request_id,
+        )
         return await self.me(user)
 
     async def me(self, user: CurrentUser) -> PlayerSelfOut:
@@ -123,6 +161,7 @@ class PlayerService:
             cricheroes_url=ch_url,
             cricheroes_profile_url=ch_url,
             cricheroes_player_id=ch_id,
+            cricheroes_stats=cricheroes_stats_out(prof.get("cricheroes_stats")),
             previous_teams=prof.get("previous_teams", []),
             bio=prof.get("bio"),
             locality=prof.get("locality"),

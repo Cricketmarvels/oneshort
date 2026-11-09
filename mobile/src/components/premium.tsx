@@ -287,12 +287,12 @@ export function SaveButton({ kind, id, name }: { kind: "player" | "team"; id: st
 
 // ---------------------------------------------------------------- player card
 export type InviteState = "idle" | "sending" | "sent" | "error";
-export const PlayerDiscoveryCard = memo(function PlayerDiscoveryCard({ id, name, photo, role, ratingText, meta, available, onOpen, onInvite, invite, canInvite }: {
-  id: string; name: string; photo?: string | null; role: string; ratingText?: string | null; meta: string; available: boolean;
+export const PlayerDiscoveryCard = memo(function PlayerDiscoveryCard({ id, name, photo, role, ratingText, meta, available, onOpen, onInvite, invite, canInvite, cricheroes }: {
+  id: string; name: string; photo?: string | null; role: string; ratingText?: string | null; meta: string; available: boolean; cricheroes?: boolean;
   onOpen: () => void; onInvite?: () => void; invite?: InviteState; canInvite: boolean;
 }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${name}, ${role}. ${meta}${available ? ". Available this week" : ""}`} onPress={onOpen}
+    <Pressable accessibilityRole="button" accessibilityLabel={`${name}, ${role}. ${meta}${available ? ". Available this week" : ""}${cricheroes ? ". Has a CricHeroes profile" : ""}`} onPress={onOpen}
       style={({ pressed }) => ({ flexDirection: "row", gap: 14, padding: 14, paddingRight: 12, borderRadius: 22, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
       <Avatar uri={photo} name={name} size={66} />
       <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
@@ -300,7 +300,10 @@ export const PlayerDiscoveryCard = memo(function PlayerDiscoveryCard({ id, name,
           <Txt v="h3" numberOfLines={1} style={{ flexShrink: 1, fontSize: 17 }}>{name}</Txt>
           {ratingText ? <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}><PlayRIcon name="star" size={14} color="#F5A623" weight="fill" /><Txt v="small" color={T.muted} style={{ fontSize: 13 }}>{ratingText}</Txt></View> : null}
         </View>
-        <View style={{ alignSelf: "flex-start", paddingHorizontal: 9, height: 22, borderRadius: 11, backgroundColor: T.chipNeutral, justifyContent: "center" }}><Txt v="smallSemi" style={{ fontSize: 12 }}>{role}</Txt></View>
+        <View style={{ flexDirection: "row", gap: 6, alignSelf: "flex-start" }}>
+          <View style={{ paddingHorizontal: 9, height: 22, borderRadius: 11, backgroundColor: T.chipNeutral, justifyContent: "center" }}><Txt v="smallSemi" style={{ fontSize: 12 }}>{role}</Txt></View>
+          {cricheroes ? <View style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, height: 22, borderRadius: 11, backgroundColor: T.primarySoft }}><PlayRIcon name="stats" size={12} color={T.primaryDark} /><Txt v="smallSemi" color={T.primaryDark} style={{ fontSize: 12 }}>CricHeroes</Txt></View> : null}
+        </View>
         <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
             <Txt v="small" color={T.muted} numberOfLines={1} style={{ fontSize: 13.5 }}>{meta}</Txt>

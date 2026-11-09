@@ -42,9 +42,9 @@ export default function Me() {
         { value: String(p?.career?.wickets ?? 0), label: "Wkts" },
       ]} />
       {chEdit ? (
-        <CricHeroesEditor kind="player" current={p?.cricheroes_profile_url} save={async (u) => { await savePlayerCricHeroes(u); await r.refetch(); }} onClose={() => setChEdit(false)} />
+        <CricHeroesEditor kind="player" current={p?.cricheroes_profile_url} currentStats={p?.cricheroes_stats} save={async (u, st) => { await savePlayerCricHeroes(u, st); await r.refetch(); }} onClose={() => setChEdit(false)} />
       ) : (
-        <CricHeroesCard kind="player" url={p?.cricheroes_profile_url} onEdit={() => setChEdit(true)} compact />
+        <CricHeroesCard kind="player" url={p?.cricheroes_profile_url} stats={p?.cricheroes_stats} onEdit={() => setChEdit(true)} compact />
       )}
       <View style={{ gap: 12 }}>
         <LinkCard icon="calendar" title="My Games & History" onPress={() => router.push("/games")} />

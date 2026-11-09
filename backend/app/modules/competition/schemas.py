@@ -9,9 +9,10 @@ from app.common.enums import ChallengeStatus, FixtureFormat, FixtureStatus, Resu
 from app.common.types import AwareDatetime, GeoPointIn, ObjectIdStr, StrictModel
 from app.common.validators import LongText, ShortText
 from app.modules.competition.achievements import AchievementOut, AttendanceOut
-from app.modules.users.schemas import PublicUserOut
 
 # ---------------------------------------------------------------- shared briefs
+from app.modules.players.schemas import CricHeroesStatsOut
+from app.modules.users.schemas import PublicUserOut
 
 
 class RatingBrief(BaseModel):
@@ -246,6 +247,8 @@ class DisciplineOut(BaseModel):
 
 class PlayerRatingOut(BaseModel):
     user: PublicUserOut
+    bio: str | None = None
+    cricheroes_stats: CricHeroesStatsOut | None = None
     locality: str | None
     primary_role: str | None
     batting_style: str | None
@@ -404,6 +407,9 @@ class NearbyPlayerOut(BaseModel):
     verified_matches: int
     available_this_week: bool
     teams: list[str]
+    has_cricheroes: bool = Field(
+        default=False, description="Player linked a CricHeroes profile (open their PlayR profile to view it)"
+    )
 
 
 class RosterEntry(BaseModel):

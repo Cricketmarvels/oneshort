@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from app.api.dependencies import ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
 from app.common.types import parse_object_id
-from app.modules.players.schemas import PlayerProfileIn, PlayerPublicOut, PlayerSelfOut
+from app.modules.players.schemas import CricHeroesIn, PlayerProfileIn, PlayerPublicOut, PlayerSelfOut
 from app.modules.players.service import PlayerService
 
 router = APIRouter(prefix="/players", tags=["Players"], responses=ERROR_RESPONSES)
@@ -26,6 +26,15 @@ async def get_me(user: UserDep, svc: Svc) -> Envelope[PlayerSelfOut]:
 @router.put("/me", response_model=Envelope[PlayerSelfOut], summary="Create or update my player profile")
 async def put_me(data: PlayerProfileIn, user: UserDep, svc: Svc) -> Envelope[PlayerSelfOut]:
     return ok(await svc.upsert_me(user, data))
+
+
+@router.put(
+    "/me/cricheroes",
+    response_model=Envelope[PlayerSelfOut],
+    summary="Set my CricHeroes link and self-reported stats (omit = keep, null = remove)",
+)
+async def put_cricheroes(data: CricHeroesIn, user: UserDep, svc: Svc) -> Envelope[PlayerSelfOut]:
+    return ok(await svc.update_cricheroes(user, data))
 
 
 @router.get(

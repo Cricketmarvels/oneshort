@@ -25,6 +25,36 @@ def _cricheroes(v: str) -> str:
 CricHeroesUrl = Annotated[str, StringConstraints(max_length=300), AfterValidator(_cricheroes)]
 
 
+class CricHeroesStats(StrictModel):
+    """Career numbers the player copies from their CricHeroes profile. Self-reported: PlayR shows them labelled
+    as such, never mixes them into PlayR ratings, and never fetches them from CricHeroes."""
+
+    matches: int | None = Field(default=None, ge=0, le=5000)
+    runs: int | None = Field(default=None, ge=0, le=250_000)
+    highest_score: str | None = Field(default=None, pattern=r"^\d{1,3}\*?$", description="e.g. 87 or 102*")
+    batting_average: float | None = Field(default=None, ge=0, le=300)
+    strike_rate: float | None = Field(default=None, ge=0, le=500)
+    wickets: int | None = Field(default=None, ge=0, le=10_000)
+    best_bowling: str | None = Field(default=None, pattern=r"^\d{1,2}/\d{1,3}$", description="wickets/runs, e.g. 4/18")
+    economy: float | None = Field(default=None, ge=0, le=36)
+    catches: int | None = Field(default=None, ge=0, le=5000)
+
+    def is_empty(self) -> bool:
+        return all(v is None for v in self.model_dump().values())
+
+
+class CricHeroesStatsOut(CricHeroesStats):
+    updated_at: datetime | None = None
+    self_reported: bool = True
+
+
+class CricHeroesIn(StrictModel):
+    """Update only the CricHeroes part of a player profile. Omit a field to keep it, send null to remove it."""
+
+    profile_url: CricHeroesUrl | None = None
+    stats: CricHeroesStats | None = None
+
+
 class PlayerProfileIn(StrictModel):
     primary_role: PlayingRole
     secondary_roles: list[PlayingRole] = Field(default_factory=list, max_length=3)
@@ -80,6 +110,7 @@ class PlayerPublicOut(BaseModel):
     cricheroes_url: str | None
     cricheroes_profile_url: str | None = None
     cricheroes_player_id: str | None = None
+    cricheroes_stats: CricHeroesStatsOut | None = None
     previous_teams: list[str]
     bio: str | None
     locality: str | None = None

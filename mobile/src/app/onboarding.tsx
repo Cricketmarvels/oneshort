@@ -2,7 +2,9 @@
  * Progressive onboarding (refined spec §5.3), shown once after sign-up:
  *   1 · How will you play? Player / Captain / Both (a preference on ONE account)
  *   2 · Name and area (manual area always available; no location permission needed)
- *   3 · Sport profile: main role + usual days/times (optional — can skip)
+ *   3 · Sport profile: main role + usual days/times, a short bio, and (optional) CricHeroes profile link and
+ *       self-reported CricHeroes stats that captains and players see on the profile
+ * Shown after sign-up, and on first sign-in for accounts without a player profile (see lib/onboarding.ts).
  */
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -10,13 +12,14 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { CricHeroesField, cricHeroesError } from "@/components/cricheroes-link";
+import { CricHeroesField, CricHeroesStatsFields, cricHeroesError, formToStats, type StatsForm } from "@/components/cricheroes-link";
 import { PlayRIcon } from "@/components/icons";
 import { KickerChip } from "@/components/refined";
 import { ChoiceRow, H } from "@/components/starter";
 import { Button, Chip, Field, InlineNotice, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { savePlayerCricHeroes } from "@/lib/cricheroes";
 import { useHomeContext } from "@/lib/context";
 import { PLACES, useLocation } from "@/lib/location";
 import { useOnboarding } from "@/lib/onboarding";
@@ -41,9 +44,13 @@ export default function Onboarding() {
   const [days, setDays] = useState<string[]>(["sat", "sun"]);
   const [times, setTimes] = useState<string[]>([]);
   const [chUrl, setChUrl] = useState("");
+  const [bio, setBio] = useState("");
+  const [showStats, setShowStats] = useState(false);
+  const [statsForm, setStatsForm] = useState<StatsForm>({});
+  const parsedStats = formToStats(statsForm);
   const [err, setErr] = useState<string | null>(null);
 
-  const finish = () => { done(); router.replace(playAs !== "player" ? "/teams" : "/"); };
+  const finish = () => { done(user?.id); router.replace(playAs !== "player" ? "/teams" : "/"); };
   const saveName = useMutation({
     mutationFn: async () => {
       if (name.trim().length < 2) throw new Error("Enter your name");
@@ -55,11 +62,16 @@ export default function Onboarding() {
     onError: (e) => setErr(e instanceof Error && !("status" in e) ? e.message : errorText(e)),
   });
   const saveProfile = useMutation({
-    mutationFn: () => api("/players/me", { method: "PUT", body: {
-      primary_role: role, preferred_days: days, preferred_timing: times,
-      ...(chUrl.trim() ? { cricheroes_profile_url: chUrl.trim() } : {}),
-      ...(area ? { locality: area.label.split(",")[0], home_location: { lat: area.lat, lng: area.lng } } : {}),
-    } }),
+    mutationFn: async () => {
+      await api("/players/me", { method: "PUT", body: {
+        primary_role: role, preferred_days: days, preferred_timing: times,
+        ...(bio.trim() ? { bio: bio.trim() } : {}),
+        ...(area ? { locality: area.label.split(",")[0], home_location: { lat: area.lat, lng: area.lng } } : {}),
+      } });
+      // CricHeroes link + self-reported stats go through their own endpoint once the profile exists
+      if (chUrl.trim() || parsedStats.stats) await savePlayerCricHeroes(chUrl.trim() || null, parsedStats.stats);
+      await reload();
+    },
     onSuccess: finish,
     onError: (e) => setErr(errorText(e)),
   });
@@ -107,17 +119,34 @@ export default function Onboarding() {
             </View>
           </View>
         )}
-        {step === 3 ? <CricHeroesField kind="player" value={chUrl} onChange={setChUrl} /> : null}
+        {step === 3 ? (
+          <View style={{ gap: 16 }}>
+            <Field label="About you (optional)" value={bio} onChangeText={setBio} multiline maxLength={280}
+              placeholder="e.g. Opening bat, part-time off-spin. Weekend T20s for 6 years." hint={`${bio.length}/280 · shown on your profile`} style={{ minHeight: 84, textAlignVertical: "top" }} />
+            <View style={{ gap: 12, padding: 14, borderRadius: 16, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }}>
+              <Txt v="h2">Your CricHeroes profile</Txt>
+              <Txt v="small" color={T.muted}>Captains and players can open it from your PlayR profile.</Txt>
+              <CricHeroesField kind="player" value={chUrl} onChange={setChUrl} />
+              {showStats ? <CricHeroesStatsFields value={statsForm} onChange={setStatsForm} /> : (
+                <Button title="Add your CricHeroes stats" variant="secondary" size="sm" onPress={() => setShowStats(true)} style={{ alignSelf: "flex-start" }} />
+              )}
+              {parsedStats.error ? <Txt v="small" color={T.dangerText}>{parsedStats.error}</Txt> : null}
+            </View>
+          </View>
+        ) : null}
         {err ? <InlineNotice tone="warning">{err}</InlineNotice> : null}
       </ScrollView>
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: SP.page, paddingBottom: Math.max(insets.bottom, 20), backgroundColor: T.bg, gap: 6 }}>
         {step === 1 ? (
-          <Button title="Continue" size="lg" onPress={() => { ctx.set(playAs === "player" ? "player" : "captain"); setStep(2); }} />
+          <>
+            <Button title="Continue" size="lg" onPress={() => { ctx.set(playAs === "player" ? "player" : "captain"); setStep(2); }} />
+            <Button title="Skip for now" variant="ghost" onPress={finish} />
+          </>
         ) : step === 2 ? (
           <Button title="Continue" size="lg" loading={saveName.isPending} onPress={() => saveName.mutate()} />
         ) : (
           <>
-            <Button title={playAs === "player" ? "Finish" : "Finish & create your team"} size="lg" disabled={!role || !!cricHeroesError(chUrl, "player")} loading={saveProfile.isPending} onPress={() => saveProfile.mutate()} />
+            <Button title={playAs === "player" ? "Finish" : "Finish & create your team"} size="lg" disabled={!role || !!cricHeroesError(chUrl, "player") || !!parsedStats.error} loading={saveProfile.isPending} onPress={() => saveProfile.mutate()} />
             <Button title="Skip for now" variant="ghost" onPress={finish} />
           </>
         )}

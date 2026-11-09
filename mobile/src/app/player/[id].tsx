@@ -108,10 +108,16 @@ export default function PlayerProfile() {
           <Button title="Invite to a match" size="lg" onPress={() => inviteSheet.current?.present()} />
         ) : null}
         {chEdit && me ? (
-          <CricHeroesEditor kind="player" current={p.cricheroes_profile_url} save={async (u) => { await savePlayerCricHeroes(u); await q.refetch(); }} onClose={() => setChEdit(false)} />
+          <CricHeroesEditor kind="player" current={p.cricheroes_profile_url} currentStats={p.cricheroes_stats} save={async (u, st) => { await savePlayerCricHeroes(u, st); await q.refetch(); }} onClose={() => setChEdit(false)} />
         ) : (
-          <CricHeroesCard kind="player" url={p.cricheroes_profile_url} onEdit={me ? () => setChEdit(true) : undefined} />
+          <CricHeroesCard kind="player" url={p.cricheroes_profile_url} stats={p.cricheroes_stats} onEdit={me ? () => setChEdit(true) : undefined} />
         )}
+        {p.bio ? (
+          <View style={{ gap: 6, padding: SP.lg, borderRadius: R.card, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }}>
+            <Txt v="h3">About {me ? "me" : p.user.full_name.split(" ")[0]}</Txt>
+            <Txt v="body" style={{ lineHeight: 22 }}>{p.bio}</Txt>
+          </View>
+        ) : null}
         {p.achievements?.length ? (
           <View style={{ gap: SP.sm }}>
             <SectionHeader title="Achievements" action="How they're earned" onAction={() => router.push("/about-ratings")} />

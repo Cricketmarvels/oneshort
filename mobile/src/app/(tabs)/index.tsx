@@ -68,9 +68,10 @@ function CricketHome() {
   const h = home.data;
   const locSheet = useRef<BottomSheetModal>(null);
   const ctxStore = useHomeContext();
-  const onboarding = useOnboarding((x) => x.pending);
-  useEffect(() => { void ctxStore.load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (onboarding) router.push("/onboarding"); }, [onboarding]);
+  const onb = useOnboarding();
+  const needsOnboarding = onb.needs(user);
+  useEffect(() => { void ctxStore.load(); void onb.load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (needsOnboarding) router.push("/onboarding"); }, [needsOnboarding]);
 
   const unread = useQuery({ queryKey: ["notifications", "unread"], queryFn: () => api<{ meta: { unread: number } }>("/notifications", { query: { page_size: 1 } }), refetchInterval: 60_000 });
   const myTeams = useQuery({ queryKey: ["teams", "mine"], queryFn: () => api<{ data: S<"TeamOut">[] }>("/teams", { query: { scope: "mine", page_size: 10 } }) });

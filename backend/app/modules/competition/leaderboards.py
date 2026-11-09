@@ -49,6 +49,7 @@ from app.modules.competition.schemas import (
     TeamLeaderboardOut,
 )
 from app.modules.cricheroes.urls import safe_profile_url
+from app.modules.players.service import cricheroes_stats_out
 from app.modules.rating_engine.composite import all_rounder_rating, confidence_from_rd
 from app.modules.rating_engine.config import FORMAT_MIN_MATCHES, RISING_MIN_MATCHES, RISING_WINDOW_DAYS
 from app.modules.rating_engine.explain import trend_summary
@@ -389,6 +390,8 @@ class LeaderboardService:
             includes_demo_data=bool((d or {}).get("has_demo")),
             achievements=evaluate(metrics_from(hist, career, attended)),
             cricheroes_profile_url=safe_profile_url(prof.get("cricheroes_url"), "player")[0],
+            cricheroes_stats=cricheroes_stats_out(prof.get("cricheroes_stats")),
+            bio=prof.get("bio"),
             cricheroes_player_id=safe_profile_url(prof.get("cricheroes_url"), "player")[1],
             attendance=attendance if marks else None,
         )
@@ -664,6 +667,7 @@ class LeaderboardService:
                     verified_matches=(r or {}).get("matches", 0),
                     available_this_week=is_free,
                     teams=teams_of.get(p["user_id"], [])[:3],
+                    has_cricheroes=bool(safe_profile_url(p.get("cricheroes_url"), "player")[0]),
                 )
             )
         if sort == "rating":

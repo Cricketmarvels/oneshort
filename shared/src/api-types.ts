@@ -1245,6 +1245,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/players/me/cricheroes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set my CricHeroes link and self-reported stats (omit = keep, null = remove) */
+        put: operations["put_cricheroes_api_v1_players_me_cricheroes_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/players/{player_id}": {
         parameters: {
             query?: never;
@@ -3658,6 +3675,15 @@ export interface components {
             method: "file" | "manual";
             data: components["schemas"]["CricHeroesSnapshotIn"];
         };
+        /**
+         * CricHeroesIn
+         * @description Update only the CricHeroes part of a player profile. Omit a field to keep it, send null to remove it.
+         */
+        CricHeroesIn: {
+            /** Profile Url */
+            profile_url?: string | null;
+            stats?: components["schemas"]["CricHeroesStats"] | null;
+        };
         /** CricHeroesLeaderIn */
         CricHeroesLeaderIn: {
             /** Player Name */
@@ -3838,6 +3864,71 @@ export interface components {
             label: string;
             /** Value */
             value: string;
+        };
+        /**
+         * CricHeroesStats
+         * @description Career numbers the player copies from their CricHeroes profile. Self-reported: PlayR shows them labelled
+         *     as such, never mixes them into PlayR ratings, and never fetches them from CricHeroes.
+         */
+        CricHeroesStats: {
+            /** Matches */
+            matches?: number | null;
+            /** Runs */
+            runs?: number | null;
+            /**
+             * Highest Score
+             * @description e.g. 87 or 102*
+             */
+            highest_score?: string | null;
+            /** Batting Average */
+            batting_average?: number | null;
+            /** Strike Rate */
+            strike_rate?: number | null;
+            /** Wickets */
+            wickets?: number | null;
+            /**
+             * Best Bowling
+             * @description wickets/runs, e.g. 4/18
+             */
+            best_bowling?: string | null;
+            /** Economy */
+            economy?: number | null;
+            /** Catches */
+            catches?: number | null;
+        };
+        /** CricHeroesStatsOut */
+        CricHeroesStatsOut: {
+            /** Matches */
+            matches?: number | null;
+            /** Runs */
+            runs?: number | null;
+            /**
+             * Highest Score
+             * @description e.g. 87 or 102*
+             */
+            highest_score?: string | null;
+            /** Batting Average */
+            batting_average?: number | null;
+            /** Strike Rate */
+            strike_rate?: number | null;
+            /** Wickets */
+            wickets?: number | null;
+            /**
+             * Best Bowling
+             * @description wickets/runs, e.g. 4/18
+             */
+            best_bowling?: string | null;
+            /** Economy */
+            economy?: number | null;
+            /** Catches */
+            catches?: number | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /**
+             * Self Reported
+             * @default true
+             */
+            self_reported: boolean;
         };
         /** DashboardOut */
         DashboardOut: {
@@ -5098,6 +5189,12 @@ export interface components {
             available_this_week: boolean;
             /** Teams */
             teams: string[];
+            /**
+             * Has Cricheroes
+             * @description Player linked a CricHeroes profile (open their PlayR profile to view it)
+             * @default false
+             */
+            has_cricheroes: boolean;
         };
         /** NearbyRacketPlayerOut */
         NearbyRacketPlayerOut: {
@@ -5590,6 +5687,7 @@ export interface components {
             cricheroes_profile_url?: string | null;
             /** Cricheroes Player Id */
             cricheroes_player_id?: string | null;
+            cricheroes_stats?: components["schemas"]["CricHeroesStatsOut"] | null;
             /** Previous Teams */
             previous_teams: string[];
             /** Bio */
@@ -5616,6 +5714,9 @@ export interface components {
         /** PlayerRatingOut */
         PlayerRatingOut: {
             user: components["schemas"]["PublicUserOut"];
+            /** Bio */
+            bio?: string | null;
+            cricheroes_stats?: components["schemas"]["CricHeroesStatsOut"] | null;
             /** Locality */
             locality: string | null;
             /** Primary Role */
@@ -5851,6 +5952,7 @@ export interface components {
             cricheroes_profile_url?: string | null;
             /** Cricheroes Player Id */
             cricheroes_player_id?: string | null;
+            cricheroes_stats?: components["schemas"]["CricHeroesStatsOut"] | null;
             /** Previous Teams */
             previous_teams: string[];
             /** Bio */
@@ -14343,6 +14445,93 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PlayerProfileIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_PlayerSelfOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    put_cricheroes_api_v1_players_me_cricheroes_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CricHeroesIn"];
             };
         };
         responses: {

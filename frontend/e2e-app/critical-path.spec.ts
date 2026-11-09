@@ -199,3 +199,55 @@ test("Terms and Privacy Notice are public, and a player can make a privacy reque
   await expect(page.getByText(/Request PR-[0-9A-F]{8} received/)).toBeVisible();
   await expect(page.getByText(/Nominate someone · PR-/)).toBeVisible();
 });
+
+test("a new player adds their CricHeroes profile and stats at sign-up, and a captain sees them", async ({ browser }) => {
+  const id = (Number(run) % 90) + 700;
+  const ch = { name: `CH Newbie ${run}`, mobile: `+447700900${id}`, email: `ch.newbie.${run}@example.in` };
+  const page = await (await browser.newContext()).newPage();
+  await chooseSport(page);
+  await page.getByRole("button", { name: "New here? Create an account" }).click();
+  await page.getByLabel("Full name").fill(ch.name);
+  await page.getByLabel("Email").fill(ch.email);
+  await page.getByLabel("Mobile number").fill(ch.mobile);
+  await page.getByRole("button", { name: "Continue with OTP" }).click();
+  const code = ((await page.getByText(/Development mode: your code is \d{6}/).innerText()).match(/\d{6}/) ?? [""])[0];
+  await page.getByLabel("6-digit code").fill(code);
+  await acceptAgreementIfShown(page);
+
+  // First sign-in: onboarding, ending with bio + CricHeroes link + self-reported stats
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Sector 18, Noida" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Batter", exact: true }).click();
+  await page.getByLabel("About you (optional)").fill("Opening bat, weekend T20s in Noida.");
+  await page.getByLabel("CricHeroes Player Profile (optional)").fill("https://cricheroes.com/player-profile/4794795/ch-newbie/stats");
+  await page.getByRole("button", { name: "Add your CricHeroes stats" }).click();
+  await page.getByLabel("Best bowling").fill("four");
+  await expect(page.getByText("Best bowling: wickets/runs, e.g. 4/18")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeDisabled();
+  await page.getByLabel("Best bowling").fill("2/21");
+  await page.getByLabel("Matches").fill("64");
+  await page.getByLabel("Runs").fill("1520");
+  await page.getByLabel("Highest score").fill("102*");
+  await page.getByRole("button", { name: "Finish" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.waitForLoadState("networkidle");
+  await expect(page).not.toHaveURL(/onboarding/); // finished: not asked again
+
+  // A captain finds them (badge on the card) and opens the profile
+  const captain = await (await browser.newContext()).newPage();
+  await emailLogin(captain, MATCH_CAPTAIN);
+  await captain.goto("/find/players");
+  await captain.getByPlaceholder("Search by name, role or team").fill(ch.name);
+  const card = captain.getByRole("button", { name: new RegExp(`^${ch.name}, .*Has a CricHeroes profile`) });
+  await expect(card).toBeVisible();
+  await card.click();
+  await expect(captain).toHaveURL(/\/player\/[a-f0-9]{24}$/);
+  await expect(captain.getByText(/Self-reported from CricHeroes/)).toBeVisible();
+  await expect(captain.getByText("1,520")).toBeVisible();
+  await expect(captain.getByText("102*")).toBeVisible();
+  await expect(captain.getByText("2/21")).toBeVisible();
+  await expect(captain.getByRole("link", { name: /View CricHeroes Player Stats/ })).toBeVisible();
+  await expect(captain.getByText("Opening bat, weekend T20s in Noida.")).toBeVisible();
+});
