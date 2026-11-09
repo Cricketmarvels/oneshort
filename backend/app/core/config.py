@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     # Database
     mongodb_uri: str = "mongodb://127.0.0.1:27018/?replicaSet=rs0"
     mongodb_db: str = "cricket_platform"
+    # Must exceed a replica-set election (~10-12 s) so requests wait for the new primary instead of failing.
+    mongodb_server_selection_timeout_ms: int = Field(default=15_000, ge=1_000, le=60_000)
+    mongodb_max_pool_size: int = Field(default=100, ge=5, le=1_000)
 
     # Auth
     jwt_secret: str = _INSECURE_DEFAULT

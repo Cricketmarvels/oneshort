@@ -126,7 +126,9 @@ def create_app(settings: Settings | None = None, container: Container | None = N
     @app.get("/health/ready", tags=["Health"])
     async def ready() -> JSONResponse:
         try:
-            await app.state.container.mongo.ping()
+            topo = await app.state.container.mongo.topology()
+            if not topo["writable_primary"]:  # election in progress: still serve reads, flag for monitoring
+                return JSONResponse({"status": "degraded", "database": "no_primary"}, status_code=200)
             return JSONResponse({"status": "ok", "database": "ok"})
         except Exception:  # noqa: BLE001
             return JSONResponse({"status": "degraded", "database": "unreachable"}, status_code=503)

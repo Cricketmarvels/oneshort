@@ -44,7 +44,12 @@ class Container:
 
 
 def build_container(settings: Settings) -> Container:
-    mongo = Mongo(settings.mongodb_uri, settings.mongodb_db)
+    mongo = Mongo(
+        settings.mongodb_uri,
+        settings.mongodb_db,
+        server_selection_timeout_ms=settings.mongodb_server_selection_timeout_ms,
+        max_pool_size=settings.mongodb_max_pool_size,
+    )
     return Container(
         settings=settings,
         mongo=mongo,
