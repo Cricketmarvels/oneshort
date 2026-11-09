@@ -123,7 +123,7 @@ export default function Profile() {
         </Card>
         <Section title="Appearance">
           <Card style={{ gap: 10 }}>
-            <Segmented value={appearance.pref} onChange={appearance.set} options={[{ v: "system", l: "System" }, { v: "light", l: "Light" }, { v: "dark", l: "Dark" }]} />
+            <Segmented value={appearance.pref} onChange={appearance.set} options={[{ v: "light", l: "Light" }, { v: "dark", l: "Dark" }, { v: "system", l: "System" }]} />
             <Txt v="small" color={T.muted}>{appearance.pref === "system" ? "Follows your phone's light/dark setting." : appearance.pref === "dark" ? "Dark theme is on." : "Light theme is on."}</Txt>
           </Card>
         </Section>
