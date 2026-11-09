@@ -114,7 +114,9 @@ class AuthService:
     # --------------------------------------------------------- registration
     async def register(self, data: RegisterIn) -> RegisterOut:
         existing = await self.users.by_mobile(data.mobile_number)
-        if existing and existing.get("mobile_verified"):
+        if existing and (existing.get("mobile_verified") or existing.get("verified_via")):
+            # verified_via (e.g. captain_invite) accounts can sign in before OTP verification, so letting a
+            # re-registration overwrite their email/password would hand the account to whoever knows the number.
             raise BusinessRuleViolation(
                 "This mobile number is already registered. Please log in.", code="ACCOUNT_EXISTS"
             )
@@ -166,8 +168,26 @@ class AuthService:
             raise NotFound("Account not found", code="ACCOUNT_NOT_FOUND")
         self._ensure_can_login(user)
         if not user.get("mobile_verified"):
-            user = await self.users.update(user["_id"], {"mobile_verified": True})
+            fields: dict[str, Any] = {"mobile_verified": True}
+            stripped = False
+            if purpose == "login" and (user.get("password_hash") or user.get("email")):
+                # The email/password on this record were set before anyone proved they own the number
+                # (a stale or hostile registration, or an invite-link sign-up). The person holding the
+                # phone is the account's owner: remove the unproven credentials and end their sessions.
+                fields |= {"password_hash": None, "email": None, "email_verified": False}
+                stripped = True
+            user = await self.users.update(user["_id"], fields)
             assert user is not None
+            if stripped:
+                await self.tokens.update_many(
+                    {"user_id": user["_id"], "revoked_at": None}, {"$set": {"revoked_at": utcnow()}}
+                )
+                await self.c.audit.log(
+                    actor_id=user["_id"],
+                    action="user.preverification_credentials_removed",
+                    entity_type="user",
+                    entity_id=user["_id"],
+                )
             await self.c.audit.log(
                 actor_id=user["_id"], action="user.registered", entity_type="user", entity_id=user["_id"]
             )

@@ -1,0 +1,140 @@
+"""Account-takeover regressions (auth review C1/C2): credentials attached to a number nobody has
+proven must never survive against the number's real owner."""
+
+import httpx
+from bson import ObjectId
+
+from app.core.container import Container
+from tests.api.test_competition import SECTOR_18, player, team
+from tests.conftest import future, make_match
+
+API = "/api/v1"
+
+
+async def _login_otp(client: httpx.AsyncClient, container: Container, mobile: str) -> httpx.Response:
+    # clear the send-log so the resend cooldown from registration doesn't slow the suite
+    await container.mongo["otp_codes"].delete_many({"kind": "send_log", "mobile_number": mobile})
+    r = await client.post(f"{API}/auth/send-otp", json={"mobile_number": mobile, "purpose": "login"})
+    assert r.status_code == 200, r.text
+    code = r.json()["data"]["dev_otp"]
+    return await client.post(f"{API}/auth/verify-otp", json={"mobile_number": mobile, "code": code, "purpose": "login"})
+
+
+async def test_register_cannot_take_over_an_invite_account(client: httpx.AsyncClient) -> None:
+    """C1: /auth/register with an invite-link account's number must not replace its credentials."""
+    cap = await player(client, "Takeover Captain", "all_rounder", SECTOR_18)
+    tid = await team(client, cap, "Takeover XI", SECTOR_18, [])
+    mid = (await make_match(client, cap, tid, start=future(5, 7), at=SECTOR_18, capacity=11))["id"]
+    code = (await client.post(f"{API}/matches/{mid}/invite-link", headers=cap.h)).json()["data"]["code"]
+    victim = {
+        "code": code,
+        "full_name": "Invite Victim",
+        "mobile_number": "+447700900931",
+        "email": "invite.victim@example.in",
+        "password": "VictimPass2026",
+    }
+    assert (await client.post(f"{API}/auth/invite-register", json=victim)).status_code == 201
+
+    r = await client.post(
+        f"{API}/auth/register",
+        json={
+            "full_name": "Attacker",
+            "mobile_number": victim["mobile_number"],
+            "email": "attacker.c1@example.in",
+            "password": "AttackerPass2026",
+        },
+    )
+    assert r.status_code == 422 and r.json()["error"]["code"] == "ACCOUNT_EXISTS"
+    # attacker's credentials never attached; the victim still signs in
+    bad = await client.post(
+        f"{API}/auth/login", json={"email": "attacker.c1@example.in", "password": "AttackerPass2026"}
+    )
+    assert bad.status_code == 401
+    good = await client.post(f"{API}/auth/login", json={"email": victim["email"], "password": victim["password"]})
+    assert good.status_code == 200
+
+
+async def test_login_otp_removes_preverification_credentials(client: httpx.AsyncClient, container: Container) -> None:
+    """C2: an attacker pre-registers a number with their own password; the real owner's first OTP login kills it."""
+    num = "+447700900932"
+    r = await client.post(
+        f"{API}/auth/register",
+        json={
+            "full_name": "Attacker",
+            "mobile_number": num,
+            "email": "attacker.c2@example.in",
+            "password": "AttackerPass2026",
+        },
+    )
+    assert r.status_code == 201
+    uid = ObjectId(r.json()["data"]["user_id"])
+
+    owner = await _login_otp(client, container, num)
+    assert owner.status_code == 200
+    assert owner.json()["data"]["user"]["email"] is None  # unproven email detached
+
+    after = await client.post(
+        f"{API}/auth/login", json={"email": "attacker.c2@example.in", "password": "AttackerPass2026"}
+    )
+    assert after.status_code == 401
+    doc = await container.mongo["users"].find_one({"_id": uid})
+    assert doc is not None and doc["password_hash"] is None and doc["mobile_verified"] is True
+    assert (
+        await container.mongo["audit_logs"].count_documents(
+            {"action": "user.preverification_credentials_removed", "entity_id": uid}
+        )
+        == 1
+    )
+
+
+async def test_invite_account_otp_login_revokes_password_and_sessions(
+    client: httpx.AsyncClient, container: Container
+) -> None:
+    """An invite-link account created by whoever held the link: once the number's owner proves it by OTP,
+    the link-holder's password and any sessions it opened are dead."""
+    cap = await player(client, "Takeover Captain B", "all_rounder", SECTOR_18)
+    tid = await team(client, cap, "Takeover XI B", SECTOR_18, [])
+    mid = (await make_match(client, cap, tid, start=future(5, 8), at=SECTOR_18, capacity=11))["id"]
+    code = (await client.post(f"{API}/matches/{mid}/invite-link", headers=cap.h)).json()["data"]["code"]
+    reg = await client.post(
+        f"{API}/auth/invite-register",
+        json={
+            "code": code,
+            "full_name": "Invite Holder",
+            "mobile_number": "+447700900933",
+            "email": "holder.c2b@example.in",
+            "password": "HolderPass2026",
+        },
+    )
+    assert reg.status_code == 201
+    stale_refresh = reg.json()["data"]["refresh_token"]
+
+    owner = await _login_otp(client, container, "+447700900933")
+    assert owner.status_code == 200
+    # password sign-in and the pre-verification session are both gone
+    assert (
+        await client.post(f"{API}/auth/login", json={"email": "holder.c2b@example.in", "password": "HolderPass2026"})
+    ).status_code == 401
+    r = await client.post(f"{API}/auth/refresh", json={"refresh_token": stale_refresh})
+    assert r.status_code == 401
+
+
+async def test_normal_registration_keeps_its_own_password(client: httpx.AsyncClient) -> None:
+    """Regression: verifying your own registration (purpose=register) keeps the password you chose."""
+    r = await client.post(
+        f"{API}/auth/register",
+        json={
+            "full_name": "Honest Signup",
+            "mobile_number": "+447700900934",
+            "email": "honest.signup@example.in",
+            "password": "HonestPass2026",
+        },
+    )
+    code = r.json()["data"]["otp"]["dev_otp"]
+    v = await client.post(
+        f"{API}/auth/verify-otp", json={"mobile_number": "+447700900934", "code": code, "purpose": "register"}
+    )
+    assert v.status_code == 200
+    assert (
+        await client.post(f"{API}/auth/login", json={"email": "honest.signup@example.in", "password": "HonestPass2026"})
+    ).status_code == 200
