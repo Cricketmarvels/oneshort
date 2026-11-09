@@ -11,6 +11,7 @@ from app.common.enums import AccountStatus, Role
 from app.common.types import utcnow
 from app.core.container import Container
 from app.core.exceptions import AgreementRequired, Forbidden, Unauthorized
+from app.core.observability import tag_user
 from app.core.security import decode_access_token
 
 _bearer = HTTPBearer(auto_error=False)
@@ -64,6 +65,7 @@ async def get_current_user(
             status = AccountStatus.ACTIVE
         else:
             raise Forbidden("Your account is suspended", code="ACCOUNT_SUSPENDED")
+    tag_user(str(uid))  # error reports carry the internal id only
     return CurrentUser(
         id=uid,
         roles=list(user.get("roles", [])),

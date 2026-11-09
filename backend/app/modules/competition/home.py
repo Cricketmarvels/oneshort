@@ -141,6 +141,9 @@ async def _managed(c: Container, user: CurrentUser) -> list[Any]:
     return sorted(await managed_team_ids(c, user.id))
 
 
+SPOTLIGHT_CANDIDATES = 5000
+
+
 async def _spotlight(c: Container, user: CurrentUser, at: GeoPointIn | None) -> SpotlightOut | None:
     """Player of the Week: biggest verified rating gain in the last 7 days, within 50 km
     (or the player's city). None when nobody qualifies — never invented."""
@@ -154,11 +157,15 @@ async def _spotlight(c: Container, user: CurrentUser, at: GeoPointIn | None) -> 
                     "spherical": True,
                 }
             },
+            {"$limit": SPOTLIGHT_CANDIDATES},  # nearest first; keeps Home fast in dense cities
             {"$project": {"user_id": 1}},
         ]
         ids = [p["user_id"] async for p in await c.mongo["player_profiles"].aggregate(pipe)]
     elif user.doc.get("city"):
-        ids = [u["_id"] async for u in c.mongo["users"].find({"city": user.doc["city"]}, {"_id": 1})]
+        ids = [
+            u["_id"]
+            async for u in c.mongo["users"].find({"city": user.doc["city"]}, {"_id": 1}).limit(SPOTLIGHT_CANDIDATES)
+        ]
     else:
         return None
     since = utcnow() - timedelta(days=7)

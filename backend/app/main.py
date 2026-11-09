@@ -18,11 +18,13 @@ from app.core.container import Container, build_container
 from app.core.exceptions import AppError
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import (
+    BodySizeLimitMiddleware,
     NoSqlInjectionGuardMiddleware,
     RateLimitMiddleware,
     RequestContextMiddleware,
     SecurityHeadersMiddleware,
 )
+from app.core.observability import init_sentry
 from app.core.security import decode_access_token
 from app.infrastructure.database.indexes import ensure_indexes
 from app.modules.agreements.service import AgreementService
@@ -43,6 +45,7 @@ def _error(request: Request, status: int, code: str, message: str, details: list
 def create_app(settings: Settings | None = None, container: Container | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level, json_logs=not settings.debug)
+    init_sentry(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -79,6 +82,7 @@ def create_app(settings: Settings | None = None, container: Container | None = N
 
     # Middleware (last added = outermost)
     app.add_middleware(NoSqlInjectionGuardMiddleware)
+    app.add_middleware(BodySizeLimitMiddleware, settings=settings)
     app.add_middleware(RateLimitMiddleware, settings=settings, limiter=app.state.container.limiter)
     app.add_middleware(SecurityHeadersMiddleware, settings=settings)
     app.add_middleware(

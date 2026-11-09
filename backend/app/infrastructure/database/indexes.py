@@ -22,6 +22,11 @@ INDEXES: dict[str, list[IndexModel]] = {
             name="uniq_mobile",
         ),
         IndexModel([("email", ASCENDING)], unique=True, partialFilterExpression={"email": _STR}, name="uniq_email"),
+        # Lookups: the partial unique indexes above can't serve a plain equality match ({"mobile_number": x}),
+        # because the planner can't prove x is a string. Without these, login/OTP/sign-up scan every user.
+        IndexModel([("mobile_number", ASCENDING)], name="mobile_lookup"),
+        IndexModel([("email", ASCENDING)], name="email_lookup"),
+        IndexModel([("city", ASCENDING)]),  # home feed fallback when the user has no location
         IndexModel([("account_status", ASCENDING)]),
     ],
     "login_failures": [
@@ -56,6 +61,7 @@ INDEXES: dict[str, list[IndexModel]] = {
     "teams": [
         IndexModel([("captain_id", ASCENDING), ("team_status", ASCENDING)]),
         IndexModel([("admin_ids", ASCENDING)]),
+        IndexModel([("city", ASCENDING), ("team_status", ASCENDING)]),
         IndexModel([("location", GEOSPHERE)]),
         IndexModel([("team_name", TEXT), ("area", TEXT)], name="team_text"),
     ],
@@ -144,6 +150,7 @@ INDEXES: dict[str, list[IndexModel]] = {
         IndexModel(
             [("player_id", ASCENDING), ("start_at", ASCENDING), ("end_at", ASCENDING)], unique=True, name="uniq_slot"
         ),
+        IndexModel([("end_at", ASCENDING)]),  # nightly cleanup of old slots
     ],
     "invitations": [
         IndexModel(
@@ -154,6 +161,8 @@ INDEXES: dict[str, list[IndexModel]] = {
         ),
         IndexModel([("player_id", ASCENDING), ("invitation_status", ASCENDING), ("invited_at", DESCENDING)]),
         IndexModel([("match_id", ASCENDING), ("invitation_status", ASCENDING)]),
+        IndexModel([("captain_id", ASCENDING), ("invited_at", DESCENDING)]),  # manager inbox ($or clause 1)
+        IndexModel([("team_id", ASCENDING), ("invited_at", DESCENDING)]),  # manager inbox ($or clause 2)
         IndexModel([("captain_id", ASCENDING), ("direction", ASCENDING), ("invitation_status", ASCENDING)]),
         IndexModel([("invitation_status", ASCENDING), ("expires_at", ASCENDING)]),
     ],
@@ -161,6 +170,7 @@ INDEXES: dict[str, list[IndexModel]] = {
     "settlements": [
         IndexModel([("match_id", ASCENDING), ("version", ASCENDING)], unique=True),
         IndexModel([("settlement_code", ASCENDING)], unique=True),
+        IndexModel([("lines.player_id", ASCENDING), ("settlement_status", ASCENDING)]),  # "my dues"
         IndexModel(
             [("match_id", ASCENDING)],
             unique=True,
@@ -183,6 +193,8 @@ INDEXES: dict[str, list[IndexModel]] = {
     "ratings": [
         IndexModel([("match_id", ASCENDING), ("reviewer_id", ASCENDING), ("reviewed_user_id", ASCENDING)], unique=True),
         IndexModel([("reviewed_user_id", ASCENDING), ("rating_type", ASCENDING), ("status", ASCENDING)]),
+        IndexModel([("reviewer_id", ASCENDING)]),  # data export / ratings given
+        IndexModel([("team_id", ASCENDING), ("rating_type", ASCENDING), ("status", ASCENDING)]),
     ],
     "notifications": [
         IndexModel([("user_id", ASCENDING), ("read_at", ASCENDING), ("created_at", DESCENDING)]),

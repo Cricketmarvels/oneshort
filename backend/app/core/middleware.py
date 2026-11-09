@@ -147,3 +147,69 @@ class NoSqlInjectionGuardMiddleware(BaseHTTPMiddleware):
                         },
                     )
         return await call_next(request)
+
+
+class BodySizeLimitMiddleware:
+    """Reject oversized request bodies before anything parses or spools them to disk.
+
+    Checks Content-Length up front, then counts streamed bytes (chunked uploads have no length header). Uploads get
+    ``max_upload_bytes`` plus room for multipart framing; everything else gets ``max_request_bytes``.
+    """
+
+    def __init__(self, app: Any, settings: Settings) -> None:
+        self.app = app
+        self.json_limit = settings.max_request_bytes
+        self.upload_limit = settings.max_upload_bytes + 64 * 1024
+        self.upload_path = f"{settings.api_prefix}/uploads/"
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] != "http" or scope["method"] not in ("POST", "PUT", "PATCH"):
+            await self.app(scope, receive, send)
+            return
+        limit = self.upload_limit if scope["path"].startswith(self.upload_path) else self.json_limit
+        headers = dict(scope.get("headers") or [])
+        declared = headers.get(b"content-length")
+        if declared is not None and (not declared.isdigit() or int(declared) > limit):
+            await self._reject(scope, send, limit)
+            return
+        seen = 0
+
+        async def counted() -> Any:
+            nonlocal seen
+            msg = await receive()
+            if msg["type"] == "http.request":
+                seen += len(msg.get("body", b""))
+                if seen > limit:
+                    raise _BodyTooLarge
+            return msg
+
+        try:
+            await self.app(scope, counted, send)
+        except _BodyTooLarge:
+            await self._reject(scope, send, limit)
+
+    @staticmethod
+    async def _reject(scope: Any, send: Any, limit: int) -> None:
+        rid = (scope.get("state") or {}).get("request_id")
+        body = json.dumps(
+            {
+                "error": {
+                    "code": "PAYLOAD_TOO_LARGE",
+                    "message": f"Request body is larger than {limit // 1024} KB",
+                    "details": [],
+                },
+                "request_id": rid,
+            }
+        ).encode()
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 413,
+                "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
+
+
+class _BodyTooLarge(Exception):
+    pass

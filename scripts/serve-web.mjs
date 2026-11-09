@@ -10,7 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".data");
-const APP = path.join(ROOT, "web-app");
+const APP = process.env.WEB_ROOT ? path.resolve(process.env.WEB_ROOT) : path.join(ROOT, "web-app");
 const CLASSIC = path.join(ROOT, "web-classic");
 const API = { host: "127.0.0.1", port: Number(process.env.API_PORT ?? 8000) };
 const PORT = Number(process.env.PORT ?? 4173);

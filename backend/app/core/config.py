@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "staging", "production"] = "development"
     debug: bool = False
     log_level: str = "INFO"
+    sentry_dsn: str | None = None  # error tracking is off unless set
+    sentry_release: str | None = None  # e.g. the git commit, so errors map to a deploy
+    sentry_traces_sample_rate: float = Field(default=0.05, ge=0, le=1)
     api_prefix: str = "/api/v1"
     public_base_url: str = "http://localhost:8000"
     web_base_url: str = "http://localhost:5173"
@@ -102,6 +105,7 @@ class Settings(BaseSettings):
     storage_provider: Literal["local", "cloudinary"] = "local"
     local_upload_dir: str = "uploads"
     max_upload_bytes: int = 5 * 1024 * 1024
+    max_request_bytes: int = 512 * 1024  # JSON bodies; uploads use max_upload_bytes
     cloudinary_url: str | None = None
 
     # Push / email

@@ -10,7 +10,8 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "gen:api": "cd ../backend && uv run python -m scripts.export_openapi && cd ../shared && npm run gen"
+    "gen:api": "cd ../backend && uv run python -m scripts.export_openapi && cd ../shared && npm run gen",
+    "test:e2e:app": "playwright test -c playwright.app.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.2",

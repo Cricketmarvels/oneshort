@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 from app.common.enums import FixtureFormat, MatchCategory, PlayingRole, TeamMemberRole
 from app.common.media import OwnMediaUrl
@@ -16,7 +16,7 @@ def _ch_team(v: str) -> str:
     return normalize_profile_url(v, "team")[0]
 
 
-CricHeroesTeamUrl = Annotated[str, AfterValidator(_ch_team)]
+CricHeroesTeamUrl = Annotated[str, StringConstraints(max_length=300), AfterValidator(_ch_team)]
 
 
 class TeamIn(StrictModel):

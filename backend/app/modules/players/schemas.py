@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, Field, model_validator
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints, model_validator
 
 from app.common.enums import (
     BattingStyle,
@@ -22,7 +22,7 @@ def _cricheroes(v: str) -> str:
     return normalize_profile_url(v, "player")[0]
 
 
-CricHeroesUrl = Annotated[str, AfterValidator(_cricheroes)]
+CricHeroesUrl = Annotated[str, StringConstraints(max_length=300), AfterValidator(_cricheroes)]
 
 
 class PlayerProfileIn(StrictModel):

@@ -17,7 +17,7 @@ class NotificationPrefs(BaseModel):
         default=False,
         description="Opt-in: match invitations on WhatsApp; lets accepted teammates open a WhatsApp chat",
     )
-    muted_types: list[NotificationType] = Field(default_factory=list)
+    muted_types: list[NotificationType] = Field(default_factory=list, max_length=50)
 
 
 class AgreementState(BaseModel):

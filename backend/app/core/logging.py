@@ -30,6 +30,11 @@ SENSITIVE_KEYS = frozenset(
         "latitude",
         "longitude",
         "mobile_number",
+        "email",
+        "secret",
+        "api_key",
+        "cookie",
+        "x-hub-signature-256",
     }
 )
 REDACTED = "[REDACTED]"
@@ -49,6 +54,24 @@ def redact_processor(_logger: Any, _method: str, event_dict: MutableMapping[str,
             event_dict[key] = REDACTED
         else:
             event_dict[key] = _redact(event_dict[key])
+    return event_dict
+
+
+_PHONE = re.compile(r"\+\d{10,15}\b")
+_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+
+
+def scrub_text(text: str) -> str:
+    """Mask phone numbers and email addresses in free text (exception messages, e.g. Mongo duplicate-key errors)."""
+    return _EMAIL.sub("[EMAIL]", _PHONE.sub("[PHONE]", text))
+
+
+def scrub_exception_processor(
+    _logger: Any, _method: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
+    exc = event_dict.get("exception")
+    if isinstance(exc, str):
+        event_dict["exception"] = scrub_text(exc)
     return event_dict
 
 
@@ -94,6 +117,7 @@ def configure_logging(level: str = "INFO", json_logs: bool = True) -> None:
             structlog.processors.TimeStamper(fmt="iso", utc=True),
             redact_processor,
             structlog.processors.format_exc_info,
+            scrub_exception_processor,
             renderer,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelName(level.upper())),

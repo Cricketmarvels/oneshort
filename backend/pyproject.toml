@@ -17,6 +17,7 @@ dependencies = [
   "structlog>=24.4",
   "anthropic>=2.4.0",
   "pillow>=11",
+  "sentry-sdk[fastapi]>=2.20",
 ]
 
 [dependency-groups]
