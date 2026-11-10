@@ -1,7 +1,7 @@
 import * as Device from "expo-device";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import Constants from "expo-constants";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -43,6 +43,8 @@ export async function unregisterPush(): Promise<void> {
 
 export async function registerForPush(): Promise<void> {
   if (!Device.isDevice) return;
+  // Expo Go can't receive remote push: don't prompt for a permission it can't use, and don't fetch a token.
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return;
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", { name: "Match updates", importance: Notifications.AndroidImportance.HIGH });
   }
