@@ -37,7 +37,6 @@
     },
     "beta": {
       "distribution": "store",
-      "channel": "beta",
       "environment": "preview",
       "autoIncrement": true,
       "ios": {

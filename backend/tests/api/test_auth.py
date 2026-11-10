@@ -1,4 +1,5 @@
 import httpx
+import pytest
 
 from app.core.container import Container
 from tests.conftest import register, unique_mobile
@@ -105,13 +106,16 @@ async def test_otp_is_single_use(client: httpx.AsyncClient) -> None:
     assert r.status_code == 401
 
 
-async def test_refresh_rotation_and_reuse_detection(client: httpx.AsyncClient) -> None:
+async def test_refresh_rotation_and_reuse_detection(
+    client: httpx.AsyncClient, container: Container, monkeypatch: pytest.MonkeyPatch
+) -> None:
     u = await register(client, agree=False)
     r1 = await client.post(f"{API}/auth/refresh", json={"refresh_token": u.refresh})
     assert r1.status_code == 200
     new_refresh = r1.json()["data"]["refresh_token"]
     assert new_refresh != u.refresh
-    # Reusing the old token is detected and revokes the family, including the new token.
+    # Outside the reuse-grace window (a stolen token replayed later), reuse revokes the family, new token included.
+    monkeypatch.setattr(container, "settings", container.settings.model_copy(update={"refresh_reuse_grace_seconds": 0}))
     r2 = await client.post(f"{API}/auth/refresh", json={"refresh_token": u.refresh})
     assert r2.status_code == 401 and r2.json()["error"]["code"] == "REFRESH_REUSED"
     r3 = await client.post(f"{API}/auth/refresh", json={"refresh_token": new_refresh})
@@ -174,3 +178,27 @@ async def test_dev_otp_hidden_when_disabled(client: httpx.AsyncClient, container
         assert r.status_code == 200 and r.json()["data"]["dev_otp"] is None
     finally:
         container.settings.dev_otp_in_response = True
+
+
+async def test_refresh_replay_within_grace_survives_but_later_replay_revokes(
+    client: httpx.AsyncClient, container: Container, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A page reload or killed app can replay the token it just rotated; that must not sign the user out.
+    A replay after the grace window (a real stolen-token replay) still revokes the whole family."""
+    u = await register(client, "Grace Tester", agree=False)
+    first = await client.post(f"{API}/auth/refresh", json={"refresh_token": u.refresh})
+    assert first.status_code == 200
+    # the same old token again, immediately (the race): fresh pair, nothing revoked
+    again = await client.post(f"{API}/auth/refresh", json={"refresh_token": u.refresh})
+    assert again.status_code == 200, again.text
+    newest = again.json()["data"]["refresh_token"]
+    assert (
+        await client.get(f"{API}/users/me", headers={"Authorization": f"Bearer {again.json()['data']['access_token']}"})
+    ).status_code == 200
+    # the successor the first refresh issued is now superseded: using it is a real reuse
+    superseded = first.json()["data"]["refresh_token"]
+    monkeypatch.setattr(container, "settings", container.settings.model_copy(update={"refresh_reuse_grace_seconds": 0}))
+    r = await client.post(f"{API}/auth/refresh", json={"refresh_token": superseded})
+    assert r.status_code == 401 and r.json()["error"]["code"] == "REFRESH_REUSED"
+    # family revoked: even the newest token is dead
+    assert (await client.post(f"{API}/auth/refresh", json={"refresh_token": newest})).status_code == 401

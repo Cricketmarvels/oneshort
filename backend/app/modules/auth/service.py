@@ -364,8 +364,11 @@ class AuthService:
         if not doc:
             raise Unauthorized("Invalid refresh token", code="REFRESH_INVALID")
         if doc.get("revoked_at") is not None:
-            await self._revoke_family(doc["family_id"])
-            raise Unauthorized("Refresh token reuse detected; please log in again", code="REFRESH_REUSED")
+            successor = await self._grace_successor(doc)
+            if successor is None:
+                await self._revoke_family(doc["family_id"])
+                raise Unauthorized("Refresh token reuse detected; please log in again", code="REFRESH_REUSED")
+            doc = successor  # same client racing its own rotation: continue from the unused successor
         if ensure_utc(doc["expires_at"]) <= utcnow():
             raise Unauthorized("Refresh token expired", code="REFRESH_EXPIRED")
         first = await self.tokens.find_one({"family_id": doc["family_id"]}, sort=[("created_at", 1)])
@@ -428,6 +431,16 @@ class AuthService:
         await self.tokens.update_many({"user_id": user.id, "revoked_at": None}, {"$set": {"revoked_at": now}})
         await self.c.mongo["users"].update_one({"_id": user.id}, {"$set": {"sessions_valid_after": now}})
         await self.c.audit.log(actor_id=user.id, action="auth.logout_all", entity_type="user", entity_id=user.id)
+
+    async def _grace_successor(self, doc: dict[str, Any]) -> dict[str, Any] | None:
+        """The unused successor of a token rotated moments ago, or None when this replay must be treated as theft."""
+        grace = self.s.refresh_reuse_grace_seconds
+        revoked_at, replaced_by = doc.get("revoked_at"), doc.get("replaced_by")
+        if not grace or not replaced_by or revoked_at is None:
+            return None
+        if (utcnow() - ensure_utc(revoked_at)).total_seconds() > grace:
+            return None
+        return await self.tokens.find_one({"token_hash": replaced_by, "revoked_at": None, "replaced_by": None})
 
     async def logout(self, refresh_token: str) -> None:
         doc = await self.tokens.find_one({"token_hash": sha256(refresh_token)})

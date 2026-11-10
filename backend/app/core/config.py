@@ -72,6 +72,12 @@ class Settings(BaseSettings):
     session_absolute_days: int = Field(
         default=90, description="A refresh-token family older than this must log in again"
     )
+    refresh_reuse_grace_seconds: int = Field(
+        default=10,
+        description="A rotated refresh token replayed within this window, while its successor is still unused, gets a "
+        "fresh pair instead of revoking the family (page reloads and killed apps race their own rotation). "
+        "Replays after the window, or after the successor was used, still revoke everything.",
+    )
     rate_limiter_backend: Literal["memory", "mongo"] = "memory"  # "mongo" shares limits across API instances
     otp_provider: Literal["console", "msg91", "twilio"] = "console"
     msg91_auth_key: str | None = None

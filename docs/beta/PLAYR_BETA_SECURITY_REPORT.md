@@ -20,7 +20,8 @@ Date: 2026-11-10. Scope: API and app code on `develop`. Method: regression suite
 | No beta-to-production DB mix-up | NOT VERIFIED (no beta yet) | Runbook: separate Atlas DB user per environment, startup prints `app_env` + DB name |
 | Privacy/consent disclosures present | PASS code / **BLOCKED content** | Terms v2 + DPDP notice + consent; `LEGAL_ENTITY_*` placeholders must be filled (startup refuses in beta otherwise) |
 | Phone-number enumeration (H2) | PASS (fixed 2026-11-10) | identical replies; `test_auth.py`, e2e 11. Residual Medium: `/auth/invite-register` reveals existence behind a valid invite code |
-| Previously implemented fixes preserved | PASS | 232 backend tests incl. all earlier security suites |
+| Previously implemented fixes preserved | PASS | 233 backend tests incl. all earlier security suites |
+| Refresh-token reuse detection | PASS, with a deliberate 10 s grace | A token replayed within 10 s of its own rotation, while its successor is still unused, gets a fresh pair (page reloads and killed apps race themselves); any other replay revokes the family. Tested both ways in `test_auth.py` |
 
 ## Residual findings
 
