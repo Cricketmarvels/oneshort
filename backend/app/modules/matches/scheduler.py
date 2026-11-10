@@ -62,8 +62,18 @@ async def run_once(c: Container) -> None:
     reminded = await send_reminders(c)
     purged = await purge_old_availability(c)
     receipts = await check_push_receipts(c)
-    if expired or reminded or purged or receipts:
-        log.info("scheduler.tick", expired=expired, reminders=reminded, purged=purged, push_receipts=receipts)
+    from app.modules.search.indexer import SearchIndexer, sync_window
+
+    reindexed = await SearchIndexer(c.mongo).sync_recent(sync_window(c.settings.scheduler_interval_seconds))
+    if expired or reminded or purged or receipts or reindexed:
+        log.info(
+            "scheduler.tick",
+            expired=expired,
+            reminders=reminded,
+            purged=purged,
+            push_receipts=receipts,
+            search_reindexed=reindexed,
+        )
 
 
 async def run_scheduler(c: Container) -> None:

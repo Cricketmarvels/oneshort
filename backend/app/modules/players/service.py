@@ -16,6 +16,7 @@ from app.modules.players.schemas import (
     PlayerSelfOut,
     PlayerStats,
 )
+from app.modules.search.indexer import SearchIndexer
 
 DEFAULT_RELIABILITY = 70.0
 
@@ -49,6 +50,11 @@ class PlayerService:
         return await self.col.find_one({"user_id": user_id})
 
     async def upsert_me(self, user: CurrentUser, data: PlayerProfileIn) -> PlayerSelfOut:
+        out = await self._upsert_me(user, data)
+        await SearchIndexer(self.c.mongo).index_user(user.id)
+        return out
+
+    async def _upsert_me(self, user: CurrentUser, data: PlayerProfileIn) -> PlayerSelfOut:
         now = utcnow()
         fields = data.model_dump(mode="json", exclude={"home_location", "cricheroes_url", "cricheroes_profile_url"})
         # CricHeroes link: only touched when sent (omit = keep, null = remove), so other edits never wipe it.
@@ -85,6 +91,11 @@ class PlayerService:
         return await self.me(user)
 
     async def update_cricheroes(self, user: CurrentUser, data: CricHeroesIn) -> PlayerSelfOut:
+        out = await self._update_cricheroes(user, data)
+        await SearchIndexer(self.c.mongo).index_user(user.id)
+        return out
+
+    async def _update_cricheroes(self, user: CurrentUser, data: CricHeroesIn) -> PlayerSelfOut:
         """Link and self-reported stats only; the rest of the profile is untouched."""
         if not await self.col.find_one({"user_id": user.id}, {"_id": 1}):
             raise NotFound("Create your player profile first", code="PLAYER_PROFILE_REQUIRED")

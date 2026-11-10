@@ -19,6 +19,7 @@ from app.modules.discovery.router import router as discovery_router
 from app.modules.invitations.router import router as invitations_router
 from app.modules.joinlinks.router import router as joinlinks_router
 from app.modules.matches.router import router as matches_router
+from app.modules.media.router import router as media_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.players.router import router as players_router
 from app.modules.privacy.router import admin_router as privacy_admin_router
@@ -26,6 +27,7 @@ from app.modules.privacy.router import router as privacy_router
 from app.modules.racket.router import router as racket_router
 from app.modules.ratings.router import router as ratings_router
 from app.modules.reports.router import router as reports_router
+from app.modules.search.router import router as search_router
 from app.modules.settlements.router import router as settlements_router
 from app.modules.teams.router import router as teams_router
 from app.modules.uploads.router import router as uploads_router
@@ -56,11 +58,13 @@ for r in (
     discovery_router,
     joinlinks_router,  # before matches: /matches/{id}/invite-link
     matches_router,
+    media_router,
     invitations_router,
     settlements_router,
     ratings_router,
     notifications_router,
     reports_router,
+    search_router,
     admin_router,
     uploads_router,
     venues_router,

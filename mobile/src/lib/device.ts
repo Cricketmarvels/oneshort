@@ -75,7 +75,14 @@ export async function pickAndUpload(source: "camera" | "library", purpose: Uploa
   if (res.canceled || !res.assets[0]) return null;
   const a = res.assets[0];
   const form = new FormData();
-  form.append("file", { uri: a.uri, name: a.fileName ?? "photo.jpg", type: a.mimeType ?? "image/jpeg" } as unknown as Blob);
+  const name = a.fileName ?? "photo.jpg";
+  if (Platform.OS === "web") {
+    // Browsers need a real Blob/File; the {uri,name,type} shape only works with the native fetch.
+    const blob = await (await fetch(a.uri)).blob();
+    form.append("file", new File([blob], name, { type: a.mimeType ?? blob.type ?? "image/jpeg" }));
+  } else {
+    form.append("file", { uri: a.uri, name, type: a.mimeType ?? "image/jpeg" } as unknown as Blob);
+  }
   form.append("purpose", purpose);
   const out = await api<{ url: string }>("/uploads/images", { method: "POST", form });
   return out.url;

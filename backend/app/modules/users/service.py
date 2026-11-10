@@ -8,6 +8,7 @@ from app.common.enums import AccountStatus, InvitationStatus
 from app.common.types import utcnow
 from app.core.container import Container
 from app.core.exceptions import BusinessRuleViolation, NotFound
+from app.modules.search.indexer import SearchIndexer
 from app.modules.users.repository import UserRepository
 from app.modules.users.schemas import (
     AgreementState,
@@ -62,6 +63,7 @@ class UserService:
         doc = await self.repo.update(user.id, fields)
         if doc is None:
             raise NotFound("User not found")
+        await SearchIndexer(self.c.mongo).index_user(user.id)
         return await self.to_out(doc)
 
     async def register_device(self, user: CurrentUser, data: DeviceIn) -> None:
@@ -105,6 +107,7 @@ class UserService:
 
         Teams captained by the user are archived; confirmed future seats are withdrawn.
         """
+        await SearchIndexer(self.c.mongo).remove("player", user.id)
         m = self.c.mongo
         uid = user.id
         now = utcnow()

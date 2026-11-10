@@ -234,6 +234,6 @@ async def test_dashboard_and_upload(client: httpx.AsyncClient) -> None:
     r = await client.post(
         f"{API}/uploads/images", headers=u.h, files={"file": ("a.png", png, "image/png")}, data={"purpose": "profile"}
     )
-    assert r.status_code == 201 and r.json()["data"]["url"].endswith(".png")
+    assert r.status_code == 201 and ".png?e=" in r.json()["data"]["url"]  # signed media link
     r = await client.post(f"{API}/uploads/images", headers=u.h, files={"file": ("a.png", b"<script>", "image/png")})
     assert r.status_code == 422

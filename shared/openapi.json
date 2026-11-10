@@ -17299,6 +17299,134 @@
         }
       }
     },
+    "/api/v1/media/{folder}/{name}": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "Fetch an uploaded image with a signed link",
+        "operationId": "media_file_api_v1_media__folder___name__get",
+        "parameters": [
+          {
+            "name": "folder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Folder"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          },
+          {
+            "name": "e",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Expiry (unix seconds)",
+              "title": "E"
+            },
+            "description": "Expiry (unix seconds)"
+          },
+          {
+            "name": "s",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 64,
+              "description": "Signature",
+              "title": "S"
+            },
+            "description": "Signature"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/invitations/me": {
       "get": {
         "tags": [
@@ -21086,6 +21214,184 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search players, teams and grounds by name",
+        "operationId": "unified_search_api_v1_search_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "description": "Name or the start of one",
+              "title": "Q"
+            },
+            "description": "Name or the start of one"
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated subset of players,teams,grounds (default all)",
+              "title": "Types"
+            },
+            "description": "Comma-separated subset of players,teams,grounds (default all)"
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 90,
+                  "minimum": -90
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 180,
+                  "minimum": -180
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lng"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 8,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_UnifiedSearchOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/stats": {
@@ -25670,1160 +25976,93 @@
         ],
         "title": "DiscussionOut"
       },
-      "Envelope_AdminReportOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/AdminReportOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[AdminReportOut]"
-      },
-      "Envelope_AdminStats_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/AdminStats"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[AdminStats]"
-      },
-      "Envelope_AgreementOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/AgreementOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[AgreementOut]"
-      },
-      "Envelope_AuthOptionsOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/AuthOptionsOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[AuthOptionsOut]"
-      },
-      "Envelope_AvailabilityOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/AvailabilityOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[AvailabilityOut]"
-      },
-      "Envelope_CaptainDashboardOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CaptainDashboardOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[CaptainDashboardOut]"
-      },
-      "Envelope_CaptainOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CaptainOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[CaptainOut]"
-      },
-      "Envelope_ChallengeOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ChallengeOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[ChallengeOut]"
-      },
-      "Envelope_ChatMessageOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ChatMessageOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[ChatMessageOut]"
-      },
-      "Envelope_ChatThreadOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ChatThreadOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[ChatThreadOut]"
-      },
-      "Envelope_CommunityLeaderboardOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CommunityLeaderboardOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[CommunityLeaderboardOut]"
-      },
-      "Envelope_CommunityOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CommunityOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[CommunityOut]"
-      },
-      "Envelope_CommunityTeamOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CommunityTeamOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[CommunityTeamOut]"
-      },
-      "Envelope_CompareOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CompareOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[CompareOut]"
-      },
-      "Envelope_CourtOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CourtOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[CourtOut]"
-      },
-      "Envelope_CricHeroesProfileOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CricHeroesProfileOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[CricHeroesProfileOut]"
-      },
-      "Envelope_DashboardOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/DashboardOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[DashboardOut]"
-      },
-      "Envelope_DiscussionOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/DiscussionOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[DiscussionOut]"
-      },
-      "Envelope_ExpenseOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ExpenseOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[ExpenseOut]"
-      },
-      "Envelope_FeeSideOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/FeeSideOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[FeeSideOut]"
-      },
-      "Envelope_FixtureOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/FixtureOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[FixtureOut]"
-      },
-      "Envelope_HeadToHeadOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/HeadToHeadOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[HeadToHeadOut]"
-      },
-      "Envelope_HomeOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/HomeOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[HomeOut]"
-      },
-      "Envelope_InvitationOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/InvitationOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[InvitationOut]"
-      },
-      "Envelope_InviteLinkOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/InviteLinkOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[InviteLinkOut]"
-      },
-      "Envelope_JoinPreviewOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/JoinPreviewOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[JoinPreviewOut]"
-      },
-      "Envelope_JoinResultOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/JoinResultOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[JoinResultOut]"
-      },
-      "Envelope_LegalDocOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/LegalDocOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[LegalDocOut]"
-      },
-      "Envelope_MatchOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/MatchOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[MatchOut]"
-      },
-      "Envelope_MyAgreementsOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/MyAgreementsOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[MyAgreementsOut]"
-      },
-      "Envelope_NearbyRacketPlayerOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/NearbyRacketPlayerOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[NearbyRacketPlayerOut]"
-      },
-      "Envelope_OtpSentOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/OtpSentOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[OtpSentOut]"
-      },
-      "Envelope_PaymentRecordOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PaymentRecordOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[PaymentRecordOut]"
-      },
-      "Envelope_PlayRequestOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PlayRequestOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[PlayRequestOut]"
-      },
-      "Envelope_PlayerDashboardOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PlayerDashboardOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[PlayerDashboardOut]"
-      },
-      "Envelope_PlayerPublicOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PlayerPublicOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[PlayerPublicOut]"
-      },
-      "Envelope_PlayerRatingOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PlayerRatingOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[PlayerRatingOut]"
-      },
-      "Envelope_PlayerSelfOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PlayerSelfOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[PlayerSelfOut]"
-      },
-      "Envelope_PostOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PostOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[PostOut]"
-      },
-      "Envelope_PrivacyRequestOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PrivacyRequestOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[PrivacyRequestOut]"
-      },
-      "Envelope_RacketProfileOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/RacketProfileOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[RacketProfileOut]"
-      },
-      "Envelope_RatingOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/RatingOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[RatingOut]"
-      },
-      "Envelope_RegisterOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/RegisterOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[RegisterOut]"
-      },
-      "Envelope_ReportOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ReportOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[ReportOut]"
-      },
-      "Envelope_ReputationOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ReputationOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[ReputationOut]"
-      },
-      "Envelope_RosterOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/RosterOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[RosterOut]"
-      },
-      "Envelope_SearchOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/SearchOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[SearchOut]"
-      },
-      "Envelope_SettlementOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/SettlementOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[SettlementOut]"
-      },
-      "Envelope_ShareOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ShareOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[ShareOut]"
-      },
-      "Envelope_TeamCompareOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/TeamCompareOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[TeamCompareOut]"
-      },
-      "Envelope_TeamDashboardOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/TeamDashboardOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[TeamDashboardOut]"
-      },
-      "Envelope_TeamOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/TeamOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[TeamOut]"
-      },
-      "Envelope_TokenOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/TokenOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[TokenOut]"
-      },
-      "Envelope_Union_RacketProfileOut__NoneType__": {
-        "properties": {
-          "data": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RacketProfileOut"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[Union[RacketProfileOut, NoneType]]"
-      },
-      "Envelope_UploadOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/UploadOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[UploadOut]"
-      },
-      "Envelope_UserOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/UserOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[UserOut]"
-      },
-      "Envelope_WhatsAppTestOut_": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/WhatsAppTestOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[WhatsAppTestOut]"
-      },
-      "Envelope_dict_str__Any__": {
-        "properties": {
-          "data": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[dict[str, Any]]"
-      },
-      "Envelope_list_AdminPrivacyRequestOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/AdminPrivacyRequestOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[AdminPrivacyRequestOut]]"
-      },
-      "Envelope_list_AvailabilityOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/AvailabilityOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[AvailabilityOut]]"
-      },
-      "Envelope_list_BlockedUserOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/BlockedUserOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[BlockedUserOut]]"
-      },
-      "Envelope_list_ChallengeOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/ChallengeOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[ChallengeOut]]"
-      },
-      "Envelope_list_CommunityMemberOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/CommunityMemberOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[CommunityMemberOut]]"
-      },
-      "Envelope_list_CommunityOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/CommunityOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[CommunityOut]]"
-      },
-      "Envelope_list_CommunityTeamOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/CommunityTeamOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[CommunityTeamOut]]"
-      },
-      "Envelope_list_CourtOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/CourtOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[CourtOut]]"
-      },
-      "Envelope_list_DiscussionOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/DiscussionOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[DiscussionOut]]"
-      },
-      "Envelope_list_ExpenseOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/ExpenseOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[ExpenseOut]]"
-      },
-      "Envelope_list_FixtureOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/FixtureOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[FixtureOut]]"
-      },
-      "Envelope_list_InvitationOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/InvitationOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[InvitationOut]]"
-      },
-      "Envelope_list_InvitationResultItem__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/InvitationResultItem"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[InvitationResultItem]]"
-      },
-      "Envelope_list_NearbyPlayerOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/NearbyPlayerOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[NearbyPlayerOut]]"
-      },
-      "Envelope_list_NearbyRacketPlayerOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/NearbyRacketPlayerOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[NearbyRacketPlayerOut]]"
-      },
-      "Envelope_list_PlayRequestOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/PlayRequestOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[PlayRequestOut]]"
-      },
-      "Envelope_list_PrivacyRequestOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/PrivacyRequestOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[PrivacyRequestOut]]"
-      },
-      "Envelope_list_RateableOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/RateableOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[RateableOut]]"
-      },
-      "Envelope_list_ReportOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/ReportOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[ReportOut]]"
-      },
-      "Envelope_list_SessionOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/SessionOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[SessionOut]]"
-      },
-      "Envelope_list_SettlementOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/SettlementOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[SettlementOut]]"
-      },
-      "Envelope_list_SimMessage__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/SimMessage"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[SimMessage]]"
-      },
-      "Envelope_list_SuggestionOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/SuggestionOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[SuggestionOut]]"
-      },
-      "Envelope_list_TeamDiscoverEntry__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/TeamDiscoverEntry"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[TeamDiscoverEntry]]"
-      },
-      "Envelope_list_TeamMemberOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/TeamMemberOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[TeamMemberOut]]"
-      },
-      "Envelope_list_TeamOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/TeamOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[TeamOut]]"
-      },
-      "Envelope_list_VenueSearchOut__": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/VenueSearchOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[VenueSearchOut]]"
-      },
-      "Envelope_list_dict_str__Any___": {
-        "properties": {
-          "data": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "Envelope[list[dict[str, Any]]]"
-      },
+      "Envelope_AdminReportOut_": {},
+      "Envelope_AdminStats_": {},
+      "Envelope_AgreementOut_": {},
+      "Envelope_AuthOptionsOut_": {},
+      "Envelope_AvailabilityOut_": {},
+      "Envelope_CaptainDashboardOut_": {},
+      "Envelope_CaptainOut_": {},
+      "Envelope_ChallengeOut_": {},
+      "Envelope_ChatMessageOut_": {},
+      "Envelope_ChatThreadOut_": {},
+      "Envelope_CommunityLeaderboardOut_": {},
+      "Envelope_CommunityOut_": {},
+      "Envelope_CommunityTeamOut_": {},
+      "Envelope_CompareOut_": {},
+      "Envelope_CourtOut_": {},
+      "Envelope_CricHeroesProfileOut_": {},
+      "Envelope_DashboardOut_": {},
+      "Envelope_DiscussionOut_": {},
+      "Envelope_ExpenseOut_": {},
+      "Envelope_FeeSideOut_": {},
+      "Envelope_FixtureOut_": {},
+      "Envelope_HeadToHeadOut_": {},
+      "Envelope_HomeOut_": {},
+      "Envelope_InvitationOut_": {},
+      "Envelope_InviteLinkOut_": {},
+      "Envelope_JoinPreviewOut_": {},
+      "Envelope_JoinResultOut_": {},
+      "Envelope_LegalDocOut_": {},
+      "Envelope_MatchOut_": {},
+      "Envelope_MyAgreementsOut_": {},
+      "Envelope_NearbyRacketPlayerOut_": {},
+      "Envelope_OtpSentOut_": {},
+      "Envelope_PaymentRecordOut_": {},
+      "Envelope_PlayRequestOut_": {},
+      "Envelope_PlayerDashboardOut_": {},
+      "Envelope_PlayerPublicOut_": {},
+      "Envelope_PlayerRatingOut_": {},
+      "Envelope_PlayerSelfOut_": {},
+      "Envelope_PostOut_": {},
+      "Envelope_PrivacyRequestOut_": {},
+      "Envelope_RacketProfileOut_": {},
+      "Envelope_RatingOut_": {},
+      "Envelope_RegisterOut_": {},
+      "Envelope_ReportOut_": {},
+      "Envelope_ReputationOut_": {},
+      "Envelope_RosterOut_": {},
+      "Envelope_SearchOut_": {},
+      "Envelope_SettlementOut_": {},
+      "Envelope_ShareOut_": {},
+      "Envelope_TeamCompareOut_": {},
+      "Envelope_TeamDashboardOut_": {},
+      "Envelope_TeamOut_": {},
+      "Envelope_TokenOut_": {},
+      "Envelope_UnifiedSearchOut_": {},
+      "Envelope_Union_RacketProfileOut__NoneType__": {},
+      "Envelope_UploadOut_": {},
+      "Envelope_UserOut_": {},
+      "Envelope_WhatsAppTestOut_": {},
+      "Envelope_dict_str__Any__": {},
+      "Envelope_list_AdminPrivacyRequestOut__": {},
+      "Envelope_list_AvailabilityOut__": {},
+      "Envelope_list_BlockedUserOut__": {},
+      "Envelope_list_ChallengeOut__": {},
+      "Envelope_list_CommunityMemberOut__": {},
+      "Envelope_list_CommunityOut__": {},
+      "Envelope_list_CommunityTeamOut__": {},
+      "Envelope_list_CourtOut__": {},
+      "Envelope_list_DiscussionOut__": {},
+      "Envelope_list_ExpenseOut__": {},
+      "Envelope_list_FixtureOut__": {},
+      "Envelope_list_InvitationOut__": {},
+      "Envelope_list_InvitationResultItem__": {},
+      "Envelope_list_NearbyPlayerOut__": {},
+      "Envelope_list_NearbyRacketPlayerOut__": {},
+      "Envelope_list_PlayRequestOut__": {},
+      "Envelope_list_PrivacyRequestOut__": {},
+      "Envelope_list_RateableOut__": {},
+      "Envelope_list_ReportOut__": {},
+      "Envelope_list_SessionOut__": {},
+      "Envelope_list_SettlementOut__": {},
+      "Envelope_list_SimMessage__": {},
+      "Envelope_list_SuggestionOut__": {},
+      "Envelope_list_TeamDiscoverEntry__": {},
+      "Envelope_list_TeamMemberOut__": {},
+      "Envelope_list_TeamOut__": {},
+      "Envelope_list_VenueSearchOut__": {},
+      "Envelope_list_dict_str__Any___": {},
       "ErrorBody": {
         "properties": {
           "code": {
@@ -27301,6 +26540,96 @@
           "lng"
         ],
         "title": "GeoPointOut"
+      },
+      "GroundHit": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address",
+          "area",
+          "city",
+          "lat",
+          "lng",
+          "distance_km"
+        ],
+        "title": "GroundHit"
       },
       "HTTPValidationError": {
         "properties": {
@@ -29739,106 +29068,11 @@
         ],
         "title": "PageMeta"
       },
-      "PagedEnvelope_AdminReportOut_": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/AdminReportOut"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PageMeta"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data",
-          "meta"
-        ],
-        "title": "PagedEnvelope[AdminReportOut]"
-      },
-      "PagedEnvelope_InvitationOut_": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/InvitationOut"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PageMeta"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data",
-          "meta"
-        ],
-        "title": "PagedEnvelope[InvitationOut]"
-      },
-      "PagedEnvelope_MatchOut_": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/MatchOut"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PageMeta"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data",
-          "meta"
-        ],
-        "title": "PagedEnvelope[MatchOut]"
-      },
-      "PagedEnvelope_RatingHistoryOut_": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/RatingHistoryOut"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PageMeta"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data",
-          "meta"
-        ],
-        "title": "PagedEnvelope[RatingHistoryOut]"
-      },
-      "PagedEnvelope_TeamOut_": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/TeamOut"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PageMeta"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data",
-          "meta"
-        ],
-        "title": "PagedEnvelope[TeamOut]"
-      },
+      "PagedEnvelope_AdminReportOut_": {},
+      "PagedEnvelope_InvitationOut_": {},
+      "PagedEnvelope_MatchOut_": {},
+      "PagedEnvelope_RatingHistoryOut_": {},
+      "PagedEnvelope_TeamOut_": {},
       "PasswordLoginIn": {
         "properties": {
           "email": {
@@ -30219,6 +29453,106 @@
           "records"
         ],
         "title": "PlayerDashboardOut"
+      },
+      "PlayerHit": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "verified_matches": {
+            "type": "integer",
+            "title": "Verified Matches"
+          },
+          "has_cricheroes": {
+            "type": "boolean",
+            "title": "Has Cricheroes"
+          },
+          "cricheroes_profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cricheroes Profile Url"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "role",
+          "area",
+          "city",
+          "image",
+          "verified_matches",
+          "has_cricheroes",
+          "cricheroes_profile_url",
+          "distance_km"
+        ],
+        "title": "PlayerHit"
       },
       "PlayerLeaderboardEntry": {
         "properties": {
@@ -35133,6 +34467,87 @@
         ],
         "title": "TeamDiscoverEntry"
       },
+      "TeamHit": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo"
+          },
+          "member_count": {
+            "type": "integer",
+            "title": "Member Count"
+          },
+          "has_cricheroes": {
+            "type": "boolean",
+            "title": "Has Cricheroes"
+          },
+          "looking_for_opponents": {
+            "type": "boolean",
+            "title": "Looking For Opponents"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "area",
+          "city",
+          "logo",
+          "member_count",
+          "has_cricheroes",
+          "looking_for_opponents",
+          "distance_km"
+        ],
+        "title": "TeamHit"
+      },
       "TeamIn": {
         "properties": {
           "team_name": {
@@ -36041,6 +35456,43 @@
           "to"
         ],
         "title": "TransitionIn"
+      },
+      "UnifiedSearchOut": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerHit"
+            },
+            "type": "array",
+            "title": "Players"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/TeamHit"
+            },
+            "type": "array",
+            "title": "Teams"
+          },
+          "grounds": {
+            "items": {
+              "$ref": "#/components/schemas/GroundHit"
+            },
+            "type": "array",
+            "title": "Grounds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "players",
+          "teams",
+          "grounds"
+        ],
+        "title": "UnifiedSearchOut"
       },
       "UpcomingMatchBrief": {
         "properties": {

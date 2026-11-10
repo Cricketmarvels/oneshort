@@ -57,13 +57,23 @@ def process_image(content: bytes, ext: str, purpose: str) -> tuple[bytes, str]:
 _OWN_MEDIA = re.compile(r"^/uploads/[A-Za-z0-9_-]{1,40}/[a-f0-9]{32}\.(?:jpg|png|webp)$")
 
 
-def is_own_media(url: str | None, settings: Settings) -> bool:
-    """True only for files GoFindr stored itself (relative /uploads/… path, or legacy absolute URL on our base)."""
+def normalize_media_key(url: str | None, settings: Settings) -> str | None:
+    """Private key for a GoFindr-stored file, from either the key itself, a legacy absolute URL on our base,
+    or a signed media link the API handed out. None for anything else (external URLs are never stored)."""
     if not url:
-        return False
+        return None
     base = settings.public_base_url.rstrip("/")
     path = url[len(base) :] if url.startswith(base + "/uploads/") else url
-    return bool(_OWN_MEDIA.match(path))
+    if _OWN_MEDIA.match(path):
+        return path
+    from app.common.media_sign import media_signer
+
+    return media_signer.signed_to_key(url)
+
+
+def is_own_media(url: str | None, settings: Settings) -> bool:
+    """True only for files GoFindr stored itself."""
+    return normalize_media_key(url, settings) is not None
 
 
 class StorageProvider(Protocol):

@@ -1,9 +1,11 @@
 """Consistent response envelope and pagination."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SerializerFunctionWrapHandler, model_serializer
+
+from app.common.media_sign import media_signer
 
 
 class PageMeta(BaseModel):
@@ -16,10 +18,19 @@ class PageMeta(BaseModel):
 class Envelope[T](BaseModel):
     data: T
 
+    @model_serializer(mode="wrap")
+    def _sign_media(self, handler: SerializerFunctionWrapHandler) -> Any:
+        # Private upload keys never leave the API: every response carries signed, expiring media links instead.
+        return media_signer.sign_tree(handler(self))
+
 
 class PagedEnvelope[T](BaseModel):
     data: list[T]
     meta: PageMeta
+
+    @model_serializer(mode="wrap")
+    def _sign_media(self, handler: SerializerFunctionWrapHandler) -> Any:
+        return media_signer.sign_tree(handler(self))
 
 
 class ErrorBody(BaseModel):

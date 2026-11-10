@@ -9,10 +9,10 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import api_router
+from app.common.media_sign import media_signer
 from app.core.config import Settings, get_settings
 from app.core.container import Container, build_container
 from app.core.exceptions import AppError
@@ -28,6 +28,7 @@ from app.core.observability import init_sentry
 from app.core.security import decode_access_token
 from app.infrastructure.database.indexes import ensure_indexes
 from app.modules.agreements.service import AgreementService
+from app.modules.search.indexer import SearchIndexer
 
 log = get_logger("app")
 
@@ -52,6 +53,7 @@ def create_app(settings: Settings | None = None, container: Container | None = N
         c: Container = app.state.container
         await ensure_indexes(c.mongo)
         await AgreementService(c).seed_default()
+        await SearchIndexer(c.mongo).ensure_populated()
         task: asyncio.Task[None] | None = None
         if settings.scheduler_enabled:
             from app.modules.matches.scheduler import run_scheduler
@@ -79,6 +81,7 @@ def create_app(settings: Settings | None = None, container: Container | None = N
     )
     app.state.container = container or build_container(settings)
     app.state.settings = settings
+    media_signer.configure(settings.jwt_secret, settings.api_prefix, settings.media_link_ttl_seconds)
 
     # Middleware (last added = outermost)
     app.add_middleware(NoSqlInjectionGuardMiddleware)
@@ -155,7 +158,7 @@ def create_app(settings: Settings | None = None, container: Container | None = N
 
     if settings.storage_provider == "local":
         Path(settings.local_upload_dir).mkdir(parents=True, exist_ok=True)
-        app.mount("/uploads", StaticFiles(directory=settings.local_upload_dir), name="uploads")
+        # No public mount: files are served only through the signed /media endpoint (app/modules/media).
 
     return app
 

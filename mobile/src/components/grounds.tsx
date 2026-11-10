@@ -6,9 +6,9 @@
 import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import type { S } from "@cm/shared";
 import { useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { LandPlot, MapPinned, Swords } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
 
 import { GroundCoverImage } from "@/components/media";
@@ -48,6 +48,16 @@ export function FindGrounds() {
   const detail = useRef<BottomSheetModal>(null);
   const locSheet = useRef<BottomSheetModal>(null);
   const res = useQuery({ queryKey: ["grounds", lat, lng, q], queryFn: () => api<Ground[]>("/venues", { query: { lat, lng, q: q.trim() || undefined } }) });
+  // Opened from search: show that ground's details straight away, even if it is outside the list radius.
+  const params = useLocalSearchParams<{ focus?: string; name?: string; address?: string; area?: string; city?: string; lat?: string; lng?: string }>();
+  useEffect(() => {
+    if (!params.focus || !params.name) return;
+    const fromList = res.data?.find((g) => g.id === params.focus);
+    const g: Ground = fromList ?? { id: params.focus, name: params.name, address: params.address ?? "", area: params.area ?? "", city: params.city ?? "", lat: Number(params.lat) || 0, lng: Number(params.lng) || 0, distance_km: null };
+    setFocus(g); setPicked(g.id); setView("list");
+    const t = setTimeout(() => detail.current?.present(), 250);
+    return () => clearTimeout(t);
+  }, [params.focus, params.name, params.address, params.area, params.city, params.lat, params.lng, res.data]);
   const n = res.data?.length ?? 0;
   const maps = (g: Ground) => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${g.name}, ${g.address}`)}`);
   return (

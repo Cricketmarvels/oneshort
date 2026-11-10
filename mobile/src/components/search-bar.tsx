@@ -23,8 +23,8 @@ export function SmartSearchBar({ value, onChange, onSubmit, autoFocus }: { value
     <View style={{ gap: 6 }}>
       <View style={[{ flexDirection: "row", alignItems: "center", gap: 10, height: 50, paddingLeft: 16, paddingRight: 4, borderRadius: R.field, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }, shadow(2)]}>
         <Search size={18} color={T.muted} strokeWidth={ICON.stroke} />
-        <TextInput ref={input} accessibilityLabel="Search GoFindr in your own words" value={value} onChangeText={onChange} onSubmitEditing={() => onSubmit(value)} returnKeyType="search" autoFocus={autoFocus}
-          placeholder={voice.listening ? "Listening…" : "Try “play on Saturday morning”"} placeholderTextColor={T.placeholder}
+        <TextInput ref={input} accessibilityLabel="Search players, teams and grounds, or ask in your own words" value={value} onChangeText={onChange} onSubmitEditing={() => onSubmit(value)} returnKeyType="search" autoFocus={autoFocus}
+          placeholder={voice.listening ? "Listening…" : "Players, teams, grounds, or “play on Saturday”"} placeholderTextColor={T.placeholder}
           style={{ flex: 1, minWidth: 0, height: 48, ...FW.body, fontSize: 15, color: T.ink, outlineStyle: "none" } as object} />
         {canSearch ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Search" onPress={() => onSubmit(value)} hitSlop={4} style={{ width: 40, height: 44, alignItems: "center", justifyContent: "center" }}>

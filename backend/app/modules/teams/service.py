@@ -13,6 +13,7 @@ from app.core.container import Container
 from app.core.exceptions import BusinessRuleViolation, Conflict, NotFound, ValidationFailed
 from app.modules.captains.service import CaptainService
 from app.modules.cricheroes.urls import safe_profile_url
+from app.modules.search.indexer import SearchIndexer
 from app.modules.teams.policy import can_manage_team, ensure_team_captain, ensure_team_manager
 from app.modules.teams.schemas import (
     AddMemberIn,
@@ -58,6 +59,11 @@ class TeamService:
         return team
 
     async def create(self, user: CurrentUser, data: TeamIn) -> TeamOut:
+        out = await self._create(user, data)
+        await SearchIndexer(self.c.mongo).index_team(ObjectId(out.id))
+        return out
+
+    async def _create(self, user: CurrentUser, data: TeamIn) -> TeamOut:
         await CaptainService(self.c).ensure_profile(user.id)
         now = utcnow()
         doc: dict[str, Any] = {
@@ -111,6 +117,11 @@ class TeamService:
         return await self.get_out(team_id, user)
 
     async def update(self, user: CurrentUser, team_id: ObjectId, data: TeamUpdateIn) -> TeamOut:
+        out = await self._update(user, team_id, data)
+        await SearchIndexer(self.c.mongo).index_team(team_id)
+        return out
+
+    async def _update(self, user: CurrentUser, team_id: ObjectId, data: TeamUpdateIn) -> TeamOut:
         team = await self.get_team(team_id)
         ensure_team_manager(team, user.id)
         fields = data.model_dump(exclude_unset=True, mode="json", exclude={"location"})
@@ -310,6 +321,7 @@ class TeamService:
                 await self.teams.update_one({"_id": team_id}, upd, session=s)
 
         await self.c.mongo.transaction(txn)
+        await SearchIndexer(self.c.mongo).index_team(team_id)
         await self.c.notifications.notify(
             [team["captain_id"]],
             NotificationType.TEAM_MEMBERSHIP,
@@ -377,6 +389,7 @@ class TeamService:
             )
 
         await self.c.mongo.transaction(txn)
+        await SearchIndexer(self.c.mongo).index_team(team_id)
         if not leaving_self:
             await self.c.notifications.notify(
                 [member_id],

@@ -128,6 +128,7 @@ class Settings(BaseSettings):
     storage_provider: Literal["local", "cloudinary"] = "local"
     local_upload_dir: str = "uploads"
     max_upload_bytes: int = 5 * 1024 * 1024
+    media_link_ttl_seconds: int = 48 * 3600  # signed media links in API responses expire after this
     max_request_bytes: int = 512 * 1024  # JSON bodies; uploads use max_upload_bytes
     cloudinary_url: str | None = None
 

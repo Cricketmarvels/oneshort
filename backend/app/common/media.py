@@ -5,13 +5,15 @@ from typing import Annotated
 from pydantic import AfterValidator
 
 from app.core.config import get_settings
-from app.infrastructure.integrations.storage import is_own_media
+from app.infrastructure.integrations.storage import normalize_media_key
 
 
 def _own(v: str) -> str:
-    if not is_own_media(v, get_settings()):
+    """Accepts the upload's key or the signed link the API returned for it; stores the private key."""
+    key = normalize_media_key(v, get_settings())
+    if key is None:
         raise ValueError("Upload the image through GoFindr first (POST /uploads/images) and use the returned URL")
-    return v
+    return key
 
 
 OwnMediaUrl = Annotated[str, AfterValidator(_own)]

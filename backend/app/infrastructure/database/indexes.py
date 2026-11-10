@@ -28,6 +28,7 @@ INDEXES: dict[str, list[IndexModel]] = {
         IndexModel([("email", ASCENDING)], name="email_lookup"),
         IndexModel([("city", ASCENDING)]),  # home feed fallback when the user has no location
         IndexModel([("account_status", ASCENDING)]),
+        IndexModel([("updated_at", ASCENDING)], name="updated_at_sync"),
     ],
     "login_failures": [
         IndexModel([("email", ASCENDING)], unique=True),
@@ -58,6 +59,7 @@ INDEXES: dict[str, list[IndexModel]] = {
     "player_profiles": [
         IndexModel([("user_id", ASCENDING)], unique=True),
         IndexModel([("home_location", GEOSPHERE)]),
+        IndexModel([("updated_at", ASCENDING)], name="updated_at_sync"),  # search index safety-net sync
     ],
     "captain_profiles": [IndexModel([("user_id", ASCENDING)], unique=True)],
     "teams": [
@@ -66,9 +68,11 @@ INDEXES: dict[str, list[IndexModel]] = {
         IndexModel([("city", ASCENDING), ("team_status", ASCENDING)]),
         IndexModel([("location", GEOSPHERE)]),
         IndexModel([("team_name", TEXT), ("area", TEXT)], name="team_text"),
+        IndexModel([("updated_at", ASCENDING)], name="updated_at_sync"),
     ],
     "cricheroes_teams": [IndexModel([("team_id", ASCENDING)], unique=True)],
     "player_ratings": [
+        IndexModel([("updated_at", ASCENDING)], name="updated_at_sync"),
         IndexModel([("user_id", ASCENDING)], unique=True),
         IndexModel([("scores.overall", DESCENDING)]),
         IndexModel([("matches", ASCENDING)]),
@@ -245,6 +249,14 @@ INDEXES: dict[str, list[IndexModel]] = {
     "venues": [
         IndexModel([("location", GEOSPHERE)]),
         IndexModel([("name", TEXT), ("area", TEXT)], name="venue_text"),
+    ],
+    # Unified search (app/modules/search): prefix lookups are index seeks on (type, tokens) ordered by boost;
+    # phonetic is the spelling-variant fallback; loc supports future geo-filtered search.
+    "search_index": [
+        IndexModel([("type", ASCENDING), ("tokens", ASCENDING), ("boost", DESCENDING)], name="type_tokens_boost"),
+        IndexModel([("type", ASCENDING), ("phonetic", ASCENDING), ("boost", DESCENDING)], name="type_phonetic_boost"),
+        IndexModel([("type", ASCENDING), ("entity_id", ASCENDING)], name="type_entity"),
+        IndexModel([("loc", GEOSPHERE)], name="loc_2dsphere"),
     ],
 }
 

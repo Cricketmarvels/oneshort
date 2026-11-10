@@ -2184,6 +2184,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/{folder}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch an uploaded image with a signed link */
+        get: operations["media_file_api_v1_media__folder___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/invitations/me": {
         parameters: {
             query?: never;
@@ -2692,6 +2709,23 @@ export interface paths {
         };
         /** Reports I have filed */
         get: operations["my_reports_api_v1_reports_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search players, teams and grounds by name */
+        get: operations["unified_search_api_v1_search_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4084,383 +4118,93 @@ export interface components {
              */
             created_at: string;
         };
-        /** Envelope[AdminReportOut] */
-        Envelope_AdminReportOut_: {
-            data: components["schemas"]["AdminReportOut"];
-        };
-        /** Envelope[AdminStats] */
-        Envelope_AdminStats_: {
-            data: components["schemas"]["AdminStats"];
-        };
-        /** Envelope[AgreementOut] */
-        Envelope_AgreementOut_: {
-            data: components["schemas"]["AgreementOut"];
-        };
-        /** Envelope[AuthOptionsOut] */
-        Envelope_AuthOptionsOut_: {
-            data: components["schemas"]["AuthOptionsOut"];
-        };
-        /** Envelope[AvailabilityOut] */
-        Envelope_AvailabilityOut_: {
-            data: components["schemas"]["AvailabilityOut"];
-        };
-        /** Envelope[CaptainDashboardOut] */
-        Envelope_CaptainDashboardOut_: {
-            data: components["schemas"]["CaptainDashboardOut"];
-        };
-        /** Envelope[CaptainOut] */
-        Envelope_CaptainOut_: {
-            data: components["schemas"]["CaptainOut"];
-        };
-        /** Envelope[ChallengeOut] */
-        Envelope_ChallengeOut_: {
-            data: components["schemas"]["ChallengeOut"];
-        };
-        /** Envelope[ChatMessageOut] */
-        Envelope_ChatMessageOut_: {
-            data: components["schemas"]["ChatMessageOut"];
-        };
-        /** Envelope[ChatThreadOut] */
-        Envelope_ChatThreadOut_: {
-            data: components["schemas"]["ChatThreadOut"];
-        };
-        /** Envelope[CommunityLeaderboardOut] */
-        Envelope_CommunityLeaderboardOut_: {
-            data: components["schemas"]["CommunityLeaderboardOut"];
-        };
-        /** Envelope[CommunityOut] */
-        Envelope_CommunityOut_: {
-            data: components["schemas"]["CommunityOut"];
-        };
-        /** Envelope[CommunityTeamOut] */
-        Envelope_CommunityTeamOut_: {
-            data: components["schemas"]["CommunityTeamOut"];
-        };
-        /** Envelope[CompareOut] */
-        Envelope_CompareOut_: {
-            data: components["schemas"]["CompareOut"];
-        };
-        /** Envelope[CourtOut] */
-        Envelope_CourtOut_: {
-            data: components["schemas"]["CourtOut"];
-        };
-        /** Envelope[CricHeroesProfileOut] */
-        Envelope_CricHeroesProfileOut_: {
-            data: components["schemas"]["CricHeroesProfileOut"];
-        };
-        /** Envelope[DashboardOut] */
-        Envelope_DashboardOut_: {
-            data: components["schemas"]["DashboardOut"];
-        };
-        /** Envelope[DiscussionOut] */
-        Envelope_DiscussionOut_: {
-            data: components["schemas"]["DiscussionOut"];
-        };
-        /** Envelope[ExpenseOut] */
-        Envelope_ExpenseOut_: {
-            data: components["schemas"]["ExpenseOut"];
-        };
-        /** Envelope[FeeSideOut] */
-        Envelope_FeeSideOut_: {
-            data: components["schemas"]["FeeSideOut"];
-        };
-        /** Envelope[FixtureOut] */
-        Envelope_FixtureOut_: {
-            data: components["schemas"]["FixtureOut"];
-        };
-        /** Envelope[HeadToHeadOut] */
-        Envelope_HeadToHeadOut_: {
-            data: components["schemas"]["HeadToHeadOut"];
-        };
-        /** Envelope[HomeOut] */
-        Envelope_HomeOut_: {
-            data: components["schemas"]["HomeOut"];
-        };
-        /** Envelope[InvitationOut] */
-        Envelope_InvitationOut_: {
-            data: components["schemas"]["InvitationOut"];
-        };
-        /** Envelope[InviteLinkOut] */
-        Envelope_InviteLinkOut_: {
-            data: components["schemas"]["InviteLinkOut"];
-        };
-        /** Envelope[JoinPreviewOut] */
-        Envelope_JoinPreviewOut_: {
-            data: components["schemas"]["JoinPreviewOut"];
-        };
-        /** Envelope[JoinResultOut] */
-        Envelope_JoinResultOut_: {
-            data: components["schemas"]["JoinResultOut"];
-        };
-        /** Envelope[LegalDocOut] */
-        Envelope_LegalDocOut_: {
-            data: components["schemas"]["LegalDocOut"];
-        };
-        /** Envelope[MatchOut] */
-        Envelope_MatchOut_: {
-            data: components["schemas"]["MatchOut"];
-        };
-        /** Envelope[MyAgreementsOut] */
-        Envelope_MyAgreementsOut_: {
-            data: components["schemas"]["MyAgreementsOut"];
-        };
-        /** Envelope[NearbyRacketPlayerOut] */
-        Envelope_NearbyRacketPlayerOut_: {
-            data: components["schemas"]["NearbyRacketPlayerOut"];
-        };
-        /** Envelope[OtpSentOut] */
-        Envelope_OtpSentOut_: {
-            data: components["schemas"]["OtpSentOut"];
-        };
-        /** Envelope[PaymentRecordOut] */
-        Envelope_PaymentRecordOut_: {
-            data: components["schemas"]["PaymentRecordOut"];
-        };
-        /** Envelope[PlayRequestOut] */
-        Envelope_PlayRequestOut_: {
-            data: components["schemas"]["PlayRequestOut"];
-        };
-        /** Envelope[PlayerDashboardOut] */
-        Envelope_PlayerDashboardOut_: {
-            data: components["schemas"]["PlayerDashboardOut"];
-        };
-        /** Envelope[PlayerPublicOut] */
-        Envelope_PlayerPublicOut_: {
-            data: components["schemas"]["PlayerPublicOut"];
-        };
-        /** Envelope[PlayerRatingOut] */
-        Envelope_PlayerRatingOut_: {
-            data: components["schemas"]["PlayerRatingOut"];
-        };
-        /** Envelope[PlayerSelfOut] */
-        Envelope_PlayerSelfOut_: {
-            data: components["schemas"]["PlayerSelfOut"];
-        };
-        /** Envelope[PostOut] */
-        Envelope_PostOut_: {
-            data: components["schemas"]["PostOut"];
-        };
-        /** Envelope[PrivacyRequestOut] */
-        Envelope_PrivacyRequestOut_: {
-            data: components["schemas"]["PrivacyRequestOut"];
-        };
-        /** Envelope[RacketProfileOut] */
-        Envelope_RacketProfileOut_: {
-            data: components["schemas"]["RacketProfileOut"];
-        };
-        /** Envelope[RatingOut] */
-        Envelope_RatingOut_: {
-            data: components["schemas"]["RatingOut"];
-        };
-        /** Envelope[RegisterOut] */
-        Envelope_RegisterOut_: {
-            data: components["schemas"]["RegisterOut"];
-        };
-        /** Envelope[ReportOut] */
-        Envelope_ReportOut_: {
-            data: components["schemas"]["ReportOut"];
-        };
-        /** Envelope[ReputationOut] */
-        Envelope_ReputationOut_: {
-            data: components["schemas"]["ReputationOut"];
-        };
-        /** Envelope[RosterOut] */
-        Envelope_RosterOut_: {
-            data: components["schemas"]["RosterOut"];
-        };
-        /** Envelope[SearchOut] */
-        Envelope_SearchOut_: {
-            data: components["schemas"]["SearchOut"];
-        };
-        /** Envelope[SettlementOut] */
-        Envelope_SettlementOut_: {
-            data: components["schemas"]["SettlementOut"];
-        };
-        /** Envelope[ShareOut] */
-        Envelope_ShareOut_: {
-            data: components["schemas"]["ShareOut"];
-        };
-        /** Envelope[TeamCompareOut] */
-        Envelope_TeamCompareOut_: {
-            data: components["schemas"]["TeamCompareOut"];
-        };
-        /** Envelope[TeamDashboardOut] */
-        Envelope_TeamDashboardOut_: {
-            data: components["schemas"]["TeamDashboardOut"];
-        };
-        /** Envelope[TeamOut] */
-        Envelope_TeamOut_: {
-            data: components["schemas"]["TeamOut"];
-        };
-        /** Envelope[TokenOut] */
-        Envelope_TokenOut_: {
-            data: components["schemas"]["TokenOut"];
-        };
-        /** Envelope[Union[RacketProfileOut, NoneType]] */
-        Envelope_Union_RacketProfileOut__NoneType__: {
-            data: components["schemas"]["RacketProfileOut"] | null;
-        };
-        /** Envelope[UploadOut] */
-        Envelope_UploadOut_: {
-            data: components["schemas"]["UploadOut"];
-        };
-        /** Envelope[UserOut] */
-        Envelope_UserOut_: {
-            data: components["schemas"]["UserOut"];
-        };
-        /** Envelope[WhatsAppTestOut] */
-        Envelope_WhatsAppTestOut_: {
-            data: components["schemas"]["WhatsAppTestOut"];
-        };
-        /** Envelope[dict[str, Any]] */
-        Envelope_dict_str__Any__: {
-            /** Data */
-            data: {
-                [key: string]: unknown;
-            };
-        };
-        /** Envelope[list[AdminPrivacyRequestOut]] */
-        Envelope_list_AdminPrivacyRequestOut__: {
-            /** Data */
-            data: components["schemas"]["AdminPrivacyRequestOut"][];
-        };
-        /** Envelope[list[AvailabilityOut]] */
-        Envelope_list_AvailabilityOut__: {
-            /** Data */
-            data: components["schemas"]["AvailabilityOut"][];
-        };
-        /** Envelope[list[BlockedUserOut]] */
-        Envelope_list_BlockedUserOut__: {
-            /** Data */
-            data: components["schemas"]["BlockedUserOut"][];
-        };
-        /** Envelope[list[ChallengeOut]] */
-        Envelope_list_ChallengeOut__: {
-            /** Data */
-            data: components["schemas"]["ChallengeOut"][];
-        };
-        /** Envelope[list[CommunityMemberOut]] */
-        Envelope_list_CommunityMemberOut__: {
-            /** Data */
-            data: components["schemas"]["CommunityMemberOut"][];
-        };
-        /** Envelope[list[CommunityOut]] */
-        Envelope_list_CommunityOut__: {
-            /** Data */
-            data: components["schemas"]["CommunityOut"][];
-        };
-        /** Envelope[list[CommunityTeamOut]] */
-        Envelope_list_CommunityTeamOut__: {
-            /** Data */
-            data: components["schemas"]["CommunityTeamOut"][];
-        };
-        /** Envelope[list[CourtOut]] */
-        Envelope_list_CourtOut__: {
-            /** Data */
-            data: components["schemas"]["CourtOut"][];
-        };
-        /** Envelope[list[DiscussionOut]] */
-        Envelope_list_DiscussionOut__: {
-            /** Data */
-            data: components["schemas"]["DiscussionOut"][];
-        };
-        /** Envelope[list[ExpenseOut]] */
-        Envelope_list_ExpenseOut__: {
-            /** Data */
-            data: components["schemas"]["ExpenseOut"][];
-        };
-        /** Envelope[list[FixtureOut]] */
-        Envelope_list_FixtureOut__: {
-            /** Data */
-            data: components["schemas"]["FixtureOut"][];
-        };
-        /** Envelope[list[InvitationOut]] */
-        Envelope_list_InvitationOut__: {
-            /** Data */
-            data: components["schemas"]["InvitationOut"][];
-        };
-        /** Envelope[list[InvitationResultItem]] */
-        Envelope_list_InvitationResultItem__: {
-            /** Data */
-            data: components["schemas"]["InvitationResultItem"][];
-        };
-        /** Envelope[list[NearbyPlayerOut]] */
-        Envelope_list_NearbyPlayerOut__: {
-            /** Data */
-            data: components["schemas"]["NearbyPlayerOut"][];
-        };
-        /** Envelope[list[NearbyRacketPlayerOut]] */
-        Envelope_list_NearbyRacketPlayerOut__: {
-            /** Data */
-            data: components["schemas"]["NearbyRacketPlayerOut"][];
-        };
-        /** Envelope[list[PlayRequestOut]] */
-        Envelope_list_PlayRequestOut__: {
-            /** Data */
-            data: components["schemas"]["PlayRequestOut"][];
-        };
-        /** Envelope[list[PrivacyRequestOut]] */
-        Envelope_list_PrivacyRequestOut__: {
-            /** Data */
-            data: components["schemas"]["PrivacyRequestOut"][];
-        };
-        /** Envelope[list[RateableOut]] */
-        Envelope_list_RateableOut__: {
-            /** Data */
-            data: components["schemas"]["RateableOut"][];
-        };
-        /** Envelope[list[ReportOut]] */
-        Envelope_list_ReportOut__: {
-            /** Data */
-            data: components["schemas"]["ReportOut"][];
-        };
-        /** Envelope[list[SessionOut]] */
-        Envelope_list_SessionOut__: {
-            /** Data */
-            data: components["schemas"]["SessionOut"][];
-        };
-        /** Envelope[list[SettlementOut]] */
-        Envelope_list_SettlementOut__: {
-            /** Data */
-            data: components["schemas"]["SettlementOut"][];
-        };
-        /** Envelope[list[SimMessage]] */
-        Envelope_list_SimMessage__: {
-            /** Data */
-            data: components["schemas"]["SimMessage"][];
-        };
-        /** Envelope[list[SuggestionOut]] */
-        Envelope_list_SuggestionOut__: {
-            /** Data */
-            data: components["schemas"]["SuggestionOut"][];
-        };
-        /** Envelope[list[TeamDiscoverEntry]] */
-        Envelope_list_TeamDiscoverEntry__: {
-            /** Data */
-            data: components["schemas"]["TeamDiscoverEntry"][];
-        };
-        /** Envelope[list[TeamMemberOut]] */
-        Envelope_list_TeamMemberOut__: {
-            /** Data */
-            data: components["schemas"]["TeamMemberOut"][];
-        };
-        /** Envelope[list[TeamOut]] */
-        Envelope_list_TeamOut__: {
-            /** Data */
-            data: components["schemas"]["TeamOut"][];
-        };
-        /** Envelope[list[VenueSearchOut]] */
-        Envelope_list_VenueSearchOut__: {
-            /** Data */
-            data: components["schemas"]["VenueSearchOut"][];
-        };
-        /** Envelope[list[dict[str, Any]]] */
-        Envelope_list_dict_str__Any___: {
-            /** Data */
-            data: {
-                [key: string]: unknown;
-            }[];
-        };
+        Envelope_AdminReportOut_: unknown;
+        Envelope_AdminStats_: unknown;
+        Envelope_AgreementOut_: unknown;
+        Envelope_AuthOptionsOut_: unknown;
+        Envelope_AvailabilityOut_: unknown;
+        Envelope_CaptainDashboardOut_: unknown;
+        Envelope_CaptainOut_: unknown;
+        Envelope_ChallengeOut_: unknown;
+        Envelope_ChatMessageOut_: unknown;
+        Envelope_ChatThreadOut_: unknown;
+        Envelope_CommunityLeaderboardOut_: unknown;
+        Envelope_CommunityOut_: unknown;
+        Envelope_CommunityTeamOut_: unknown;
+        Envelope_CompareOut_: unknown;
+        Envelope_CourtOut_: unknown;
+        Envelope_CricHeroesProfileOut_: unknown;
+        Envelope_DashboardOut_: unknown;
+        Envelope_DiscussionOut_: unknown;
+        Envelope_ExpenseOut_: unknown;
+        Envelope_FeeSideOut_: unknown;
+        Envelope_FixtureOut_: unknown;
+        Envelope_HeadToHeadOut_: unknown;
+        Envelope_HomeOut_: unknown;
+        Envelope_InvitationOut_: unknown;
+        Envelope_InviteLinkOut_: unknown;
+        Envelope_JoinPreviewOut_: unknown;
+        Envelope_JoinResultOut_: unknown;
+        Envelope_LegalDocOut_: unknown;
+        Envelope_MatchOut_: unknown;
+        Envelope_MyAgreementsOut_: unknown;
+        Envelope_NearbyRacketPlayerOut_: unknown;
+        Envelope_OtpSentOut_: unknown;
+        Envelope_PaymentRecordOut_: unknown;
+        Envelope_PlayRequestOut_: unknown;
+        Envelope_PlayerDashboardOut_: unknown;
+        Envelope_PlayerPublicOut_: unknown;
+        Envelope_PlayerRatingOut_: unknown;
+        Envelope_PlayerSelfOut_: unknown;
+        Envelope_PostOut_: unknown;
+        Envelope_PrivacyRequestOut_: unknown;
+        Envelope_RacketProfileOut_: unknown;
+        Envelope_RatingOut_: unknown;
+        Envelope_RegisterOut_: unknown;
+        Envelope_ReportOut_: unknown;
+        Envelope_ReputationOut_: unknown;
+        Envelope_RosterOut_: unknown;
+        Envelope_SearchOut_: unknown;
+        Envelope_SettlementOut_: unknown;
+        Envelope_ShareOut_: unknown;
+        Envelope_TeamCompareOut_: unknown;
+        Envelope_TeamDashboardOut_: unknown;
+        Envelope_TeamOut_: unknown;
+        Envelope_TokenOut_: unknown;
+        Envelope_UnifiedSearchOut_: unknown;
+        Envelope_Union_RacketProfileOut__NoneType__: unknown;
+        Envelope_UploadOut_: unknown;
+        Envelope_UserOut_: unknown;
+        Envelope_WhatsAppTestOut_: unknown;
+        Envelope_dict_str__Any__: unknown;
+        Envelope_list_AdminPrivacyRequestOut__: unknown;
+        Envelope_list_AvailabilityOut__: unknown;
+        Envelope_list_BlockedUserOut__: unknown;
+        Envelope_list_ChallengeOut__: unknown;
+        Envelope_list_CommunityMemberOut__: unknown;
+        Envelope_list_CommunityOut__: unknown;
+        Envelope_list_CommunityTeamOut__: unknown;
+        Envelope_list_CourtOut__: unknown;
+        Envelope_list_DiscussionOut__: unknown;
+        Envelope_list_ExpenseOut__: unknown;
+        Envelope_list_FixtureOut__: unknown;
+        Envelope_list_InvitationOut__: unknown;
+        Envelope_list_InvitationResultItem__: unknown;
+        Envelope_list_NearbyPlayerOut__: unknown;
+        Envelope_list_NearbyRacketPlayerOut__: unknown;
+        Envelope_list_PlayRequestOut__: unknown;
+        Envelope_list_PrivacyRequestOut__: unknown;
+        Envelope_list_RateableOut__: unknown;
+        Envelope_list_ReportOut__: unknown;
+        Envelope_list_SessionOut__: unknown;
+        Envelope_list_SettlementOut__: unknown;
+        Envelope_list_SimMessage__: unknown;
+        Envelope_list_SuggestionOut__: unknown;
+        Envelope_list_TeamDiscoverEntry__: unknown;
+        Envelope_list_TeamMemberOut__: unknown;
+        Envelope_list_TeamOut__: unknown;
+        Envelope_list_VenueSearchOut__: unknown;
+        Envelope_list_dict_str__Any___: unknown;
         /** ErrorBody */
         ErrorBody: {
             /** Code */
@@ -4635,6 +4379,25 @@ export interface components {
             lat: number;
             /** Lng */
             lng: number;
+        };
+        /** GroundHit */
+        GroundHit: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Address */
+            address: string | null;
+            /** Area */
+            area: string | null;
+            /** City */
+            city: string | null;
+            /** Lat */
+            lat: number | null;
+            /** Lng */
+            lng: number | null;
+            /** Distance Km */
+            distance_km: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -5469,36 +5232,11 @@ export interface components {
             /** Has Next */
             has_next: boolean;
         };
-        /** PagedEnvelope[AdminReportOut] */
-        PagedEnvelope_AdminReportOut_: {
-            /** Data */
-            data: components["schemas"]["AdminReportOut"][];
-            meta: components["schemas"]["PageMeta"];
-        };
-        /** PagedEnvelope[InvitationOut] */
-        PagedEnvelope_InvitationOut_: {
-            /** Data */
-            data: components["schemas"]["InvitationOut"][];
-            meta: components["schemas"]["PageMeta"];
-        };
-        /** PagedEnvelope[MatchOut] */
-        PagedEnvelope_MatchOut_: {
-            /** Data */
-            data: components["schemas"]["MatchOut"][];
-            meta: components["schemas"]["PageMeta"];
-        };
-        /** PagedEnvelope[RatingHistoryOut] */
-        PagedEnvelope_RatingHistoryOut_: {
-            /** Data */
-            data: components["schemas"]["RatingHistoryOut"][];
-            meta: components["schemas"]["PageMeta"];
-        };
-        /** PagedEnvelope[TeamOut] */
-        PagedEnvelope_TeamOut_: {
-            /** Data */
-            data: components["schemas"]["TeamOut"][];
-            meta: components["schemas"]["PageMeta"];
-        };
+        PagedEnvelope_AdminReportOut_: unknown;
+        PagedEnvelope_InvitationOut_: unknown;
+        PagedEnvelope_MatchOut_: unknown;
+        PagedEnvelope_RatingHistoryOut_: unknown;
+        PagedEnvelope_TeamOut_: unknown;
         /** PasswordLoginIn */
         PasswordLoginIn: {
             /**
@@ -5633,6 +5371,29 @@ export interface components {
             exempted_count: number;
             /** Records */
             records: components["schemas"]["PaymentRecordOut"][];
+        };
+        /** PlayerHit */
+        PlayerHit: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string | null;
+            /** Area */
+            area: string | null;
+            /** City */
+            city: string | null;
+            /** Image */
+            image: string | null;
+            /** Verified Matches */
+            verified_matches: number;
+            /** Has Cricheroes */
+            has_cricheroes: boolean;
+            /** Cricheroes Profile Url */
+            cricheroes_profile_url: string | null;
+            /** Distance Km */
+            distance_km: number | null;
         };
         /** PlayerLeaderboardEntry */
         PlayerLeaderboardEntry: {
@@ -7200,6 +6961,27 @@ export interface components {
              */
             my_membership?: string | null;
         };
+        /** TeamHit */
+        TeamHit: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Area */
+            area: string | null;
+            /** City */
+            city: string | null;
+            /** Logo */
+            logo: string | null;
+            /** Member Count */
+            member_count: number;
+            /** Has Cricheroes */
+            has_cricheroes: boolean;
+            /** Looking For Opponents */
+            looking_for_opponents: boolean;
+            /** Distance Km */
+            distance_km: number | null;
+        };
         /** TeamIn */
         TeamIn: {
             /** Team Name */
@@ -7478,6 +7260,17 @@ export interface components {
              * @default false
              */
             allow_short_squad: boolean;
+        };
+        /** UnifiedSearchOut */
+        UnifiedSearchOut: {
+            /** Query */
+            query: string;
+            /** Players */
+            players: components["schemas"]["PlayerHit"][];
+            /** Teams */
+            teams: components["schemas"]["TeamHit"][];
+            /** Grounds */
+            grounds: components["schemas"]["GroundHit"][];
         };
         /** UpcomingMatchBrief */
         UpcomingMatchBrief: {
@@ -20519,6 +20312,95 @@ export interface operations {
             };
         };
     };
+    media_file_api_v1_media__folder___name__get: {
+        parameters: {
+            query: {
+                /** @description Expiry (unix seconds) */
+                e: number;
+                /** @description Signature */
+                s: string;
+            };
+            header?: never;
+            path: {
+                folder: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     mine_api_v1_invitations_me_get: {
         parameters: {
             query?: {
@@ -23310,6 +23192,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Envelope_list_ReportOut__"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    unified_search_api_v1_search_get: {
+        parameters: {
+            query: {
+                /** @description Name or the start of one */
+                q: string;
+                /** @description Comma-separated subset of players,teams,grounds (default all) */
+                types?: string | null;
+                lat?: number | null;
+                lng?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_UnifiedSearchOut_"];
                 };
             };
             /** @description Bad request */

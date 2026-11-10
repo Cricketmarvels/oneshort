@@ -8,6 +8,7 @@ from PIL import Image
 from PIL.TiffImagePlugin import IFDRational
 
 from app.core.container import Container
+from app.infrastructure.integrations.storage import normalize_media_key
 from tests.api.test_competition import SECTOR_18, player, team
 from tests.conftest import future, make_match
 
@@ -43,8 +44,10 @@ async def _upload(client: httpx.AsyncClient, h: dict[str, str], data: bytes, pur
 async def test_upload_strips_metadata_resizes_and_is_relative(client: httpx.AsyncClient, container: Container) -> None:
     u = await player(client, "Media ME", "batsman", SECTOR_18)
     url = await _upload(client, u.h, _jpeg_with_gps(), "team_cover")
-    assert url.startswith("/uploads/team_cover/") and url.endswith(".jpg")
-    rel = url.removeprefix("/uploads/")
+    assert url.startswith(f"{API}/media/team_cover/") and "?e=" in url and "&s=" in url  # signed link, never a raw path
+    key = normalize_media_key(url, container.settings)
+    assert key is not None and key.startswith("/uploads/team_cover/") and key.endswith(".jpg")
+    rel = key.removeprefix("/uploads/")
     candidates = (Path("/tmp/cricket-test-uploads") / rel, Path(container.settings.local_upload_dir) / rel)
     stored = next(p for p in candidates if p.exists())
     with Image.open(stored) as im:
@@ -56,7 +59,10 @@ async def test_upload_strips_metadata_resizes_and_is_relative(client: httpx.Asyn
     assert bad.status_code == 422
 
 
-async def test_media_fields_accept_only_playr_uploads_and_owners(client: httpx.AsyncClient) -> None:
+async def test_media_fields_accept_only_playr_uploads_and_owners(client: httpx.AsyncClient, container: Container) -> None:
+    def same(a: str | None, b: str | None) -> bool:  # signed links differ by expiry; compare the private keys
+        return normalize_media_key(a, container.settings) == normalize_media_key(b, container.settings)
+
     cap = await player(client, "Captain MEF", "all_rounder", SECTOR_18)
     other = await player(client, "Other MEF", "bowler", SECTOR_18)
     tid = await team(client, cap, "Team MEF", SECTOR_18, [])
@@ -72,13 +78,13 @@ async def test_media_fields_accept_only_playr_uploads_and_owners(client: httpx.A
         await client.put(f"{API}/teams/{tid}", headers=cap.h, json={"cover_image": "https://evil.example/c.jpg"})
     ).status_code == 422
     r = await client.put(f"{API}/teams/{tid}", headers=cap.h, json={"cover_image": img, "logo": img})
-    assert r.status_code == 200 and r.json()["data"]["cover_image"] == img
+    assert r.status_code == 200 and same(r.json()["data"]["cover_image"], img)
     assert (await client.put(f"{API}/teams/{tid}", headers=other.h, json={"cover_image": img})).status_code == 403
     dash = (await client.get(f"{API}/teams/{tid}/dashboard", headers=other.h)).json()["data"]
-    assert dash["team"]["cover_image"] == img and dash["team"]["logo"] == img
+    assert same(dash["team"]["cover_image"], img) and same(dash["team"]["logo"], img)
 
     r = await client.put(f"{API}/matches/{mid}", headers=cap.h, json={"cover_image": img})
-    assert r.status_code == 200 and r.json()["data"]["cover_image"] == img
+    assert r.status_code == 200 and same(r.json()["data"]["cover_image"], img)
     assert (await client.put(f"{API}/matches/{mid}", headers=other.h, json={"cover_image": img})).status_code in (
         403,
         404,
@@ -118,7 +124,8 @@ async def test_media_policy_cleanup_removes_external_and_keeps_uploads(
     t = await db["teams"].find_one({"_id": ObjectId(tid)})
     assert u is not None and "profile_image" not in u
     assert t is not None and "logo" not in t and t["cover_image"] == img  # valid upload kept
-    assert (await db["users"].find_one({"_id": ObjectId(keep.id)}))["profile_image"] == img
+    kept = (await db["users"].find_one({"_id": ObjectId(keep.id)}))["profile_image"]
+    assert kept == normalize_media_key(img, container.settings)  # stored as the private key, never the signed link
     log = await db["audit_logs"].find_one({"action": "media.policy_cleanup", "entity_id": ObjectId(cap.id)})
     assert log is not None and log["previous_value"] == {"profile_image": dice}
     # API falls back cleanly and a second run is a no-op for these records.
