@@ -16,6 +16,15 @@ GoFindr is three parts: a static web app, a Python (FastAPI) API and a MongoDB d
 
 Do A now, B before inviting outside testers. Nothing about A is wasted: the same Cloudflare zone and DNS carry over to B.
 
+## Status (2026-11-10)
+
+Done through the owner's Cloudflare account (free plan, US$0):
+- Zone `gofindr.in` created (id `6586c3f2…`), nameservers **merlin.ns.cloudflare.com** / **sierra.ns.cloudflare.com**; HTTPS enforced, Full SSL, TLS ≥ 1.2.
+- `cloudflared` authorised on the Mac (browser approval); tunnel **`gofindr`** (`eb812615…`) created; proxied CNAMEs for `gofindr.in`, `www.gofindr.in`, `expo.gofindr.in` → the tunnel.
+- `public-demo.sh` runs in named-tunnel mode (`.data/named-tunnel.env`).
+
+Waiting on: the nameserver change at GoDaddy (zone status `pending` until then). Nothing in this setup costs money: Cloudflare Free plan, Cloudflare Tunnel is free, no paid add-ons enabled.
+
 ## Option A, step by step
 
 **1. Put gofindr.in on Cloudflare (free plan).** Create an account at dash.cloudflare.com → Add a site → `gofindr.in` → Free. Cloudflare shows two nameservers (like `ada.ns.cloudflare.com`).
