@@ -13,6 +13,8 @@ import { Button, Field, Txt } from "@/components/ui";
 import { R, SP, T } from "@/theme";
 
 export type CHKind = "player" | "team";
+/** Self-reported stat entry is parked for now: the link alone counts as a complete CricHeroes profile. */
+export const MANUAL_STATS_ENABLED = false;
 export type CHStats = S<"CricHeroesStats">;
 type CHStatsOut = S<"CricHeroesStatsOut">;
 
@@ -139,7 +141,7 @@ export function CricHeroesCard({ kind, url, onEdit, compact, stats }: { kind: CH
   const title = kind === "player" ? "CricHeroes Stats" : "CricHeroes Team Stats";
   const body = kind === "player" ? "View my cricket career statistics, match history, batting and bowling performance." : "Explore our team's cricket statistics, recent matches, and performance on CricHeroes.";
   const action = kind === "player" ? "View CricHeroes Player Stats" : "View CricHeroes Team Stats";
-  if (!url && !stats) {
+  if (!url && !(MANUAL_STATS_ENABLED && stats)) {
     if (!onEdit) return null;
     return (
       <Pressable accessibilityRole="button" accessibilityLabel={`Add your CricHeroes ${kind} profile`} onPress={onEdit}
@@ -164,7 +166,7 @@ export function CricHeroesCard({ kind, url, onEdit, compact, stats }: { kind: CH
         </View>
         {onEdit ? <Pressable accessibilityRole="button" accessibilityLabel="Edit CricHeroes link" onPress={onEdit} hitSlop={10}><Txt v="smallSemi" color={T.primaryDark}>Edit</Txt></Pressable> : null}
       </View>
-      {stats && !compact ? <CricHeroesStatsGrid stats={stats} /> : null}
+      {MANUAL_STATS_ENABLED && stats && !compact ? <CricHeroesStatsGrid stats={stats} /> : null}
       {url ? (<>
       <Pressable accessibilityRole="link" accessibilityLabel={`${action}, opens cricheroes.com`} onPress={() => { setErr(null); void openLink(url, setErr); }}
         style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 46, borderRadius: R.button, backgroundColor: pressed ? T.pressedSoft : T.primarySoft })}>
@@ -184,7 +186,7 @@ export function CricHeroesEditor({ kind, current, currentStats, save, onClose }:
 }) {
   const [v, setV] = useState(current ?? "");
   const [form, setForm] = useState<StatsForm>(statsToForm(currentStats));
-  const parsed = kind === "player" ? formToStats(form) : { stats: null };
+  const parsed = kind === "player" && MANUAL_STATS_ENABLED ? formToStats(form) : { stats: null };
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const run = async (url: string | null, stats?: CHStats | null) => {
@@ -195,12 +197,12 @@ export function CricHeroesEditor({ kind, current, currentStats, save, onClose }:
   return (
     <View style={{ gap: 12, padding: SP.lg, borderRadius: R.card, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }}>
       <CricHeroesField kind={kind} value={v} onChange={setV} serverError={err} />
-      {kind === "player" ? <CricHeroesStatsFields value={form} onChange={setForm} /> : null}
+      {kind === "player" && MANUAL_STATS_ENABLED ? <CricHeroesStatsFields value={form} onChange={setForm} /> : null}
       {parsed.error ? <Txt v="small" color={T.dangerText}>{parsed.error}</Txt> : null}
       <View style={{ flexDirection: "row", gap: 10 }}>
-        <Button title="Save" size="sm" disabled={(kind === "team" ? !v.trim() : !v.trim() && !parsed.stats) || invalid || !!parsed.error} loading={busy}
-          onPress={() => void run(v.trim() || null, kind === "player" ? parsed.stats : undefined)} style={{ flex: 1 }} />
-        {current || currentStats ? <Button title="Remove" size="sm" variant="secondary" disabled={busy} onPress={() => void run(null, kind === "player" ? null : undefined)} style={{ flex: 1 }} /> : null}
+        <Button title="Save" size="sm" disabled={(!v.trim() && !parsed.stats) || invalid || !!parsed.error} loading={busy}
+          onPress={() => void run(v.trim() || null, kind === "player" && MANUAL_STATS_ENABLED ? parsed.stats : undefined)} style={{ flex: 1 }} />
+        {current || (MANUAL_STATS_ENABLED && currentStats) ? <Button title="Remove" size="sm" variant="secondary" disabled={busy} onPress={() => void run(null, kind === "player" ? null : undefined)} style={{ flex: 1 }} /> : null}
         <Button title="Cancel" size="sm" variant="ghost" onPress={onClose} />
       </View>
     </View>
@@ -213,10 +215,12 @@ export function CricHeroesEditor({ kind, current, currentStats, save, onClose }:
  */
 export function HomeCricHeroesCard({ url, stats, onEdit }: { url: string | null | undefined; stats: CHStatsOut | null | undefined; onEdit: () => void }) {
   const [err, setErr] = useState<string | null>(null);
-  const headline = (["matches", "runs", "wickets", "batting_average", "strike_rate", "economy"] as const)
-    .filter((k) => stats?.[k] != null).slice(0, 3)
-    .map((k) => ({ k, l: STAT_FIELDS.find((d) => d.k === k)!.l, v: stats![k] as number }));
-  if (!url || !headline.length) {
+  const headline = MANUAL_STATS_ENABLED
+    ? (["matches", "runs", "wickets", "batting_average", "strike_rate", "economy"] as const)
+      .filter((k) => stats?.[k] != null).slice(0, 3)
+      .map((k) => ({ k, l: STAT_FIELDS.find((d) => d.k === k)!.l, v: stats![k] as number }))
+    : [];
+  if (!url) {
     return (
       <Pressable accessibilityRole="button" accessibilityLabel="Complete your CricHeroes profile" onPress={onEdit}
         style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 16, borderRadius: R.card, backgroundColor: pressed ? T.pressedSoft : T.primarySoft, borderWidth: 1, borderColor: T.primary })}>
@@ -224,8 +228,8 @@ export function HomeCricHeroesCard({ url, stats, onEdit }: { url: string | null 
           <PlayRIcon name="stats" size={24} weight="duotone" />
         </View>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <Txt v="h3" color={T.primaryDark}>{url ? "Add your CricHeroes stats" : "Complete your CricHeroes profile"}</Txt>
-          <Txt v="small" color={T.text2}>Captains see it when picking players. Players with stats get noticed more.</Txt>
+          <Txt v="h3" color={T.primaryDark}>Complete your CricHeroes profile</Txt>
+          <Txt v="small" color={T.text2}>Captains see it when picking players. Players with a profile get noticed more.</Txt>
         </View>
         <PlayRIcon name="chevronRight" size={20} color={T.primaryDark} />
       </Pressable>
@@ -235,20 +239,25 @@ export function HomeCricHeroesCard({ url, stats, onEdit }: { url: string | null 
     <View style={{ gap: 12, padding: 16, borderRadius: R.card, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <PlayRIcon name="stats" size={22} weight="duotone" />
-        <Txt v="h3" style={{ flex: 1 }}>Your CricHeroes stats</Txt>
-        <Pressable accessibilityRole="button" accessibilityLabel="Update CricHeroes stats" onPress={onEdit} hitSlop={10}><Txt v="smallSemi" color={T.primaryDark}>Update</Txt></Pressable>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt v="h3">CricHeroes profile linked</Txt>
+          <Txt v="small" color={T.muted}>Captains and players can open it from your profile.</Txt>
+        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Change CricHeroes link" onPress={onEdit} hitSlop={10}><Txt v="smallSemi" color={T.primaryDark}>Change</Txt></Pressable>
       </View>
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        {headline.map((h) => (
-          <View key={h.k} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: T.surface2, alignItems: "center", gap: 2 }}>
-            <Txt v="h3" style={{ fontSize: 18 }}>{Number.isInteger(h.v) ? h.v.toLocaleString("en-IN") : String(h.v)}</Txt>
-            <Txt v="small" color={T.muted} style={{ fontSize: 11.5 }}>{h.l}</Txt>
-          </View>
-        ))}
-      </View>
-      <Pressable accessibilityRole="link" accessibilityLabel="View full profile on CricHeroes, opens cricheroes.com" onPress={() => { setErr(null); void openLink(url, setErr); }} hitSlop={6}
+      {headline.length ? (
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {headline.map((h) => (
+            <View key={h.k} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: T.surface2, alignItems: "center", gap: 2 }}>
+              <Txt v="h3" style={{ fontSize: 18 }}>{Number.isInteger(h.v) ? h.v.toLocaleString("en-IN") : String(h.v)}</Txt>
+              <Txt v="small" color={T.muted} style={{ fontSize: 11.5 }}>{h.l}</Txt>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      <Pressable accessibilityRole="link" accessibilityLabel="View my profile on CricHeroes, opens cricheroes.com" onPress={() => { setErr(null); void openLink(url, setErr); }} hitSlop={6}
         style={{ flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start" }}>
-        <Txt v="smallSemi" color={T.primaryDark}>View full profile on CricHeroes</Txt>
+        <Txt v="smallSemi" color={T.primaryDark}>View my profile on CricHeroes</Txt>
         <PlayRIcon name="external" size={16} color={T.primaryDark} />
       </Pressable>
       {err ? <Txt v="small" color={T.dangerText}>{err}</Txt> : null}

@@ -2,8 +2,8 @@
  * Progressive onboarding (refined spec §5.3), shown once after sign-up:
  *   1 · How will you play? Player / Captain / Both (a preference on ONE account)
  *   2 · Name and area (manual area always available; no location permission needed)
- *   3 · Sport profile: main role + usual days/times, a short bio, and (optional) CricHeroes profile link and
- *       self-reported CricHeroes stats that captains and players see on the profile
+ *   3 · Sport profile: main role + usual days/times, a short bio, and an optional CricHeroes profile link
+ *       that captains and players can open from the profile
  * Shown after sign-up, and on first sign-in for accounts without a player profile (see lib/onboarding.ts).
  */
 import { useMutation } from "@tanstack/react-query";
@@ -12,7 +12,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { CricHeroesField, CricHeroesStatsFields, cricHeroesError, formToStats, type StatsForm } from "@/components/cricheroes-link";
+import { CricHeroesField, cricHeroesError } from "@/components/cricheroes-link";
 import { PlayRIcon } from "@/components/icons";
 import { KickerChip } from "@/components/refined";
 import { ChoiceRow, H } from "@/components/starter";
@@ -45,9 +45,6 @@ export default function Onboarding() {
   const [times, setTimes] = useState<string[]>([]);
   const [chUrl, setChUrl] = useState("");
   const [bio, setBio] = useState("");
-  const [showStats, setShowStats] = useState(false);
-  const [statsForm, setStatsForm] = useState<StatsForm>({});
-  const parsedStats = formToStats(statsForm);
   const [err, setErr] = useState<string | null>(null);
 
   const finish = () => { done(user?.id); router.replace(playAs !== "player" ? "/teams" : "/"); };
@@ -69,7 +66,7 @@ export default function Onboarding() {
         ...(area ? { locality: area.label.split(",")[0], home_location: { lat: area.lat, lng: area.lng } } : {}),
       } });
       // CricHeroes link + self-reported stats go through their own endpoint once the profile exists
-      if (chUrl.trim() || parsedStats.stats) await savePlayerCricHeroes(chUrl.trim() || null, parsedStats.stats);
+      if (chUrl.trim()) await savePlayerCricHeroes(chUrl.trim());
       await reload();
     },
     onSuccess: finish,
@@ -127,10 +124,6 @@ export default function Onboarding() {
               <Txt v="h2">Your CricHeroes profile</Txt>
               <Txt v="small" color={T.muted}>Captains and players can open it from your GoFindr profile.</Txt>
               <CricHeroesField kind="player" value={chUrl} onChange={setChUrl} />
-              {showStats ? <CricHeroesStatsFields value={statsForm} onChange={setStatsForm} /> : (
-                <Button title="Add your CricHeroes stats" variant="secondary" size="sm" onPress={() => setShowStats(true)} style={{ alignSelf: "flex-start" }} />
-              )}
-              {parsedStats.error ? <Txt v="small" color={T.dangerText}>{parsedStats.error}</Txt> : null}
             </View>
           </View>
         ) : null}
@@ -146,7 +139,7 @@ export default function Onboarding() {
           <Button title="Continue" size="lg" loading={saveName.isPending} onPress={() => saveName.mutate()} />
         ) : (
           <>
-            <Button title={playAs === "player" ? "Finish" : "Finish & create your team"} size="lg" disabled={!role || !!cricHeroesError(chUrl, "player") || !!parsedStats.error} loading={saveProfile.isPending} onPress={() => saveProfile.mutate()} />
+            <Button title={playAs === "player" ? "Finish" : "Finish & create your team"} size="lg" disabled={!role || !!cricHeroesError(chUrl, "player")} loading={saveProfile.isPending} onPress={() => saveProfile.mutate()} />
             <Button title="Skip for now" variant="ghost" onPress={finish} />
           </>
         )}
