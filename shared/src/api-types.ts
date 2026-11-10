@@ -3277,6 +3277,12 @@ export interface components {
              */
             email_otp: boolean;
             /**
+             * Email Test Mode
+             * @description No email account is connected: codes are not delivered (shown only for test numbers)
+             * @default false
+             */
+            email_test_mode: boolean;
+            /**
              * Whatsapp Simulator
              * @description Test mode: WhatsApp messages go to the in-app simulator
              * @default false

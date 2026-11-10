@@ -94,6 +94,7 @@ async def options(c: ContainerDep) -> Envelope[AuthOptionsOut]:
         AuthOptionsOut(
             sms_otp=True,
             email_otp=c.email.configured,
+            email_test_mode=c.email.configured and c.email.exposes_code,
             whatsapp_otp=c.whatsapp.configured,
             whatsapp_simulator=c.settings.whatsapp_provider == "simulator",
             tester_signup_prefix=c.settings.tester_signup_prefix

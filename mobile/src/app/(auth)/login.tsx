@@ -29,7 +29,7 @@ export default function Login() {
   const [mode, setMode] = useState<"phone" | "email">(DEFAULT_LOGIN === "email" ? "email" : "phone");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [reset, setReset] = useState<null | "phone" | "code">(null);
-  const [f, setF] = useState({ name: "", mobile: "", email: "", code: "", password: "" });
+  const [f, setF] = useState({ name: "", mobile: "", email: "", code: "", password: "", confirm: "" });
   const [dev, setDev] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -46,6 +46,7 @@ export default function Login() {
   const singleSport = !!opts.data?.beta_sport;
   const testerPrefix = opts.data?.tester_signup_prefix ?? null; // friends-testing mode (never in production)
   const emailCodes = !!opts.data?.email_otp; // sign-up and password reset codes by email
+  const emailTest = !!opts.data?.email_test_mode; // no email account connected: nothing is actually sent
 
   // Resend countdown: ticks once a second only while it is running.
   const wait = Math.max(0, Math.ceil((resendAt - now) / 1000));
@@ -67,12 +68,14 @@ export default function Login() {
   const sent = (r: S<"OtpSentOut">) => { setDev(r.dev_otp ?? null); setResendAt(Date.now() + r.resend_after * 1000); setNow(Date.now()); };
   const validMobile = () => MOBILE_REGEX.test(f.mobile.replace(/\s/g, ""));
 
-  const [fieldErr, setFieldErr] = useState<Partial<Record<"name" | "email" | "password", string>>>({});
+  const [fieldErr, setFieldErr] = useState<Partial<Record<"name" | "email" | "password" | "confirm", string>>>({});
   const checkSignup = () => {
     const e: typeof fieldErr = {};
     if (f.name.trim().length < 2) e.name = "Enter your full name";
     if (!EMAIL_RE.test(f.email.trim())) e.email = "Enter a valid email address";
     if (f.password.length < 8 || !/[A-Za-z]/.test(f.password) || !/\d/.test(f.password)) e.password = "At least 8 characters, with a letter and a number";
+    if (!f.confirm) e.confirm = "Enter your password again";
+    else if (f.confirm !== f.password) e.confirm = "Passwords don't match";
     setFieldErr(e);
     return Object.keys(e).length === 0;
   };
@@ -148,17 +151,18 @@ export default function Login() {
   const doReset = async () => {
     setErr(null);
     if (!OTP_REGEX.test(f.code)) return setErr("Enter the 6-digit code");
-    if (f.password.length < 8) return setErr("Use at least 8 characters");
+    if (f.password.length < 8 || !/[A-Za-z]/.test(f.password) || !/\d/.test(f.password)) return setErr("At least 8 characters, with a letter and a number");
+    if (f.confirm !== f.password) return setErr("Passwords don't match");
     setBusy(true);
     try {
       if (resetByEmail) await api("/auth/email-reset/verify", { method: "POST", body: { email: f.mobile.trim(), code: f.code, new_password: f.password } });
       else await api("/auth/reset-password", { method: "POST", body: { mobile_number: mobile, code: f.code, new_password: f.password } });
-      setReset(null); setMode("email"); setF({ ...f, code: "", password: "" }); setNotice("Password updated. Log in with your new password.");
+      setReset(null); setMode("email"); setF({ ...f, code: "", password: "", confirm: "" }); setNotice("Password updated. Log in with your new password.");
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
 
   const title = reset ? "Reset password" : mode === "email" ? "Welcome back" : step === "otp" ? "Enter the code" : signup ? "Create your account" : "Log in with your mobile";
-  const sentTo = channel === "email" ? `Sent to ${(resetByEmail && reset ? f.mobile : f.email).trim()}. Check your inbox and spam folder.` : `Sent ${channel === "whatsapp" ? "on WhatsApp" : "by SMS"} to ${mobile}`;
+  const sentTo = channel === "email" && emailTest && !dev ? "Email delivery isn't switched on yet." : channel === "email" ? `Sent to ${(resetByEmail && reset ? f.mobile : f.email).trim()}. Check your inbox and spam folder.` : `Sent ${channel === "whatsapp" ? "on WhatsApp" : "by SMS"} to ${mobile}`;
   const sub = reset === "code" ? sentTo : reset ? null : mode === "email" ? "Log in with your email and password." : step === "otp" ? sentTo
     : signup ? (emailCodes ? "We'll email you a 6-digit code to confirm it's you." : "We'll text a 6-digit code to verify your number.") : "We'll send a 6-digit code to verify it.";
   const back = step === "otp" || reset || (mode === "email" && DEFAULT_LOGIN !== "email")
@@ -193,7 +197,8 @@ export default function Login() {
           ) : reset === "code" ? (
             <View style={{ gap: 14 }}>
               <CodeField value={f.code} onChange={(t) => setF({ ...f, code: t.replace(/\D/g, "").slice(0, 6) })} />
-              <Field label="New password" value={f.password} onChangeText={(password) => setF({ ...f, password })} secureTextEntry autoCapitalize="none" textContentType="newPassword" error={err} />
+              <Field label="New password" value={f.password} onChangeText={(password) => setF({ ...f, password })} secureTextEntry autoCapitalize="none" textContentType="newPassword" hint="At least 8 characters, with a letter and a number" />
+              <Field label="Confirm new password" value={f.confirm} onChangeText={(confirm) => setF({ ...f, confirm })} secureTextEntry autoCapitalize="none" textContentType="newPassword" error={err} />
               {dev ? <DevCode code={dev} /> : null}
               {simulator && channel === "whatsapp" ? <SimButton phone={mobile} /> : null}
               <Button title="Set new password" size="lg" loading={busy} onPress={() => void doReset()} />
@@ -218,8 +223,13 @@ export default function Login() {
               <Field label="Mobile number" value={f.mobile} onChangeText={(m) => { setF({ ...f, mobile: m }); if (err) setErr(null); }} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="+91  98765 43210" error={err} autoFocus={!signup} />
               {signup ? (
                 <Field label="Set password" value={f.password} onChangeText={(password) => { setF({ ...f, password }); setFieldErr({ ...fieldErr, password: undefined }); }} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword"
-                  hint="At least 8 characters, with a letter and a number. Lets you also log in with your email." error={fieldErr.password} />
+                  hint="At least 8 characters, with a letter and a number." error={fieldErr.password} />
               ) : null}
+              {signup ? (
+                <Field label="Confirm password" value={f.confirm} onChangeText={(confirm) => { setF({ ...f, confirm }); setFieldErr({ ...fieldErr, confirm: undefined }); }} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword"
+                  error={fieldErr.confirm} />
+              ) : null}
+              {signup && emailCodes && emailTest ? <EmailOffNotice prefix={testerPrefix} /> : null}
               {testerPrefix ? (
                 <Txt v="small" color={T.primaryDark}>Testing? Use {testerPrefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3")}123 and your code shows here.</Txt>
               ) : null}
@@ -241,7 +251,7 @@ export default function Login() {
           ) : (
             <View style={{ gap: 14 }}>
               <CodeField value={f.code} onChange={onCode} error={err} autoFocus />
-              {dev ? <DevCode code={dev} onUse={() => onCode(dev)} /> : null}
+              {dev ? <DevCode code={dev} onUse={() => onCode(dev)} /> : channel === "email" && emailTest ? <EmailOffNotice prefix={testerPrefix} sent /> : null}
               {simulator && channel === "whatsapp" ? <SimButton phone={mobile} /> : null}
               <Button title="Verify" size="lg" loading={busy} disabled={busy || f.code.length !== 6} onPress={() => void verify()} />
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -255,6 +265,20 @@ export default function Login() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+/** Shown while the server has no email account connected, so nobody waits for a code that will never arrive. */
+function EmailOffNotice({ prefix, sent }: { prefix: string | null; sent?: boolean }) {
+  const sample = prefix ? prefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3") + "123" : null;
+  return (
+    <View accessibilityRole="alert" style={{ padding: 12, borderRadius: 14, backgroundColor: T.warningBackground, gap: 4 }}>
+      <Txt v="smallSemi" color={T.warningText}>{sent ? "No email was sent" : "Emails aren't being sent yet"}</Txt>
+      <Txt v="small" color={T.warningText}>
+        GoFindr isn't connected to an email service yet, so codes can't reach real inboxes.
+        {sample ? ` For now, use a test mobile number like ${sample} and the code shows on screen.` : " Please try again later."}
+      </Txt>
+    </View>
   );
 }
 

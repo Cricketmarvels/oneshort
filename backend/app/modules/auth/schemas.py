@@ -31,6 +31,10 @@ class AuthOptionsOut(BaseModel):
     sms_otp: bool = Field(description="A real SMS provider is configured (or the dev adapter is active)")
     whatsapp_otp: bool = Field(description="WhatsApp codes can be delivered (provider configured)")
     email_otp: bool = Field(default=False, description="Sign-up codes can be sent by email")
+    email_test_mode: bool = Field(
+        default=False,
+        description="No email account is connected: codes are not delivered (shown only for test numbers)",
+    )
     whatsapp_simulator: bool = Field(
         default=False, description="Test mode: WhatsApp messages go to the in-app simulator"
     )

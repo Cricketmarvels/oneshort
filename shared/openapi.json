@@ -23589,6 +23589,12 @@
             "description": "Sign-up codes can be sent by email",
             "default": false
           },
+          "email_test_mode": {
+            "type": "boolean",
+            "title": "Email Test Mode",
+            "description": "No email account is connected: codes are not delivered (shown only for test numbers)",
+            "default": false
+          },
           "whatsapp_simulator": {
             "type": "boolean",
             "title": "Whatsapp Simulator",
