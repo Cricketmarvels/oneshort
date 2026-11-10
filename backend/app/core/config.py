@@ -143,6 +143,9 @@ class Settings(BaseSettings):
     ai_model: str = "claude-opus-5-5"
 
     # Email codes for sign-up and password reset (app/infrastructure/integrations/email.py).
+    # DEFERRED: phone OTP is the only verification in this release. Emails are collected but not verified,
+    # and no email codes or links are sent, until EMAIL_OTP_ENABLED=true is set deliberately.
+    email_otp_enabled: bool = False
     # console = dev adapter (nothing sent) | smtp = real delivery | none = email codes off
     email_provider: Literal["console", "smtp", "none"] = "console"
     smtp_host: str | None = None
@@ -195,7 +198,7 @@ class Settings(BaseSettings):
                 problems.append("WHATSAPP_PROVIDER=simulator is not allowed in production")
             if self.otp_provider == "console":
                 problems.append("OTP_PROVIDER=console is not allowed in production")
-            if self.email_provider == "console":
+            if self.email_otp_enabled and self.email_provider == "console":
                 problems.append("EMAIL_PROVIDER=console is not allowed in production (use smtp or none)")
             if self.debug:
                 problems.append("DEBUG must be false in production")

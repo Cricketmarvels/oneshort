@@ -197,7 +197,7 @@ export const MatchDiscoveryCard = memo(function MatchDiscoveryCard({ title, form
     <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${date} ${time}. ${spots} spots open. ${cta}`} onPress={onPress}
       style={({ pressed }) => ({ flexDirection: "row", gap: 12, padding: 12, borderRadius: 20, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
       <View style={{ width: 84, alignSelf: "stretch", minHeight: 96, borderRadius: 16, overflow: "hidden" }}>
-        <MatchCoverImage uri={cover} title={title} format={format} style={{ width: 84, height: "100%", minHeight: 96 }} />
+        <MatchCoverImage uri={cover} title={title} format={format} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
         {cover && format ? <View style={{ position: "absolute", left: 6, bottom: 6, paddingHorizontal: 7, height: 18, borderRadius: 9, backgroundColor: "rgba(6,63,61,0.85)", justifyContent: "center" }}><Txt v="micro" color="#FFFFFF" style={{ fontSize: 10 }}>{format}</Txt></View> : null}
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 6 }}>

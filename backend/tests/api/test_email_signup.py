@@ -152,7 +152,40 @@ async def test_email_code_resend_cooldown(client: httpx.AsyncClient, cooldown: N
 
 def test_console_email_refused_in_production() -> None:
     with pytest.raises(ValueError, match="EMAIL_PROVIDER=console"):
-        Settings(app_env="production", jwt_secret="x" * 40, otp_provider="msg91", whatsapp_provider="meta", debug=False)
+        Settings(
+            app_env="production",
+            jwt_secret="x" * 40,
+            otp_provider="msg91",
+            whatsapp_provider="meta",
+            debug=False,
+            email_otp_enabled=True,
+        )
+
+
+def test_email_codes_are_off_by_default() -> None:
+    """This release verifies the phone only: no email codes or links unless switched on deliberately."""
+    from app.infrastructure.integrations.email import DisabledEmailSender, build_email_sender
+
+    s = Settings(
+        _env_file=None, app_env="test", email_provider="smtp", smtp_host="smtp.example.in", email_from="a@b.in"
+    )
+    assert s.email_otp_enabled is False
+    assert isinstance(build_email_sender(s), DisabledEmailSender)
+
+
+async def test_sms_signup_stores_email_unverified(client: httpx.AsyncClient, container: Container) -> None:
+    m = unique_mobile()
+    r = await client.post(f"{API}/auth/send-otp", json={"mobile_number": m, "purpose": "register"})
+    assert r.status_code == 200, r.text
+    code = r.json()["data"]["dev_otp"]
+    profile = {"full_name": "Kabir Rao", "email": f"k{m[1:]}@example.in", "password": "KabirPass2026"}
+    r = await client.post(
+        f"{API}/auth/verify-otp", json={"mobile_number": m, "code": code, "purpose": "register", "profile": profile}
+    )
+    assert r.status_code in (200, 201), r.text
+    u = await container.mongo["users"].find_one({"mobile_number": m})
+    assert u and u["mobile_verified"] is True and u["email"] == profile["email"]
+    assert u["email_verified"] is False and u["email_verified_at"] is None
 
 
 async def test_email_codes_are_never_logged(client: httpx.AsyncClient, capsys: pytest.CaptureFixture[str]) -> None:

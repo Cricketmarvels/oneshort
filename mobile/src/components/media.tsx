@@ -77,7 +77,7 @@ export function TeamCoverImage({ name, uri, height = 110, style }: { name: strin
 export function MatchCoverImage({ uri, venueUri, title, format, style }: { uri?: string | null; venueUri?: string | null; title: string; format?: string | null; style: ViewStyle }) {
   const fallback = (
     <LinearGradient colors={["#0B6B66", "#063F3D"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[style, { alignItems: "center", justifyContent: "center", gap: 6, overflow: "hidden" }]} accessibilityLabel={`${title} — no match photo yet`}>
-      <SportsActionIcon action="bookGround" size={Math.min(56, Math.max(40, ((style.height as number) || 96) * 0.46))} inverse />
+      <SportsActionIcon action="bookGround" size={Math.min(56, Math.max(40, (typeof style.height === "number" ? style.height : 96) * 0.46))} inverse />
       {format ? <View style={{ paddingHorizontal: 8, height: 20, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center" }}><Txt v="micro" color="#FFFFFF" style={{ fontSize: 10.5 }}>{format}</Txt></View> : null}
     </LinearGradient>
   );

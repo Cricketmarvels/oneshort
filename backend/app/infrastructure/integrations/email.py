@@ -1,5 +1,7 @@
 """Email delivery. Business logic depends only on the ``EmailSender`` protocol.
 
+Off unless EMAIL_OTP_ENABLED=true: this release verifies the phone only, and email stays unverified.
+
 Providers (EMAIL_PROVIDER):
 - ``console``: development adapter. Sends nothing; the code may be shown on screen in dev/test mode. Never logs
   the address or the code. Refused in beta/production by config.
@@ -86,6 +88,8 @@ class DisabledEmailSender:
 
 
 def build_email_sender(s: Settings) -> EmailSender:
+    if not s.email_otp_enabled:  # deferred feature: phone OTP only
+        return DisabledEmailSender()
     if s.email_provider == "smtp" and s.smtp_host and s.email_from:
         return SmtpEmailSender(s)
     if s.email_provider == "console":

@@ -43,6 +43,8 @@ def settings() -> Settings:
         otp_provider="console",
         whatsapp_provider="none",
         push_provider="none",
+        email_otp_enabled=True,  # the deferred email-code feature keeps its own tests; off by default in .env
+        email_provider="console",
     )
 
 

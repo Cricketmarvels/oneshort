@@ -136,7 +136,7 @@ export default function Login() {
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
 
-  const resetByEmail = f.mobile.includes("@"); // the reset field takes a mobile number or an email
+  const resetByEmail = emailCodes && f.mobile.includes("@"); // email reset only while email codes are switched on
   const sendReset = async (via: "sms" | "whatsapp" = "sms") => {
     setChannel(resetByEmail ? "email" : via); setErr(null);
     if (resetByEmail ? !EMAIL_RE.test(f.mobile.trim()) : !validMobile()) return setErr(emailCodes ? "Enter the mobile number or email on your account" : "Enter the mobile number on your account");
