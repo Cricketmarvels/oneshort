@@ -79,9 +79,15 @@ Owner-reported: Expo organization **`playrrs-team`** created (https://expo.dev/a
 
 Fixed during this pass: a refresh-token race that signed users out when the app re-requested a refresh while a page reload (or app kill) replayed the token it had just rotated. The server now allows a 10-second reuse grace for a token whose successor is unused (`REFRESH_REUSE_GRACE_SECONDS`); replays outside the window, or after the successor was used, still revoke the family. Found by a 1-in-3 end-to-end failure; regression test added. The client also performs one redundant refresh right after sign-in (the auth provider re-runs its boot effect on web) — harmless now, tracked as a low-priority cleanup.
 
+### Expo project linked (2026-11-10)
+
+- `eas login` via device code (browser approval, no credentials in this session) → logged in as `playrr`, owner of `playrr` and `playrrs-team`.
+- `eas init --account playrrs-team` → created **`@playrrs-team/playr`**, ID `e8df9e32-92c4-4c6b-9234-f594c0389eb8` (https://expo.dev/accounts/playrrs-team/projects/playr). No prior project existed; nothing duplicated.
+- `eas project:info` confirms the link; `app.json` gained only `extra.eas.projectId` (the resolved plugin values `init` wrote back were reverted to keep config unchanged); Expo Doctor 20/20; TypeScript clean.
+
 ### Build blockers (in order)
 
-1. **Interactive Expo login + project link** — cannot be done from this session without pasting a token. Owner runs in a terminal: `cd ~/cricketmarvels/platform/mobile && npx eas-cli@latest login && npx eas-cli@latest init` (choose organization `playrrs-team`; accept the existing slug `playr`). This writes `extra.eas.projectId` into `app.json`; commit it.
+1. ~~Interactive Expo login + project link~~ — **done** (see above).
 2. **Apple Developer membership active** — enrollment is submitted; Apple typically activates within 24–48 h (longer for organizations needing a D-U-N-S number). Until then `eas credentials` cannot create the distribution certificate, provisioning profile or APNs key, and a store build fails at signing.
 3. **A reachable HTTPS beta backend** — provision per `PLAYR_BETA_DEPLOYMENT_RUNBOOK.md` (paid approval), or point the `beta` profile at a stable named Cloudflare tunnel on an owned domain for the first internal build. Building against `beta-api.playr.app` before it exists produces an app that cannot sign in.
 4. **Approval for the paid build** — once 1–3 are satisfied, I will ask before running `npx eas-cli build --platform ios --profile beta`.

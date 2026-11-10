@@ -91,7 +91,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://localhost:8000/api/v1"
+      "apiUrl": "http://localhost:8000/api/v1",
+      "eas": {
+        "projectId": "e8df9e32-92c4-4c6b-9234-f594c0389eb8"
+      }
     }
   }
 }
