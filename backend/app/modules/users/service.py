@@ -37,6 +37,11 @@ class UserService:
             mobile_number=doc.get("mobile_number"),
             email=doc.get("email"),
             mobile_verified=bool(doc.get("mobile_verified")),
+            phone_verified=bool(doc.get("mobile_verified")),
+            phone_verified_at=doc.get("phone_verified_at"),
+            email_verified=bool(doc.get("email_verified")),
+            email_verified_at=doc.get("email_verified_at"),
+            registration_completed_at=doc.get("registration_completed_at"),
             profile_image=doc.get("profile_image"),
             roles=doc.get("roles", []),
             city=doc.get("city"),
@@ -60,6 +65,7 @@ class UserService:
             fields["email"] = fields["email"].lower()
             if fields["email"] != user.doc.get("email"):
                 fields["email_verified"] = False
+                fields["email_verified_at"] = None
         doc = await self.repo.update(user.id, fields)
         if doc is None:
             raise NotFound("User not found")

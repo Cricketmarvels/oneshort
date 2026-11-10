@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 from app.common.enums import NotificationType
 from app.common.media import OwnMediaUrl
 from app.common.types import StrictModel
-from app.common.validators import Name, ShortText, Timezone
+from app.common.validators import Name, Password, ShortText, Timezone
 
 
 class NotificationPrefs(BaseModel):
@@ -33,7 +33,14 @@ class UserOut(BaseModel):
     full_name: str
     mobile_number: str | None
     email: str | None
-    mobile_verified: bool
+    mobile_verified: bool = Field(description="Deprecated alias of phone_verified")
+    phone_verified: bool = Field(default=False, description="Mobile number proven with an SMS/WhatsApp OTP")
+    phone_verified_at: datetime | None = None
+    email_verified: bool = Field(default=False, description="Always false for now: email verification is deferred")
+    email_verified_at: datetime | None = None
+    registration_completed_at: datetime | None = Field(
+        default=None, description="Set by the server once sign-up is finished; null means show registration"
+    )
     profile_image: str | None
     roles: list[str]
     city: str | None
@@ -65,6 +72,23 @@ class UpdateMeIn(StrictModel):
     timezone: Timezone | None = None
     notification_prefs: NotificationPrefs | None = None
     preferred_sport: Literal["cricket", "badminton", "pickleball"] | None = None
+
+
+class CompleteRegistrationIn(StrictModel):
+    """Last step of sign-up, after the mobile number is verified. Verification flags are never accepted
+    from the client (StrictModel rejects unknown fields)."""
+
+    full_name: Name
+    email: EmailStr = Field(description="Collected now, verified in a later release (email_verified stays false)")
+    play_as: Literal["player", "captain"]
+    sport: Literal["cricket", "badminton", "pickleball"] | None = Field(
+        default=None, description="Sport chosen before sign-in; the beta sport wins when one is set"
+    )
+    primary_role: Literal["batsman", "bowler", "all_rounder", "wicketkeeper"] | None = Field(
+        default=None, description="Cricket only: creates the player profile so nearby captains can find you"
+    )
+    profile_image: OwnMediaUrl | None = None
+    password: Password | None = Field(default=None, description="Test mode only: lets a tester log back in by email")
 
 
 class DeviceIn(StrictModel):

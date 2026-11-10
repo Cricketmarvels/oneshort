@@ -5,7 +5,8 @@ from pydantic import BaseModel, Field
 
 from app.api.dependencies import ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
-from app.modules.users.schemas import DeleteAccountIn, DeviceIn, UpdateMeIn, UserOut
+from app.modules.users.registration import complete_registration
+from app.modules.users.schemas import CompleteRegistrationIn, DeleteAccountIn, DeviceIn, UpdateMeIn, UserOut
 from app.modules.users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["Users"], responses=ERROR_RESPONSES)
@@ -26,6 +27,17 @@ async def get_me(user: UserDep, svc: Svc) -> Envelope[UserOut]:
 @router.put("/me", response_model=Envelope[UserOut], summary="Update current user")
 async def update_me(data: UpdateMeIn, user: UserDep, svc: Svc) -> Envelope[UserOut]:
     return ok(await svc.update_me(user, data))
+
+
+@router.post(
+    "/me/registration",
+    response_model=Envelope[UserOut],
+    summary="Finish sign-up (name, email, Player or Captain) once the mobile number is verified",
+)
+async def finish_registration(
+    data: CompleteRegistrationIn, user: UserDep, svc: Svc, c: ContainerDep
+) -> Envelope[UserOut]:
+    return ok(await svc.to_out(await complete_registration(c, user, data)))
 
 
 class WhatsAppTestOut(BaseModel):

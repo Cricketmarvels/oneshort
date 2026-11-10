@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     otp_ttl_seconds: int = 300
     otp_max_attempts: int = 5
     otp_max_sends_per_hour: int = 5
-    otp_resend_cooldown_seconds: int = 30
+    otp_resend_cooldown_seconds: int = 60
     login_max_failures: int = Field(default=8, description="Failed password logins per account before a lockout")
     login_lockout_minutes: int = 15
     # OTP spend budgets — enforced only for senders that cost money (see app/modules/auth/abuse.py)

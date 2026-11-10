@@ -210,6 +210,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/me/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finish sign-up (name, email, Player or Captain) once the mobile number is verified */
+        post: operations["finish_registration_api_v1_users_me_registration_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me/whatsapp-test": {
         parameters: {
             query?: never;
@@ -3664,6 +3681,43 @@ export interface components {
         CompleteIn: {
             /** Attendance */
             attendance?: components["schemas"]["AttendanceItem"][];
+        };
+        /**
+         * CompleteRegistrationIn
+         * @description Last step of sign-up, after the mobile number is verified. Verification flags are never accepted
+         *     from the client (StrictModel rejects unknown fields).
+         */
+        CompleteRegistrationIn: {
+            /** Full Name */
+            full_name: string;
+            /**
+             * Email
+             * Format: email
+             * @description Collected now, verified in a later release (email_verified stays false)
+             */
+            email: string;
+            /**
+             * Play As
+             * @enum {string}
+             */
+            play_as: "player" | "captain";
+            /**
+             * Sport
+             * @description Sport chosen before sign-in; the beta sport wins when one is set
+             */
+            sport?: ("cricket" | "badminton" | "pickleball") | null;
+            /**
+             * Primary Role
+             * @description Cricket only: creates the player profile so nearby captains can find you
+             */
+            primary_role?: ("batsman" | "bowler" | "all_rounder" | "wicketkeeper") | null;
+            /** Profile Image */
+            profile_image?: string | null;
+            /**
+             * Password
+             * @description Test mode only: lets a tester log back in by email
+             */
+            password?: string | null;
         };
         /** CompositionOut */
         CompositionOut: {
@@ -7345,8 +7399,32 @@ export interface components {
             mobile_number: string | null;
             /** Email */
             email: string | null;
-            /** Mobile Verified */
+            /**
+             * Mobile Verified
+             * @description Deprecated alias of phone_verified
+             */
             mobile_verified: boolean;
+            /**
+             * Phone Verified
+             * @description Mobile number proven with an SMS/WhatsApp OTP
+             * @default false
+             */
+            phone_verified: boolean;
+            /** Phone Verified At */
+            phone_verified_at?: string | null;
+            /**
+             * Email Verified
+             * @description Always false for now: email verification is deferred
+             * @default false
+             */
+            email_verified: boolean;
+            /** Email Verified At */
+            email_verified_at?: string | null;
+            /**
+             * Registration Completed At
+             * @description Set by the server once sign-up is finished; null means show registration
+             */
+            registration_completed_at?: string | null;
             /** Profile Image */
             profile_image: string | null;
             /** Roles */
@@ -8682,6 +8760,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    finish_registration_api_v1_users_me_registration_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteRegistrationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_UserOut_"];
+                };
             };
             /** @description Bad request */
             400: {

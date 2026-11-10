@@ -115,7 +115,7 @@ export function StatStrip({ items }: { items: { value: string; label: string }[]
 /** Choice card (sport / role): emoji or icon, title, description, ✓ / ○ on the right; selected = mint + teal/aqua border. */
 export function ChoiceRow({ title, body, selected, onPress, lead }: { title: string; body: string; selected: boolean; onPress: () => void; lead: ReactNode }) {
   return (
-    <Pressable accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={`${title}. ${body}`} onPress={onPress}
+    <Pressable accessibilityRole="radio" accessibilityState={{ selected, checked: selected }} aria-checked={selected} accessibilityLabel={`${title}. ${body}`} onPress={onPress}
       style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 15, padding: 16, borderRadius: 20, borderWidth: selected ? 2 : 1, borderColor: selected ? T.aqua : T.line, backgroundColor: selected ? T.primarySoft : pressed ? T.surface2 : T.surface })}>
       {lead}
       <View style={{ flex: 1, gap: 3 }}>

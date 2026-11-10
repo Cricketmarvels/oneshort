@@ -61,6 +61,12 @@ function Gate() {
   if (user && inAuth) return <Redirect href="/" />;
   if (user && !user.agreement.satisfied && seg[0] !== "agreement" && !onLegal) return <Redirect href="/agreement" />;
   if (user && user.agreement.satisfied && seg[0] === "agreement") return <Redirect href={pending.code ? { pathname: "/join/[code]", params: { code: pending.code } } : "/"} />;
+  // Sign-up isn't finished until the server says so: a verified number without registration_completed_at
+  // reopens registration (also after the app was closed mid-way). Accounts from before this flow are backfilled.
+  const onRegister = (seg as string[])[0] === "register";
+  const mustRegister = !!user && user.agreement.satisfied && user.phone_verified && !user.registration_completed_at;
+  if (mustRegister && !onRegister && !onLegal) return <Redirect href="/register" />;
+  if (user && !mustRegister && onRegister) return <Redirect href="/" />;
   if (user && user.agreement.satisfied && pending.code && !onJoin) return <Redirect href={{ pathname: "/join/[code]", params: { code: pending.code } }} />;
   return (
     <Stack screenOptions={header}>
@@ -91,6 +97,7 @@ function Gate() {
       <Stack.Screen name="join/[code]" options={{ headerShown: false }} />
       <Stack.Screen name="match/players" options={{ title: "Find Players for a Match" }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="racket/profile" options={{ title: "Profile" }} />
       <Stack.Screen name="chat/[id]" options={{ title: "Chat" }} />
       <Stack.Screen name="whatsapp-sim" options={{ title: "WhatsApp (test mode)" }} />

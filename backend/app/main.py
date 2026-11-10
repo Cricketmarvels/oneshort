@@ -29,6 +29,7 @@ from app.core.security import decode_access_token
 from app.infrastructure.database.indexes import ensure_indexes
 from app.modules.agreements.service import AgreementService
 from app.modules.search.indexer import SearchIndexer
+from app.modules.users.registration import backfill_registration_fields
 
 log = get_logger("app")
 
@@ -54,6 +55,7 @@ def create_app(settings: Settings | None = None, container: Container | None = N
         await ensure_indexes(c.mongo)
         await AgreementService(c).seed_default()
         await SearchIndexer(c.mongo).ensure_populated()
+        await backfill_registration_fields(c.mongo)  # existing accounts never repeat sign-up
         task: asyncio.Task[None] | None = None
         if settings.scheduler_enabled:
             from app.modules.matches.scheduler import run_scheduler

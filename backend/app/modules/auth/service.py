@@ -121,7 +121,7 @@ class AuthService:
             expose = self.c.otp_sender.exposes_code and (
                 (self.s.is_dev_like and self.s.dev_otp_in_response)
                 or (
-                    purpose == "register"
+                    purpose in ("register", "login")
                     and self._is_tester_number(mobile)
                     # only for brand-new numbers: showing a code for an existing account would let any
                     # tester sign in as another tester
@@ -219,7 +219,12 @@ class AuthService:
             "mobile_number": mobile,
             "email": await self._email_free(str(profile.email) if profile and profile.email else None),
             "email_verified": False,
-            "mobile_verified": True,
+            "email_verified_at": None,
+            "mobile_verified": True,  # exposed as phone_verified
+            "phone_verified_at": now,
+            # Legacy clients send the sign-up details with the code; the current app completes registration
+            # afterwards (POST /users/me/registration), so a phone-only sign-up starts incomplete.
+            "registration_completed_at": now if profile else None,
             "password_hash": hash_secret(profile.password) if profile and profile.password else None,
             "profile_image": None,
             "roles": [Role.PLAYER.value],
@@ -245,11 +250,15 @@ class AuthService:
         """First proof of the number on a record that already existed unverified (an invite-link account,
         or a legacy pending registration). Credentials set before the number was proven are never trusted:
         they're removed and their sessions ended; the verifier's own sign-up details, if sent, replace them."""
+        now = utcnow()
         fields: dict[str, Any] = {
             "mobile_verified": True,
+            "phone_verified_at": now,
             "password_hash": None,
             "email": None,
             "email_verified": False,
+            "email_verified_at": None,
+            "registration_completed_at": now if profile else None,
         }
         had_credentials = bool(user.get("password_hash") or user.get("email"))
         if profile:

@@ -1372,6 +1372,112 @@
         ]
       }
     },
+    "/api/v1/users/me/registration": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Finish sign-up (name, email, Player or Captain) once the mobile number is verified",
+        "operationId": "finish_registration_api_v1_users_me_registration_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteRegistrationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_UserOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/users/me/whatsapp-test": {
       "post": {
         "tags": [
@@ -24488,6 +24594,98 @@
         "type": "object",
         "title": "CompleteIn"
       },
+      "CompleteRegistrationIn": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Full Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "Collected now, verified in a later release (email_verified stays false)"
+          },
+          "play_as": {
+            "type": "string",
+            "enum": [
+              "player",
+              "captain"
+            ],
+            "title": "Play As"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "cricket",
+                  "badminton",
+                  "pickleball"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Sport chosen before sign-in; the beta sport wins when one is set"
+          },
+          "primary_role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "batsman",
+                  "bowler",
+                  "all_rounder",
+                  "wicketkeeper"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Role",
+            "description": "Cricket only: creates the player profile so nearby captains can find you"
+          },
+          "profile_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Image"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password",
+            "description": "Test mode only: lets a tester log back in by email"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "full_name",
+          "email",
+          "play_as"
+        ],
+        "title": "CompleteRegistrationIn",
+        "description": "Last step of sign-up, after the mobile number is verified. Verification flags are never accepted\nfrom the client (StrictModel rejects unknown fields)."
+      },
       "CompositionOut": {
         "properties": {
           "required": {
@@ -35726,7 +35924,57 @@
           },
           "mobile_verified": {
             "type": "boolean",
-            "title": "Mobile Verified"
+            "title": "Mobile Verified",
+            "description": "Deprecated alias of phone_verified"
+          },
+          "phone_verified": {
+            "type": "boolean",
+            "title": "Phone Verified",
+            "description": "Mobile number proven with an SMS/WhatsApp OTP",
+            "default": false
+          },
+          "phone_verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Verified At"
+          },
+          "email_verified": {
+            "type": "boolean",
+            "title": "Email Verified",
+            "description": "Always false for now: email verification is deferred",
+            "default": false
+          },
+          "email_verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Verified At"
+          },
+          "registration_completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Completed At",
+            "description": "Set by the server once sign-up is finished; null means show registration"
           },
           "profile_image": {
             "anyOf": [
