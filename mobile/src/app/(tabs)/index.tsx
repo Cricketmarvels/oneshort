@@ -68,7 +68,7 @@ function CricketHome() {
   const { width } = useWindowDimensions();
   const { user } = useAuth();
   const me = useQuery({ enabled: !!user, queryKey: ["rating", user?.id], queryFn: () => api<S<"PlayerRatingOut">>(`/ratings/players/${user!.id}`) });
-  const { lat, lng, label, radius } = useLocation();
+  const { lat, lng, label, radius, source: locSource } = useLocation();
   const home = useHome();
   const h = home.data;
   const locSheet = useRef<BottomSheetModal>(null);
@@ -97,7 +97,8 @@ function CricketHome() {
   const pulse = useQuery({ queryKey: ["community-feed", "pulse", lat, lng], queryFn: () => api<Pulse[]>("/communities/feed", { query: { scope: "for_you", lat, lng, radius_km: 25, limit: 2 } }) });
   const refresh = () => { for (const q of [home, myTeams, invites, opps, mine, requests, pulse, unread]) void q.refetch(); };
   const name = h?.greeting_name ?? user?.full_name.split(" ")[0] ?? "";
-  const area = [h?.locality, h?.city].filter(Boolean).join(", ") || label;
+  // The place results are measured from: what the player just picked (device or an area) wins over the saved profile area.
+  const area = locSource !== "default" ? label : [h?.locality, h?.city].filter(Boolean).join(", ") || label;
   const openSpots = teamMatches.reduce((n, m) => n + m.composition.vacancies, 0);
 
   const playerTiles = [

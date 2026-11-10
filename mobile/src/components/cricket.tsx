@@ -1,3 +1,4 @@
+import { useState } from "react";
 /** GoFindr domain components (aqua/teal system): game cards, ranked rows, team/community cards, feed items. */
 import { formatPaise, type S } from "@cm/shared";
 import { router } from "expo-router";
@@ -47,6 +48,8 @@ export function LocationSelector({ onPress }: { onPress: () => void; dark?: bool
 /** Sheet content: distance, current location, or a named area. */
 export function LocationOptions({ onDone }: { onDone: () => void }) {
   const { pick, useDevice, label, radius, setRadius } = useLocation();
+  const [locating, setLocating] = useState(false);
+  const [locErr, setLocErr] = useState<string | null>(null);
   return (
     <View style={{ gap: 20 }}>
       <View style={{ gap: 8 }}>
@@ -55,9 +58,11 @@ export function LocationOptions({ onDone }: { onDone: () => void }) {
       </View>
       <View>
         <Txt v="label" color={T.muted}>Search near</Txt>
-        <Row onPress={async () => { if (await useDevice()) onDone(); }} label="Use my current location">
-          <MapPin size={18} color={T.accent} strokeWidth={ICON.stroke} /><Txt v="body" color={T.accent} style={{ flex: 1 }}>Use my current location</Txt>
+        <Row onPress={async () => { setLocating(true); const r = await useDevice(); setLocating(false); if (r === true) onDone(); else setLocErr(r); }} label="Use my current location">
+          <MapPin size={18} color={T.accent} strokeWidth={ICON.stroke} /><Txt v="body" color={T.accent} style={{ flex: 1 }}>{locating ? "Finding you…" : "Use my current location"}</Txt>
+          {label === "My location" ? <Check size={18} color={T.accent} strokeWidth={ICON.navActive} /> : null}
         </Row>
+        {locErr ? <Txt v="small" color={T.dangerText} style={{ paddingVertical: 6 }} accessibilityLiveRegion="polite">{locErr}</Txt> : null}
         {PLACES.map((p, i) => (
           <Row key={p.label} onPress={() => { pick(p); onDone(); }} label={p.label} last={i === PLACES.length - 1}>
             <Txt v="body" style={{ flex: 1 }}>{p.label}</Txt>

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Wordmark } from "@/components/premium";
 import { Button, Field, Muted, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -32,6 +33,7 @@ export default function Login() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [channel, setChannel] = useState<"sms" | "whatsapp">("sms");
+  const [signup, setSignup] = useState(false); // same phone flow; only the wording changes for new players
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
   const mobile = normaliseMobile(f.mobile);
@@ -118,10 +120,12 @@ export default function Login() {
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
 
-  const title = reset ? "Reset password" : mode === "email" ? "Log in with email" : step === "otp" ? "Enter the code" : "Your mobile number";
-  const sub = reset ? null : mode === "email" ? null : step === "otp" ? `Sent ${channel === "whatsapp" ? "on WhatsApp" : "by SMS"} to ${mobile}` : "We'll send a 6-digit code to verify it.";
+  const title = reset ? "Reset password" : mode === "email" ? "Welcome back" : step === "otp" ? "Enter the code" : signup ? "Create your account" : "Log in with your mobile";
+  const sub = reset ? null : mode === "email" ? "Log in with your email and password." : step === "otp" ? `Sent ${channel === "whatsapp" ? "on WhatsApp" : "by SMS"} to ${mobile}`
+    : signup ? "Start with your mobile number. We'll text you a 6-digit code." : "We'll send a 6-digit code to verify it.";
   const back = step === "otp" || reset || (mode === "email" && DEFAULT_LOGIN !== "email")
-    ? () => { setErr(null); if (reset) setReset(null); else if (step === "otp") setStep("phone"); else setMode("phone"); }
+    ? () => { setErr(null); if (reset) setReset(null); else if (step === "otp") setStep("phone"); else { setMode("phone"); setSignup(false); } }
+    : signup && DEFAULT_LOGIN === "email" ? () => { setErr(null); setSignup(false); setMode("email"); }
     : router.canGoBack() ? () => router.back() : null;
 
   return (
@@ -131,6 +135,7 @@ export default function Login() {
           <View style={{ height: 40, justifyContent: "center" }}>
             {back ? <Button variant="ghost" size="sm" title="‹ Back" onPress={back} style={{ alignSelf: "flex-start", paddingHorizontal: 0 }} /> : null}
           </View>
+          <Wordmark size={38} />
           <View style={{ gap: 6 }}>
             <Txt v="hero" accessibilityRole="header">{title}</Txt>
             {sub ? <Muted>{sub}</Muted> : null}
@@ -161,8 +166,9 @@ export default function Login() {
               <Button title="Log in" size="lg" loading={busy} onPress={() => void emailLogin()} />
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <Button variant="ghost" size="sm" title="Forgot password?" onPress={() => { setReset("phone"); setErr(null); setNotice(null); }} />
-                <Button variant="ghost" size="sm" title="Use mobile number" onPress={() => { setMode("phone"); setErr(null); }} />
+                <Button variant="ghost" size="sm" title="Use mobile number" onPress={() => { setMode("phone"); setSignup(false); setErr(null); }} />
               </View>
+              <NewHere onPress={() => { setMode("phone"); setSignup(true); setErr(null); }} />
             </View>
           ) : step === "phone" ? (
             <View style={{ gap: 14 }}>
@@ -172,7 +178,12 @@ export default function Login() {
               ) : null}
               <Button title="Send code" size="lg" loading={busy && channel === "sms"} disabled={busy} onPress={() => void request("sms")} />
               {waReady ? <WhatsAppCodeButton loading={busy && channel === "whatsapp"} onPress={() => void request("whatsapp")} /> : null}
-              <Button variant="ghost" size="sm" title="Log in with email & password" onPress={() => { setMode("email"); setErr(null); }} />
+              {signup
+                ? <Button variant="ghost" size="sm" title="Already have an account? Log in" onPress={() => { setSignup(false); setMode(DEFAULT_LOGIN === "email" ? "email" : "phone"); setErr(null); }} />
+                : <>
+                    <Button variant="ghost" size="sm" title="Log in with email & password" onPress={() => { setMode("email"); setErr(null); }} />
+                    <NewHere onPress={() => { setSignup(true); setErr(null); }} />
+                  </>}
               <Txt v="small" color={T.muted} style={{ textAlign: "center" }}>
                 By continuing you agree to the GoFindr{" "}
                 <Txt v="small" color={T.primaryDark} accessibilityRole="link" onPress={() => router.push("/legal/terms")} style={{ textDecorationLine: "underline" }}>Terms of Use</Txt>
@@ -197,6 +208,16 @@ export default function Login() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+/** Sign-up entry: new players register with their mobile number (the code verifies it), never by email. */
+function NewHere({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="New to GoFindr? Create an account" onPress={onPress}
+      style={({ pressed }) => ({ marginTop: 6, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: T.line, backgroundColor: pressed ? T.surface2 : T.surface, alignItems: "center" })}>
+      <Txt v="small" color={T.muted}>New to GoFindr? <Txt v="smallSemi" color={T.primaryDark}>Create an account</Txt></Txt>
+    </Pressable>
   );
 }
 

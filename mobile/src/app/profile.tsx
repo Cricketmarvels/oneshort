@@ -10,7 +10,7 @@ import { Avatar, Button, Card, Divider, Section, Segmented, Txt } from "@/compon
 import { useAppearance } from "@/lib/appearance";
 import { api, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { currentLocation, pickAndUpload } from "@/lib/device";
+import { pickAndUpload, readLocation } from "@/lib/device";
 import { SP, T } from "@/theme";
 
 type IconT = ComponentType<{ size?: number; color?: string }>;
@@ -78,12 +78,14 @@ export default function Profile() {
     catch (e) { Alert.alert("Couldn't remove photo", errorText(e)); }
   };
   const updateLocation = async () => {
-    const loc = await currentLocation();
-    if (!loc) return Alert.alert("Location", "Permission denied. You can still pick an area on the leaderboard.");
+    const r = await readLocation();
+    if (!r.ok) return Alert.alert("Location", r.reason);
     const p = prof.data;
-    await api("/players/me", { method: "PUT", body: { primary_role: p?.primary_role ?? "batsman", secondary_roles: p?.secondary_roles ?? [], home_location: loc, locality: p?.locality, availability_visibility: p?.availability_visibility ?? "discoverable" } });
-    void prof.refetch();
-    Alert.alert("Home area updated", "Others only ever see an approximate distance.");
+    try {
+      await api("/players/me", { method: "PUT", body: { primary_role: p?.primary_role ?? "batsman", secondary_roles: p?.secondary_roles ?? [], home_location: { lat: r.lat, lng: r.lng }, locality: p?.locality, availability_visibility: p?.availability_visibility ?? "discoverable" } });
+      void prof.refetch();
+      Alert.alert("Home area updated", "Others only ever see an approximate distance.");
+    } catch (e) { Alert.alert("Couldn't save your area", errorText(e)); }
   };
   return (
     <ScrollView style={{ backgroundColor: T.paper }} contentContainerStyle={{ paddingBottom: 60 }}>

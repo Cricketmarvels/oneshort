@@ -19,6 +19,9 @@ import { applyTheme, FW, scheme, type Scheme, T } from "@/theme";
 import { useAppearance } from "@/lib/appearance";
 import { usePendingJoin } from "@/lib/joinlink";
 import { usePushNavigation } from "@/lib/push";
+import { installWebAlert, WebAlertHost } from "@/lib/web-alert";
+
+installWebAlert(); // browsers: Alert.alert is a no-op in react-native-web
 
 /** Stack header options — built at render time so they follow the current theme. */
 const makeHeader = () => ({
@@ -127,6 +130,7 @@ export default function RootLayout() {
             <AuthProvider>
               <StatusBar style={T.statusBar === "light" ? "light" : "dark"} />
               <Gate key={resolved} />
+              <WebAlertHost key={`alert-${resolved}`} />
             </AuthProvider>
           </BottomSheetModalProvider>
         </QueryClientProvider>

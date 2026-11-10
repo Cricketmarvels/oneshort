@@ -7,7 +7,7 @@
 import { DEFAULT_CITY, DEFAULT_LOCATION } from "@cm/shared";
 import { create } from "zustand";
 
-import { currentLocation } from "./device";
+import { readLocation } from "./device";
 
 export const PLACES: { label: string; city: string; lat: number; lng: number }[] = [
   { label: "Noida (centre)", city: "Noida", ...DEFAULT_LOCATION },
@@ -28,7 +28,8 @@ type LocState = {
   radius: Radius;
   setRadius: (r: Radius) => void;
   pick: (p: (typeof PLACES)[number]) => void;
-  useDevice: () => Promise<boolean>;
+  /** true once the device position is in use, otherwise a reason to show the player. */
+  useDevice: () => Promise<true | string>;
 };
 
 export const useLocation = create<LocState>((set) => ({
@@ -40,9 +41,9 @@ export const useLocation = create<LocState>((set) => ({
   setRadius: (radius) => set({ radius }),
   pick: (p) => set({ lat: p.lat, lng: p.lng, label: p.label, city: p.city, source: "manual" }),
   useDevice: async () => {
-    const loc = await currentLocation();
-    if (!loc) return false;
-    set({ ...loc, label: "My location", source: "device" });
+    const r = await readLocation();
+    if (!r.ok) return r.reason;
+    set({ lat: r.lat, lng: r.lng, label: "My location", source: "device" });
     return true;
   },
 }));
