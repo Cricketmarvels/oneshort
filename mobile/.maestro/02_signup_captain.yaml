@@ -1,0 +1,10 @@
+appId: in.gofindr.app
+name: Sign up as a captain and land on Teams
+tags: [auth, captain]
+---
+- runFlow:
+    file: subflows/signup.yaml
+    env: { ROLE: captain }
+- extendedWaitUntil:
+    visible: ".*[Tt]eam.*"
+    timeout: 20000

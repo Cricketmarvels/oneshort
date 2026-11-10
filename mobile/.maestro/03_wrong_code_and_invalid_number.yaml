@@ -1,0 +1,26 @@
+appId: in.gofindr.app
+name: Invalid number is refused; a wrong code shows an error and keeps the person on the code screen
+tags: [auth]
+---
+- runFlow: subflows/fresh-start.yaml
+- tapOn: { id: welcome-start }
+- tapOn: { id: sport-continue }
+- runFlow:
+    when: { notVisible: "Create your account" }
+    commands:
+      - hideKeyboard
+      - tapOn: { id: login-signup }
+- assertVisible: "Create your account"
+- tapOn: { id: login-mobile }
+- inputText: "12345"
+- tapOn: { id: login-send-code }
+- assertVisible: "Enter a valid 10-digit mobile number"
+- tapOn: { id: login-mobile }
+- eraseText: 20
+- inputText: ${'+447700900' + String(100 + Math.floor(Math.random() * 899))}
+- tapOn: { id: login-send-code }
+- assertVisible: "Resend in.*"               # 60 s resend countdown
+- tapOn: { id: otp-code }
+- inputText: "000001"
+- assertVisible: "Incorrect OTP"
+- assertVisible: { id: otp-code }

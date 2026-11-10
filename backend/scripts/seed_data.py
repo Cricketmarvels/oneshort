@@ -310,8 +310,12 @@ class Seeder:
 
 
 async def seed(reset: bool) -> None:
-    settings = get_settings().model_copy(
+    base = get_settings()
+    settings = base.model_copy(
         update={
+            # The seeder drives the API in-process and reads codes from the replies. Staging never shows codes over
+            # HTTP, so this process alone runs as development; the guards below still check the real environment.
+            "app_env": "development" if base.app_env == "staging" else base.app_env,
             "scheduler_enabled": False,
             "rate_limit_auth_per_minute": 100_000,
             "rate_limit_default_per_minute": 100_000,
@@ -321,8 +325,12 @@ async def seed(reset: bool) -> None:
             "dev_otp_in_response": True,  # the seeder reads OTPs in-process; never exposed over HTTP
         }
     )
-    if settings.app_env == "production" or settings.otp_provider != "console":
-        raise SystemExit("Refusing to seed: requires a non-production environment with OTP_PROVIDER=console")
+    # Beta serves real users too: seeding (and above all --reset, which drops the database) is for
+    # development, test and staging only, and a staging reset must target a database named for it.
+    if base.app_env in ("beta", "production") or settings.otp_provider != "console":
+        raise SystemExit("Refusing to seed: requires development, test or staging with OTP_PROVIDER=console")
+    if reset and base.app_env == "staging" and not any(t in settings.mongodb_db for t in ("staging", "test")):
+        raise SystemExit(f"Refusing to reset {settings.mongodb_db!r}: a staging database name must contain 'staging'")
     container = build_container(settings)
     if reset:
         await container.mongo.client.drop_database(settings.mongodb_db)

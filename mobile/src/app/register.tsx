@@ -113,16 +113,16 @@ export default function Register() {
         {step === 1 ? (
           <View style={{ gap: 16 }}>
             <H title="Your details" sub="Your number is verified. Captains and players see your name." />
-            <Field label="Full name" value={name} onChangeText={(v) => { reg.update({ name: v }); if (err) setErr(null); }} autoComplete="name" textContentType="name" autoCapitalize="words"
+            <Field testID="reg-name" label="Full name" value={name} onChangeText={(v) => { reg.update({ name: v }); if (err) setErr(null); }} autoComplete="name" textContentType="name" autoCapitalize="words"
               autoFocus error={err?.field === "name" ? err.text : null} returnKeyType="next" />
-            <Field label="Email" hint="For match updates and receipts. No verification needed." value={email} onChangeText={(v) => { reg.update({ email: v }); if (err) setErr(null); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+            <Field testID="reg-email" label="Email" hint="For match updates and receipts. No verification needed." value={email} onChangeText={(v) => { reg.update({ email: v }); if (err) setErr(null); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
               autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" error={err?.field === "email" ? err.text : null} returnKeyType="next" onSubmitEditing={next} />
           </View>
         ) : step === 2 ? (
           <View style={{ gap: 12 }} accessibilityRole="radiogroup">
             <H title="How will you use GoFindr?" sub="You can do both later from Home." />
-            <ChoiceRow lead={<RoleIcon name="cricket" />} title="Player" body="Find matches and teams near you" selected={playAs === "player"} onPress={() => reg.update({ playAs: "player" })} />
-            <ChoiceRow lead={<RoleIcon name="shield" />} title="Captain" body="Run a team, find players and opponents" selected={playAs === "captain"} onPress={() => reg.update({ playAs: "captain" })} />
+            <ChoiceRow testID="reg-player" lead={<RoleIcon name="cricket" />} title="Player" body="Find matches and teams near you" selected={playAs === "player"} onPress={() => reg.update({ playAs: "player" })} />
+            <ChoiceRow testID="reg-captain" lead={<RoleIcon name="shield" />} title="Captain" body="Run a team, find players and opponents" selected={playAs === "captain"} onPress={() => reg.update({ playAs: "captain" })} />
           </View>
         ) : (
           <View style={{ gap: 18 }}>
@@ -135,7 +135,7 @@ export default function Register() {
               <Txt v="small" color={T.primaryDark}>{photo.busy ? "Uploading…" : user.profile_image ? "Tap to change" : "Add a photo (optional)"}</Txt>
             </View>
             {tester ? (
-              <Field label="Password (test mode)" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" textContentType="newPassword"
+              <Field testID="reg-password" label="Password (test mode)" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" textContentType="newPassword"
                 hint="Test numbers only get a code once, so you'll log back in with email and this password." error={err?.field === "password" ? err.text : null} />
             ) : null}
             {cricket && playAs !== "captain" ? (
@@ -151,7 +151,7 @@ export default function Register() {
 
         <View style={{ flex: 1 }} />
         {err?.field === "form" ? <Txt v="small" color={T.dangerText}>{err.text}</Txt> : null}
-        <Button title={step === 3 ? "Finish" : "Continue"} size="lg" loading={busy} disabled={busy || photo.busy} onPress={next} />
+        <Button testID={step === 3 ? "reg-finish" : "reg-continue"} title={step === 3 ? "Finish" : "Continue"} size="lg" loading={busy} disabled={busy || photo.busy} onPress={next} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

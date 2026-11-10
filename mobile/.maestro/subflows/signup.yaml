@@ -1,0 +1,61 @@
+# New account with a fictional test number (+44 7700 900xxx shows its code on screen on staging only).
+# Params: ROLE = player | captain. Leaves the app on the dashboard.
+appId: in.gofindr.app
+---
+- runFlow: fresh-start.yaml
+- tapOn:
+    id: welcome-start
+- tapOn:
+    id: sport-cricket
+- tapOn:
+    id: sport-continue
+- runFlow:                                  # older builds open log-in: switch to sign-up
+    when:
+      notVisible: "Create your account"
+    commands:
+      - hideKeyboard
+      - tapOn:
+          id: login-signup
+- assertVisible: "Create your account"
+- assertNotVisible: "Set password"          # nothing but the number before the code
+- evalScript: ${output.mobile = '+447700900' + String(100 + Math.floor(Math.random() * 899))}
+- tapOn:
+    id: login-mobile
+- inputText: ${output.mobile}
+- tapOn:
+    id: login-send-code
+- assertVisible: "Sent by SMS to.*"
+- copyTextFrom:
+    id: dev-code
+- tapOn:
+    id: otp-code
+- inputText: ${maestro.copiedText}
+- tapOn:
+    id: consent-terms
+- tapOn:
+    id: consent-privacy
+- tapOn:
+    id: consent-age
+- tapOn:
+    id: consent-accept
+- assertVisible: "STEP 1 OF 3"
+- tapOn:
+    id: reg-name
+- inputText: "E2E ${ROLE} Tester"
+- tapOn:
+    id: reg-email
+- inputText: ${'e2e' + Date.now() + '@example.in'}
+- hideKeyboard
+- tapOn:
+    id: reg-continue
+- tapOn:
+    id: reg-${ROLE}
+- tapOn:
+    id: reg-continue
+- assertVisible: "STEP 3 OF 3"
+- tapOn:
+    id: reg-password
+- inputText: "E2ePass2026"
+- hideKeyboard
+- tapOn:
+    id: reg-finish

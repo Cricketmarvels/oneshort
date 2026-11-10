@@ -1,0 +1,21 @@
+# Clean install state. A beta APK is first pointed at the staging server (SET_SERVER=true, API_URL=https://…/api/v1);
+# an e2e APK already has the staging address built in.
+appId: in.gofindr.app
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      true: ${SET_SERVER == 'true'}
+    commands:
+      - tapOn:
+          id: welcome-server
+      - tapOn:
+          id: server-url
+      - eraseText: 80
+      - inputText: ${API_URL}
+      - hideKeyboard
+      - tapOn:
+          id: server-save
+- assertVisible:
+    id: welcome-start

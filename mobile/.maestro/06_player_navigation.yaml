@@ -1,0 +1,16 @@
+appId: in.gofindr.app
+name: Player can open every main area
+tags: [player, smoke]
+---
+- runFlow:
+    file: subflows/signup.yaml
+    env: { ROLE: player }
+- extendedWaitUntil: { visible: "Games near you|Community pulse", timeout: 20000 }
+- tapOn: "Discover"
+- assertVisible: ".*"
+- tapOn: "Community"
+- assertVisible: ".*[Cc]ommunit.*"
+- tapOn: "Profile"
+- assertVisible: "Settings"
+- tapOn: "Home"
+- assertVisible: "Games near you|Community pulse"

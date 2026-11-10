@@ -59,8 +59,8 @@ export function TextLink({ title, onPress }: { title: string; onPress: () => voi
 // ---------------------------------------------------------------- buttons
 type BtnVariant = "primary" | "lime" | "highlight" | "outline" | "secondary" | "ghost" | "danger" | "dark";
 /** Starter Btn: teal fill + white bold label (radius 14, 52 high); "highlight" = mint secondary with teal label; secondary = white + line. */
-export function Button({ title, onPress, variant = "primary", loading, disabled, style, icon, size = "md" }: {
-  title: string; onPress: () => void; variant?: BtnVariant; loading?: boolean; disabled?: boolean; style?: ViewStyle; icon?: ReactNode; size?: "sm" | "md" | "lg";
+export function Button({ title, onPress, variant = "primary", loading, disabled, style, icon, size = "md", testID }: {
+  title: string; onPress: () => void; variant?: BtnVariant; loading?: boolean; disabled?: boolean; style?: ViewStyle; icon?: ReactNode; size?: "sm" | "md" | "lg"; testID?: string;
 }) {
   // "highlight" = lime CTA (sparingly: Join team, Send challenge, Next step); "outline" = ink-bordered secondary
   const v = variant === "lime" ? "primary" : variant === "dark" ? "secondary" : variant;
@@ -69,7 +69,7 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
   const fg = { primary: T.onPrimary, highlight: T.primaryDark, outline: T.ink, secondary: T.ink, ghost: T.primaryDark, danger: T.dangerText }[v];
   const h = size === "sm" ? 40 : size === "lg" ? 52 : SIZE.button;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
+    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
       disabled={disabled || loading} onPress={onPress} hitSlop={size === "sm" ? 4 : 0}
       style={({ pressed }) => [
         { minHeight: h, borderRadius: R.button, paddingHorizontal: v === "ghost" ? 8 : size === "sm" ? 14 : 20, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, backgroundColor: pressed ? pressedBg : bg },

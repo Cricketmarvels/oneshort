@@ -1,0 +1,17 @@
+appId: in.gofindr.app
+name: A signed-in player stays signed in after a restart, then logs out
+tags: [auth, session]
+---
+- runFlow:
+    file: subflows/signup.yaml
+    env: { ROLE: player }
+- extendedWaitUntil: { visible: "Games near you|Community pulse", timeout: 20000 }
+- stopApp
+- launchApp                                   # no clearState: the saved session must be restored without a code
+- extendedWaitUntil: { visible: "Games near you|Community pulse", timeout: 20000 }
+- tapOn: "Profile"
+- scrollUntilVisible: { element: "Settings" }
+- tapOn: "Settings"
+- scrollUntilVisible: { element: "Log out" }
+- tapOn: "Log out"
+- extendedWaitUntil: { visible: "Welcome back|Log in with your mobile|Create your account", timeout: 15000 }

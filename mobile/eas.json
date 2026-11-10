@@ -36,6 +36,18 @@
         "EXPO_PUBLIC_API_URL": "https://api-staging.gofindr.in/api/v1"
       }
     },
+    "android-beta": {
+      "distribution": "internal",
+      "environment": "preview",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api-staging.gofindr.in/api/v1",
+        "EXPO_PUBLIC_ALLOW_SERVER_OVERRIDE": "true"
+      }
+    },
     "beta": {
       "distribution": "store",
       "environment": "preview",

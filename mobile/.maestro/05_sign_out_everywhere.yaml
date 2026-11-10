@@ -1,0 +1,16 @@
+appId: in.gofindr.app
+name: Sign out everywhere ends this device's session
+tags: [auth, session]
+---
+- runFlow:
+    file: subflows/signup.yaml
+    env: { ROLE: player }
+- extendedWaitUntil: { visible: "Games near you|Community pulse", timeout: 20000 }
+- tapOn: "Profile"
+- scrollUntilVisible: { element: "Settings" }
+- tapOn: "Settings"
+- scrollUntilVisible: { element: "Signed-in devices" }
+- tapOn: "Signed-in devices"
+- tapOn: "Sign out everywhere"
+- tapOn: "Sign out everywhere"                # confirm in the dialog
+- extendedWaitUntil: { visible: "Welcome back|Log in with your mobile|Create your account", timeout: 15000 }

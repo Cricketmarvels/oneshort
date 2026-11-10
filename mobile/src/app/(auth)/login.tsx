@@ -205,12 +205,12 @@ export default function Login() {
             </View>
           ) : mode === "email" ? (
             <View style={{ gap: 14 }}>
-              <Field label="Email" value={f.email} onChangeText={(email) => setF({ ...f, email })} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="username" />
-              <Field label="Password" value={f.password} onChangeText={(password) => setF({ ...f, password })} secureTextEntry autoCapitalize="none" autoComplete="password" textContentType="password" error={err} />
-              <Button title="Log in" size="lg" loading={busy} onPress={() => void emailLogin()} />
+              <Field testID="login-email" label="Email" value={f.email} onChangeText={(email) => setF({ ...f, email })} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="username" />
+              <Field testID="login-password" label="Password" value={f.password} onChangeText={(password) => setF({ ...f, password })} secureTextEntry autoCapitalize="none" autoComplete="password" textContentType="password" error={err} />
+              <Button testID="login-submit" title="Log in" size="lg" loading={busy} onPress={() => void emailLogin()} />
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <Button variant="ghost" size="sm" title="Forgot password?" onPress={() => { setReset("phone"); setErr(null); setNotice(null); }} />
-                <Button variant="ghost" size="sm" title="Use mobile number" onPress={() => { setMode("phone"); setSignup(false); setErr(null); }} />
+                <Button testID="login-use-mobile" variant="ghost" size="sm" title="Use mobile number" onPress={() => { setMode("phone"); setSignup(false); setErr(null); }} />
               </View>
               <NewHere onPress={() => { setMode("phone"); setSignup(true); setErr(null); }} />
             </View>
@@ -220,7 +220,7 @@ export default function Login() {
                 <Field label="Full name" value={f.name} onChangeText={(name) => { setF({ ...f, name }); setFieldErr({ ...fieldErr, name: undefined }); }} autoComplete="name" textContentType="name" autoCapitalize="words" autoFocus error={fieldErr.name} />
                 <Field label="Email" value={f.email} onChangeText={(email) => { setF({ ...f, email }); setFieldErr({ ...fieldErr, email: undefined }); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" error={fieldErr.email} />
               </> : null}
-              <Field label="Mobile number" value={f.mobile} onChangeText={(m) => { setF({ ...f, mobile: m }); if (err) setErr(null); }} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="+91  98765 43210" error={err} autoFocus={!signup} />
+              <Field testID="login-mobile" label="Mobile number" value={f.mobile} onChangeText={(m) => { setF({ ...f, mobile: m }); if (err) setErr(null); }} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="+91  98765 43210" error={err} autoFocus={!signup} />
               {signup && emailCodes ? (
                 <Field label="Set password" value={f.password} onChangeText={(password) => { setF({ ...f, password }); setFieldErr({ ...fieldErr, password: undefined }); }} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword"
                   hint="At least 8 characters, with a letter and a number." error={fieldErr.password} />
@@ -233,7 +233,7 @@ export default function Login() {
               {testerPrefix ? (
                 <Txt v="small" color={T.primaryDark}>Testing? Use {testerPrefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3")}123 and your code shows here.</Txt>
               ) : null}
-              <Button title={signup ? "Continue" : "Send code"} size="lg" loading={busy && channel === "sms"} disabled={busy} onPress={() => void request("sms")} />
+              <Button testID="login-send-code" title={signup ? "Continue" : "Send code"} size="lg" loading={busy && channel === "sms"} disabled={busy} onPress={() => void request("sms")} />
               {waReady && !(signup && emailCodes) ? <WhatsAppCodeButton loading={busy && channel === "whatsapp"} onPress={() => void request("whatsapp")} /> : null}
               {signup
                 ? <Button variant="ghost" size="sm" title="Already have an account? Log in" onPress={() => { setSignup(false); setMode(DEFAULT_LOGIN === "email" ? "email" : "phone"); setErr(null); }} />
@@ -253,7 +253,7 @@ export default function Login() {
               <CodeField value={f.code} onChange={onCode} error={err} autoFocus />
               {dev ? <DevCode code={dev} onUse={() => onCode(dev)} /> : channel === "email" && emailTest ? <EmailOffNotice prefix={testerPrefix} sent /> : null}
               {simulator && channel === "whatsapp" ? <SimButton phone={mobile} /> : null}
-              <Button title="Verify" size="lg" loading={busy} disabled={busy || f.code.length !== 6} onPress={() => void verify()} />
+              <Button testID="otp-verify" title="Verify" size="lg" loading={busy} disabled={busy || f.code.length !== 6} onPress={() => void verify()} />
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Button variant="ghost" size="sm" title={channel === "email" ? "Change details" : "Change number"} onPress={() => { setStep("phone"); setErr(null); }} />
                 {wait > 0
@@ -285,7 +285,7 @@ function EmailOffNotice({ prefix, sent }: { prefix: string | null; sent?: boolea
 /** Sign-up entry: new players register with their mobile number (the code verifies it), never by email. */
 function NewHere({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel="New to GoFindr? Create an account" onPress={onPress}
+    <Pressable testID="login-signup" accessibilityRole="button" accessibilityLabel="New to GoFindr? Create an account" onPress={onPress}
       style={({ pressed }) => ({ marginTop: 6, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: T.line, backgroundColor: pressed ? T.surface2 : T.surface, alignItems: "center" })}>
       <Txt v="small" color={T.muted}>New to GoFindr? <Txt v="smallSemi" color={T.primaryDark}>Create an account</Txt></Txt>
     </Pressable>
@@ -295,7 +295,7 @@ function NewHere({ onPress }: { onPress: () => void }) {
 /** One field for the 6-digit code: iOS offers the SMS code above the keyboard, Android reads it, paste works. */
 function CodeField({ value, onChange, error, autoFocus }: { value: string; onChange: (v: string) => void; error?: string | null; autoFocus?: boolean }) {
   return (
-    <Field label="6-digit code" value={value} onChangeText={onChange} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="sms-otp"
+    <Field testID="otp-code" label="6-digit code" value={value} onChangeText={onChange} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="sms-otp"
       autoFocus={autoFocus} error={error} style={{ fontSize: 24, letterSpacing: 10, textAlign: "center", fontFamily: "Inter_800ExtraBold" }} />
   );
 }
@@ -303,7 +303,7 @@ function CodeField({ value, onChange, error, autoFocus }: { value: string; onCha
 function DevCode({ code, onUse }: { code: string; onUse?: () => void }) {
   return (
     <Text style={{ backgroundColor: T.warningBackground, color: T.warningText, padding: 12, borderRadius: 14 }}>
-      Test mode: your code is <Text style={{ fontFamily: "Inter_800ExtraBold" }} onPress={onUse}>{code}</Text>
+      Test mode: your code is <Text testID="dev-code" style={{ fontFamily: "Inter_800ExtraBold" }} onPress={onUse}>{code}</Text>
     </Text>
   );
 }

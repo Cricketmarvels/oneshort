@@ -17,10 +17,10 @@ export default function Welcome() {
         <Txt v="body" style={{ fontSize: 17 }}>Your game, one tap away.</Txt>
         <Image source={PHOTO.stadium} accessibilityLabel="Cricket under floodlights" resizeMode="cover" style={{ height: 290, width: "100%", marginTop: 38, borderRadius: 26 }} />
       </View>
-      <Button title="Get Started" size="lg" onPress={() => router.push("/sport")} />
+      <Button testID="welcome-start" title="Get Started" size="lg" onPress={() => router.push({ pathname: "/sport", params: { next: "signup" } })} />
       <Txt v="small" color={T.muted} style={{ textAlign: "center", marginTop: 12 }} onPress={() => router.push("/login")}>Already have an account? <Txt v="smallSemi" color={T.primary}>Log in</Txt></Txt>
       {SERVER_OVERRIDE_ALLOWED ? (
-        <Txt v="small" color={T.muted} style={{ textAlign: "center", marginTop: 10, fontSize: 12 }} onPress={() => router.push("/server")} accessibilityRole="button" accessibilityLabel="Change server">
+        <Txt v="small" color={T.muted} style={{ textAlign: "center", marginTop: 10, fontSize: 12 }} testID="welcome-server" onPress={() => router.push("/server")} accessibilityRole="button" accessibilityLabel="Change server">
           Beta · server {API_URL.replace(/^https?:\/\//, "").replace(/\/api\/v\d+$/, "")}
         </Txt>
       ) : null}

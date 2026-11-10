@@ -49,21 +49,21 @@ export default function Agreement() {
         </Card>
       </ScrollView>
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: SP.page, paddingBottom: SP.xl, gap: SP.md, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.line }}>
-        <Consent label="I agree to the Platform User Agreement" text="I have read and agree to the GoFindr Terms of Use." value={ok} onChange={setOk} />
-        <Consent label="I consent under the Privacy Notice" text="I have read the Privacy Notice and consent to GoFindr using my data as it describes." value={priv} onChange={setPriv}
+        <Consent testID="consent-terms" label="I agree to the Platform User Agreement" text="I have read and agree to the GoFindr Terms of Use." value={ok} onChange={setOk} />
+        <Consent testID="consent-privacy" label="I consent under the Privacy Notice" text="I have read the Privacy Notice and consent to GoFindr using my data as it describes." value={priv} onChange={setPriv}
           link={{ label: "Read the Privacy Notice", onPress: () => router.push("/legal/privacy") }} />
-        <Consent label="I am 18 or older" text="I am 18 or older." value={adult} onChange={setAdult} />
+        <Consent testID="consent-age" label="I am 18 or older" text="I am 18 or older." value={adult} onChange={setAdult} />
         {err ? <Txt v="small" color={T.dangerText} accessibilityRole="alert">{err}</Txt> : null}
-        <Button title="Accept and continue" size="lg" disabled={!ok || !priv || !adult} loading={busy} onPress={() => void accept()} />
+        <Button testID="consent-accept" title="Accept and continue" size="lg" disabled={!ok || !priv || !adult} loading={busy} onPress={() => void accept()} />
       </View>
     </View>
   );
 }
 
-function Consent({ label, text, value, onChange, link }: { label: string; text: string; value: boolean; onChange: (v: boolean) => void; link?: { label: string; onPress: () => void } }) {
+function Consent({ label, text, value, onChange, link, testID }: { label: string; text: string; value: boolean; onChange: (v: boolean) => void; link?: { label: string; onPress: () => void }; testID?: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-      <Switch accessibilityLabel={label} value={value} onValueChange={onChange} trackColor={{ true: T.primary, false: T.switchOff }} thumbColor={T.surface} {...({ activeThumbColor: T.surface, activeTrackColor: T.primary } as object)} />
+      <Switch testID={testID} accessibilityLabel={label} value={value} onValueChange={onChange} trackColor={{ true: T.primary, false: T.switchOff }} thumbColor={T.surface} {...({ activeThumbColor: T.surface, activeTrackColor: T.primary } as object)} />
       <View style={{ flex: 1, gap: 2 }}>
         <Txt v="body">{text}</Txt>
         {link ? <Pressable accessibilityRole="link" onPress={link.onPress} hitSlop={6}><Txt v="smallSemi" color={T.primaryDark} style={{ textDecorationLine: "underline" }}>{link.label}</Txt></Pressable> : null}

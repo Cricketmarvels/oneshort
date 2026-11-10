@@ -55,12 +55,12 @@ export default function Server() {
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={{ padding: SP.page, paddingTop: insets.top + SP.page, paddingBottom: insets.bottom + SP.page, gap: 14 }} keyboardShouldPersistTaps="handled">
       <Txt v="h1" accessibilityRole="header">Server address</Txt>
       <Txt v="body" color={T.muted}>Beta builds can use a different GoFindr server. Only https addresses ending in /api/v1 are accepted.</Txt>
-      <Field label="API address" value={url} onChangeText={(v) => { setUrl(v); setStatus(null); }} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://gofindr.in/api/v1" error={url && !valid ? "Use https://host/api/v1" : null} hint={`Built-in: ${DEFAULT_API_URL}`} />
+      <Field testID="server-url" label="API address" value={url} onChangeText={(v) => { setUrl(v); setStatus(null); }} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://gofindr.in/api/v1" error={url && !valid ? "Use https://host/api/v1" : null} hint={`Built-in: ${DEFAULT_API_URL}`} />
       {status ? <InlineNotice tone={status.startsWith("Connected") ? "info" : "warning"}>{status}</InlineNotice> : null}
       {err ? <InlineNotice tone="warning">{err}</InlineNotice> : null}
       <View style={{ gap: 10 }}>
         <Button title="Test connection" variant="secondary" onPress={() => void test()} disabled={!valid || busy} loading={busy} />
-        <Button title="Save and use this server" onPress={() => void save(url)} disabled={!valid || busy || url.trim() === API_URL} />
+        <Button testID="server-save" title="Save and use this server" onPress={() => void save(url)} disabled={!valid || busy || url.trim() === API_URL} />
         <Button title="Use the built-in address" variant="secondary" onPress={() => void save(null)} disabled={busy || API_URL === DEFAULT_API_URL} />
         <Button title="Cancel" variant="secondary" onPress={() => router.back()} disabled={busy} />
       </View>
