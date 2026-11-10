@@ -77,3 +77,8 @@ def test_tester_mode_refused_in_production() -> None:
             grievance_officer_name="c",
             grievance_email="d@e.in",
         )
+
+
+def test_blank_tester_prefix_means_off() -> None:
+    assert Settings(tester_signup_prefix="").tester_signup_prefix is None
+    assert Settings(tester_signup_prefix="   ").tester_signup_prefix is None

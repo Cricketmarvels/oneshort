@@ -192,7 +192,8 @@ async def play_season(
             {"_id": ObjectId(ch["fixture_id"])}, {"$set": {"start_at": played, "is_demo": True}}
         )
         await container.mongo["team_challenges"].update_one(
-            {"_id": ObjectId(ch["id"])}, {"$set": {"proposal.start_at": played, "history.$[].proposal.start_at": played}}
+            {"_id": ObjectId(ch["id"])},
+            {"$set": {"proposal.start_at": played, "history.$[].proposal.start_at": played}},
         )
 
         def xi(team: str, exclude: set[str] = frozenset()) -> list[dict[str, Any]]:  # type: ignore[assignment]

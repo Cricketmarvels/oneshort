@@ -106,7 +106,7 @@ class AuthService:
 
     def _is_tester_number(self, mobile: str) -> bool:
         p = self.s.tester_signup_prefix
-        return p is not None and self.s.app_env != "production" and mobile.startswith(p)
+        return bool(p and p.strip()) and self.s.app_env != "production" and mobile.startswith(p or "\x00")
 
     async def _consume_otp(self, mobile: str, purpose: str, code: str) -> None:
         doc = await self.otps.find_one_and_update(

@@ -158,6 +158,13 @@ class Settings(BaseSettings):
     legal_effective_date: str = "9 November 2026"
 
     @model_validator(mode="after")
+    def _blank_tester_prefix(self) -> "Settings":
+        # An empty TESTER_SIGNUP_PREFIX= would otherwise match every number; treat it as "off".
+        if self.tester_signup_prefix is not None and not self.tester_signup_prefix.strip():
+            self.tester_signup_prefix = None
+        return self
+
+    @model_validator(mode="after")
     def _validate_production(self) -> "Settings":
         if self.app_env == "production":
             problems: list[str] = []

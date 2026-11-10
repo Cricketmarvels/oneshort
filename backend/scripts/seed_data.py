@@ -312,6 +312,7 @@ async def seed(reset: bool) -> None:
             "rate_limit_default_per_minute": 100_000,
             "otp_resend_cooldown_seconds": 0,
             "otp_max_sends_per_hour": 10_000,
+            "tester_signup_prefix": None,  # seeded demo accounts use the same fictional range; seeding isn't a tester sign-up
             "dev_otp_in_response": True,  # the seeder reads OTPs in-process; never exposed over HTTP
         }
     )
