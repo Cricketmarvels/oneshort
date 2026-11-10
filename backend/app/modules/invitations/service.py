@@ -593,10 +593,10 @@ class InvitationService:
         link = f"{(self.c.settings.app_base_url or self.c.settings.web_base_url).rstrip('/')}/match/{match['_id']}"
         body = "\n".join(
             [
-                "🏏 PlayR match invitation",
+                "🏏 GoFindr match invitation",
                 *lines,
                 *([f'Note: "{note}"'] if note else []),
-                f"Accept or decline in the PlayR app: {link}",
+                f"Accept or decline in the GoFindr app: {link}",
             ]
         )
         return await self.c.whatsapp.send(player["mobile_number"], body, [*lines, link])

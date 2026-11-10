@@ -114,7 +114,7 @@ class AgreementService:
                 "Please accept the current agreement version", code="AGREEMENT_VERSION_MISMATCH"
             )
         if data.version >= 2 and not data.age_confirmed:
-            raise BusinessRuleViolation("PlayR is for people aged 18 or over", code="AGE_NOT_CONFIRMED")
+            raise BusinessRuleViolation("GoFindr is for people aged 18 or over", code="AGE_NOT_CONFIRMED")
         if data.version >= 2 and not data.privacy_acknowledged:
             raise BusinessRuleViolation(
                 "Please read and accept the Privacy Notice to continue", code="PRIVACY_NOT_ACKNOWLEDGED"

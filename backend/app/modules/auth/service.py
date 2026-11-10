@@ -47,7 +47,7 @@ from app.modules.auth.schemas import (
 from app.modules.users.repository import UserRepository
 from app.modules.users.service import UserService
 
-NEW_PLAYER_NAME = "PlayR player"  # placeholder until onboarding asks for a name
+NEW_PLAYER_NAME = "GoFindr player"  # placeholder until onboarding asks for a name
 
 
 class AuthService:
@@ -109,7 +109,7 @@ class AuthService:
         if channel == "whatsapp":
             status = await self.c.whatsapp.send(
                 mobile,
-                f"{code} is your PlayR verification code. It expires in 5 minutes. Don't share it.",
+                f"{code} is your GoFindr verification code. It expires in 5 minutes. Don't share it.",
                 [code],
                 "otp",
             )

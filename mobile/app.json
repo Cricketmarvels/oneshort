@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PlayR",
+    "name": "GoFindr",
     "slug": "playr",
     "owner": "playrrs-team",
     "version": "1.0.0",
@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.playr.cricket",
+      "bundleIdentifier": "in.gofindr.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "PlayR uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared.",
+        "NSLocationWhenInUseUsageDescription": "GoFindr uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared.",
         "NSCameraUsageDescription": "Take a profile photo.",
         "NSPhotoLibraryUsageDescription": "Choose a profile photo.",
         "ITSAppUsesNonExemptEncryption": false
@@ -26,7 +26,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "app.playr.cricket",
+      "package": "in.gofindr.app",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
@@ -56,7 +56,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "PlayR uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared."
+          "locationWhenInUsePermission": "GoFindr uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared."
         }
       ],
       [
@@ -78,15 +78,15 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "PlayR uses the microphone only while you search by voice. Audio isn't recorded or stored.",
-          "speechRecognitionPermission": "PlayR turns what you say into search text, e.g. 'I want to play on Saturday morning'.",
+          "microphonePermission": "GoFindr uses the microphone only while you search by voice. Audio isn't recorded or stored.",
+          "speechRecognitionPermission": "GoFindr turns what you say into search text, e.g. 'I want to play on Saturday morning'.",
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
           ]
         }
       ]
     ],
-    "scheme": "playr",
+    "scheme": "gofindr",
     "experiments": {
       "typedRoutes": true
     },
@@ -95,6 +95,7 @@
       "eas": {
         "projectId": "e8df9e32-92c4-4c6b-9234-f594c0389eb8"
       }
-    }
+    },
+    "description": "Your game, one tap away."
   }
 }

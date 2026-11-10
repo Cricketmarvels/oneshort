@@ -44,23 +44,24 @@ def failure_reason(sender: object) -> str:
     code = getattr(sender, "last_error", None)
     if code in NEEDS_SESSION:
         return (
-            "WhatsApp needs you to message PlayR's WhatsApp number first (any message, or the sandbox join "
+            "WhatsApp needs you to message GoFindr's WhatsApp number first (any message, or the sandbox join "
             "code). Then tap the button again within 24 hours."
         )
     if code in (21211, 21614, 63003):
         return "That number can't receive WhatsApp messages. Check the number or use SMS."
     if code == 63007:
-        return "PlayR's WhatsApp sender isn't set up correctly yet. Use SMS for now."
+        return "GoFindr's WhatsApp sender isn't set up correctly yet. Use SMS for now."
     if code in (131031, 368):
-        return "PlayR's WhatsApp business account is restricted by Meta right now. Use SMS for now."
+        return "GoFindr's WhatsApp business account is restricted by Meta right now. Use SMS for now."
     if code == 131030:
         return (
-            "This number isn't on PlayR's WhatsApp test list yet. Add it as a recipient in Meta's WhatsApp test setup."
+            "This number isn't on GoFindr's WhatsApp test list yet. "
+            "Add it as a recipient in Meta's WhatsApp test setup."
         )
     if code in (190, 10, 200):
-        return "PlayR's WhatsApp access has expired. Use SMS for now."
+        return "GoFindr's WhatsApp access has expired. Use SMS for now."
     if code in (132001, 132000, 132012):
-        return "PlayR's WhatsApp message template isn't approved yet. Use SMS for now."
+        return "GoFindr's WhatsApp message template isn't approved yet. Use SMS for now."
     return "Couldn't send the code on WhatsApp. Try again or use SMS."
 
 
@@ -188,7 +189,7 @@ class MetaWhatsApp:
 
 class SimulatorWhatsApp:
     """TEST MODE: delivers nothing. Each message is stored in `whatsapp_outbox` (auto-expires after 24 h) and shown
-    in PlayR's "WhatsApp simulator" screen, so OTP login, invitations and notifications can be tested end to end
+    in GoFindr's "WhatsApp simulator" screen, so OTP login, invitations and notifications can be tested end to end
     without a provider. Refused in production (see Settings). Message text is never logged."""
 
     configured = True

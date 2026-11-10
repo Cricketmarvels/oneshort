@@ -1,4 +1,4 @@
-# PlayR beta — security and privacy release gate
+# GoFindr beta — security and privacy release gate
 
 Date: 2026-11-10. Scope: API and app code on `develop`. Method: regression suites executed in this workspace, config inspection, live-demo probes. **No Critical or High findings open at the API level.** Items that need the real beta environment are marked NOT VERIFIED.
 
@@ -36,5 +36,5 @@ Date: 2026-11-10. Scope: API and app code on `develop`. Method: regression suite
 ## Regression results (this run)
 
 - Backend: see `PLAYR_RELEASE_READINESS_REPORT.md` for the exact count (all security suites included: `test_security_idor.py`, `test_security_auth.py`, `test_security_takeover.py`, `test_sessions.py`, `test_push_and_abuse.py`, `test_request_limits.py`, `test_media.py`, `test_tester_signup.py`, `test_beta_sport_flag.py`, `test_devices.py`).
-- Playwright: 11/11 with `PLAYR_BETA_SPORT=cricket`.
+- Playwright: 11/11 with `GOFINDR_BETA_SPORT=cricket`.
 - Dependency audit: pip-audit clean (last run); npm production audit clean at high.

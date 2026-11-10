@@ -1,5 +1,5 @@
 /**
- * PlayR critical path (Expo web build, phone viewport), against the seeded e2e stack:
+ * GoFindr critical path (Expo web build, phone viewport), against the seeded e2e stack:
  *   captain OTP login → create match → invite link + WhatsApp share → new player joins via link →
  *   captain sees them and splits the fee → player sees what they owe → player requests to join a team →
  *   captain approves → a non-participant is refused the fee page.
@@ -184,10 +184,10 @@ test("someone outside the match can't open its fee page", async ({ page }) => {
 
 test("Terms and Privacy Notice are public, and a player can make a privacy request", async ({ page }) => {
   await page.goto("/legal/privacy");
-  await expect(page.getByText("PlayR Privacy Notice").first()).toBeVisible();
+  await expect(page.getByText("GoFindr Privacy Notice").first()).toBeVisible();
   await expect(page.getByText(/Data Protection Board of India/).first()).toBeVisible();
   await page.getByText("Read the Terms of Use").click();
-  await expect(page.getByText("PlayR Terms of Use").first()).toBeVisible();
+  await expect(page.getByText("GoFindr Terms of Use").first()).toBeVisible();
 
   await emailLogin(page, newbie.email, newbie.password);
   await page.goto("/privacy");

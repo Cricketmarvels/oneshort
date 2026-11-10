@@ -1,4 +1,4 @@
-"""Media: uploads are re-encoded (resized, metadata stripped); image fields only accept PlayR uploads."""
+"""Media: uploads are re-encoded (resized, metadata stripped); image fields only accept GoFindr uploads."""
 
 import io
 from pathlib import Path

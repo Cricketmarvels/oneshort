@@ -7,7 +7,7 @@
  * - Expo Go: the native module isn't bundled, so `available` is false and callers fall back to the
  *   keyboard's own dictation button. We never import the native module there (it would throw).
  *
- * PlayR doesn't record or store audio; recognition is done by the device or browser speech service.
+ * GoFindr doesn't record or store audio; recognition is done by the device or browser speech service.
  */
 import { requireOptionalNativeModule } from "expo";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,7 +26,7 @@ function loadSpeech(): SpeechModule | null {
   }
 }
 
-const HINTS = ["T10", "T15", "T20", "wicketkeeper", "all-rounder", "bowler", "batter", "Noida", "Greater Noida", "Sector", "PlayR", "weekend"];
+const HINTS = ["T10", "T15", "T20", "wicketkeeper", "all-rounder", "bowler", "batter", "Noida", "Greater Noida", "Sector", "GoFindr", "weekend"];
 
 export function useVoiceInput({ onText, onFinal }: { onText: (t: string) => void; onFinal: (t: string) => void }) {
   const mod = useRef<SpeechModule | null | undefined>(undefined);

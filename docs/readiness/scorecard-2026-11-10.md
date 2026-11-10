@@ -1,4 +1,4 @@
-# PlayR launch readiness — 2026-11-10 (develop, after 94a1d94)
+# GoFindr launch readiness — 2026-11-10 (develop, after 94a1d94)
 
 Scored with the `playr-launch-readiness` skill: fresh evidence from `collect_evidence.sh` (full run, both test suites executed) against its fixed rubric. Previous reference: the table from 2026-11-09 pasted by the owner.
 
@@ -10,10 +10,10 @@ Scored with the `playr-launch-readiness` skill: fresh evidence from `collect_evi
 | Data and performance | 8 | +1 | Query-plan audit (no hot-path scans), caps, failover drill with 0 lost writes, backup + restore verified. Backups not scheduled (0 jobs); no load test |
 | Production setup | 2.5 | = | Still a Mac behind a temporary tunnel (it went down overnight and was restarted with new links). Console OTP, WhatsApp simulator, push off, local media, no Sentry DSN, no fixed domain |
 | App store distribution | 3 | +1 | Bundle ids, EAS profiles, splash, production API URL, push code client + server in place. No EAS project id, no google-services.json, no builds, no store assets |
-| Legal | 8 | +4.5 | PlayR Terms v2 and DPDP Privacy Notice live, 3-switch consent with fingerprints, privacy requests with 90-day deadlines, retention schedule, breach runbook, production refuses to start without legal identity. Company details unset; no counsel review or Hindi version |
+| Legal | 8 | +4.5 | GoFindr Terms v2 and DPDP Privacy Notice live, 3-switch consent with fingerprints, privacy requests with 90-day deadlines, retention schedule, breach runbook, production refuses to start without legal identity. Company details unset; no counsel review or Hindi version |
 
 ## What changed since 2026-11-09
-- **Legal 3.5 → 8:** final Terms (no "Draft", no "CricketMarvels"), DPDP Privacy Notice, consent records, privacy-request system, erasing account deletion, compliance docs.
+- **Legal 3.5 → 8:** final Terms (no "Draft", no "GoFindr"), DPDP Privacy Notice, consent records, privacy-request system, erasing account deletion, compliance docs.
 - **Data and performance 7 → 8:** failover-safe Mongo client proven by a crash drill; backup + restore-verify scripts proven (48 collections restored in 5 s).
 - **App store distribution 2 → 3:** splash and per-profile API config, Expo push pipeline (tickets + receipts), deep links, device-sessions screen.
 - **Security and privacy stays 7.5, for a different reason:** much stronger now (two critical takeovers fixed, sessions, budgets), but the rubric doesn't allow 8+ with a High finding open — H2 enumeration. Fixing it lifts this to 8.5.
@@ -22,7 +22,7 @@ Scored with the `playr-launch-readiness` skill: fresh evidence from `collect_evi
 - "202 backend tests, 8 end-to-end tests" — now 224 and 10.
 - "No backups" — backups and restore checks exist and are verified; they just aren't scheduled yet.
 - "Needs a shared rate limiter" — built (`RATE_LIMITER_BACKEND=mongo`); not yet switched on in a deployment.
-- "Agreement marked Draft and says CricketMarvels Play; no DPDP privacy policy" — both resolved.
+- "Agreement marked Draft and says GoFindr; no DPDP privacy policy" — both resolved.
 - "No push notifications" — the code is complete; delivery waits on EAS/Firebase/APNs credentials and device builds.
 
 ## Found and fixed during this audit

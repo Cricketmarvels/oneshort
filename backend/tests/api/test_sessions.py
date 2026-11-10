@@ -22,7 +22,7 @@ async def test_sessions_list_revoke_and_logout_all(client: httpx.AsyncClient, co
     me = (await client.get(f"{API}/users/me", headers=u.h)).json()["data"]
     email = me["email"]
 
-    phone = await _password_login(client, email, "SessionPass2026", "PlayR/1.0 (iPhone 15)")
+    phone = await _password_login(client, email, "SessionPass2026", "GoFindr/1.0 (iPhone 15)")
     laptop = await _password_login(client, email, "SessionPass2026", "Mozilla/5.0 (Macintosh)")
     h_phone = {"Authorization": f"Bearer {phone['access_token']}"}
     h_laptop = {"Authorization": f"Bearer {laptop['access_token']}"}
@@ -53,7 +53,7 @@ async def test_sessions_list_revoke_and_logout_all(client: httpx.AsyncClient, co
     assert dead2.status_code == 401 and dead2.json()["error"]["code"] == "TOKEN_REVOKED"
 
     # logging in again works and the new access token is accepted (iat after the cut-off)
-    fresh = await _password_login(client, email, "SessionPass2026", "PlayR/1.0 (iPhone 15)")
+    fresh = await _password_login(client, email, "SessionPass2026", "GoFindr/1.0 (iPhone 15)")
     assert (
         await client.get(f"{API}/users/me", headers={"Authorization": f"Bearer {fresh['access_token']}"})
     ).status_code == 200

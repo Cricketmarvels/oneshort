@@ -2,7 +2,7 @@
 
 Only the invitation's player and captain can read or write. The WhatsApp option is a deep link
 (wa.me) to the OTHER person's number, offered only when that person has opted in to WhatsApp
-(notification_prefs.whatsapp) — PlayR never shows a number to someone who hasn't been allowed it.
+(notification_prefs.whatsapp) — GoFindr never shows a number to someone who hasn't been allowed it.
 """
 
 import re
@@ -75,13 +75,13 @@ async def thread(invitation_id: str, user: UserDep, c: ContainerDep) -> Envelope
     inv, match, other_id = await _load(c, user, invitation_id)
     other = await c.mongo["users"].find_one(
         {"_id": other_id}, {"full_name": 1, "profile_image": 1, "mobile_number": 1, "notification_prefs": 1}
-    ) or {"_id": other_id, "full_name": "PlayR player"}
+    ) or {"_id": other_id, "full_name": "GoFindr player"}
     is_open = inv["invitation_status"] in OPEN
     wa = None
     if is_open and (other.get("notification_prefs") or {}).get("whatsapp") and other.get("mobile_number"):
         wa = _wa_link(
             other["mobile_number"],
-            f"Hi {other['full_name'].split()[0]}, it's {user.full_name} from PlayR "
+            f"Hi {other['full_name'].split()[0]}, it's {user.full_name} from GoFindr "
             f"about {match.get('title', 'our match')}.",
         )
     rows = [

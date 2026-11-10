@@ -1,4 +1,4 @@
-# PlayR beta — real-device test matrix
+# GoFindr beta — real-device test matrix
 
 Date: 2026-11-10. **No physical-device run has happened yet** (no EAS project, APNs key, WhatsApp sender or dev builds). Statuses reflect what was actually executed: web build + API, or BLOCKED. A row becomes PASS only with device evidence (recording + log excerpt) attached here.
 

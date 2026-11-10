@@ -84,7 +84,7 @@ function Snapshot({ snap }: { snap: NonNullable<Profile["snapshot"]> }) {
                       : <span className="font-medium">{pl.name}</span>}
                     {pl.role && <p className="truncate text-xs text-ink-500">{pl.role}</p>}
                   </div>
-                  {pl.member_user_id && <Link to={`/players/${pl.member_user_id}`}><Badge tone="success">On CricketMarvels</Badge></Link>}
+                  {pl.member_user_id && <Link to={`/players/${pl.member_user_id}`}><Badge tone="success">On GoFindr</Badge></Link>}
                 </li>
               ))}
             </ul>
@@ -129,7 +129,7 @@ function Snapshot({ snap }: { snap: NonNullable<Profile["snapshot"]> }) {
       )}
       <p className="text-xs text-ink-500">
         {snap.method === "manual" ? "Entered manually" : snap.method === "sync" ? "Synced" : "Imported from file"} {relativeTime(snap.imported_at)}
-        {snap.imported_by && ` by ${snap.imported_by.full_name}`}. Provided by the team; not verified by CricketMarvels.
+        {snap.imported_by && ` by ${snap.imported_by.full_name}`}. Provided by the team; not verified by GoFindr.
       </p>
     </div>
   );

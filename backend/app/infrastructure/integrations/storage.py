@@ -58,7 +58,7 @@ _OWN_MEDIA = re.compile(r"^/uploads/[A-Za-z0-9_-]{1,40}/[a-f0-9]{32}\.(?:jpg|png
 
 
 def is_own_media(url: str | None, settings: Settings) -> bool:
-    """True only for files PlayR stored itself (relative /uploads/… path, or legacy absolute URL on our base)."""
+    """True only for files GoFindr stored itself (relative /uploads/… path, or legacy absolute URL on our base)."""
     if not url:
         return False
     base = settings.public_base_url.rstrip("/")

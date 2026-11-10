@@ -29,7 +29,7 @@ export default function MyFees() {
           <Stat label="To pay" value={d.pending_count} />
           <Stat label="Disputed" value={d.disputed_count} />
         </View>
-        <Txt v="small" color={T.text2}>Pay your captain directly by cash or UPI. They mark it paid; PlayR doesn't process payments.</Txt>
+        <Txt v="small" color={T.text2}>Pay your captain directly by cash or UPI. They mark it paid; GoFindr doesn't process payments.</Txt>
       </View>
       <ChipRow value={filter} onChange={setFilter} options={[{ v: "all", l: "All" }, { v: "pending", l: "To pay" }, { v: "paid", l: "Paid" }, { v: "disputed", l: "Disputed" }]} />
       {!d.records.length ? <EmptyState icon={<Wallet size={22} color={T.ink} strokeWidth={1.5} />} title={filter === "all" ? "No match fees yet" : "Nothing here"} body="When a captain shares a fee split that includes you, it shows up here." /> : d.records.map((r) => (

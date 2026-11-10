@@ -1,6 +1,6 @@
 /**
  * Split a match fee. Works for pickup matches (ledger = match id) and team-vs-team matches
- * (ledger = this team's fee side, opened from the match centre). PlayR only records who has
+ * (ledger = this team's fee side, opened from the match centre). GoFindr only records who has
  * paid: money goes directly to the captain (cash/UPI); no payment is processed here.
  */
 import type { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -73,7 +73,7 @@ export default function SplitFee() {
       ) : (
         <EmptyState icon={<Wallet size={22} color={T.ink} strokeWidth={1.5} />} title="No fee published yet" body="Your captain hasn't shared the match fee split. You'll be notified when they do." />
       )}
-      <Txt v="small" color={T.muted}>PlayR doesn't process payments. Pay your captain directly by cash or UPI; they mark it paid here. Never share a UPI PIN.</Txt>
+      <Txt v="small" color={T.muted}>GoFindr doesn't process payments. Pay your captain directly by cash or UPI; they mark it paid here. Never share a UPI PIN.</Txt>
     </Shell>
   );
 }
@@ -140,7 +140,7 @@ function Summary({ total, collected, outstanding, perHead, payers, state, record
           ) : null}
         </Card>
       ) : null}
-      {mine?.status === "paid" ? <Txt v="small" color={T.muted}>Marked paid by {mine.captain.full_name}. This is a manual record — PlayR doesn't process or verify payments.</Txt> : null}
+      {mine?.status === "paid" ? <Txt v="small" color={T.muted}>Marked paid by {mine.captain.full_name}. This is a manual record — GoFindr doesn't process or verify payments.</Txt> : null}
     </View>
   );
 }

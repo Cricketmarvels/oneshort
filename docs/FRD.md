@@ -1,6 +1,6 @@
 # Functional Requirements Document (FRD)
 
-**Product:** CricketMarvels Play: Hyperlocal Cricket Matchmaking & Team Management Platform
+**Product:** GoFindr: Hyperlocal Cricket Matchmaking & Team Management Platform
 **Version:** 1.0 (MVP) · **Market:** India first · **Platforms:** Web, iOS, Android
 
 This document is the condensed, numbered version of the master specification, which remains authoritative.

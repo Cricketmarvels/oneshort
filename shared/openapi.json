@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "CricketMarvels Play API",
+    "title": "GoFindr API",
     "description": "Hyperlocal cricket matchmaking & team management API. All responses use the envelope `{data, meta?}`; errors use `{error: {code, message, details}, request_id}`.",
     "version": "1.0.0"
   },
@@ -6348,7 +6348,7 @@
         "tags": [
           "Home"
         ],
-        "summary": "PlayR home: rating, rank, fixtures, challenges",
+        "summary": "GoFindr home: rating, rank, fixtures, challenges",
         "operationId": "home_api_v1_home_get",
         "security": [
           {
@@ -24437,7 +24437,7 @@
           "booking_available": {
             "type": "boolean",
             "title": "Booking Available",
-            "description": "False until a facility shares live slots with PlayR"
+            "description": "False until a facility shares live slots with GoFindr"
           }
         },
         "type": "object",
@@ -25313,7 +25313,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "CricHeroesStats",
-        "description": "Career numbers the player copies from their CricHeroes profile. Self-reported: PlayR shows them labelled\nas such, never mixes them into PlayR ratings, and never fetches them from CricHeroes."
+        "description": "Career numbers the player copies from their CricHeroes profile. Self-reported: GoFindr shows them labelled\nas such, never mixes them into GoFindr ratings, and never fetches them from CricHeroes."
       },
       "CricHeroesStatsOut": {
         "properties": {
@@ -29194,7 +29194,7 @@
           "has_cricheroes": {
             "type": "boolean",
             "title": "Has Cricheroes",
-            "description": "Player linked a CricHeroes profile (open their PlayR profile to view it)",
+            "description": "Player linked a CricHeroes profile (open their GoFindr profile to view it)",
             "default": false
           }
         },
@@ -31038,7 +31038,7 @@
               }
             ],
             "title": "Cricheroes Profile Url",
-            "description": "Player-supplied CricHeroes link (not verified by PlayR)"
+            "description": "Player-supplied CricHeroes link (not verified by GoFindr)"
           },
           "cricheroes_player_id": {
             "anyOf": [

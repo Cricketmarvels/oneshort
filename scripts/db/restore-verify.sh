@@ -6,8 +6,8 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 URI="${MONGODB_URI:-mongodb://127.0.0.1:27018/?replicaSet=rs0}"
 DB="${MONGODB_DB:-cricket_platform}"
 DIR="${BACKUP_DIR:-$ROOT/.data/backups}"
-ARCHIVE="${1:-$(ls -t "$DIR"/playr-*.archive.gz | head -1)}"
-SCRATCH="playr_restore_check"
+ARCHIVE="${1:-$(ls -t "$DIR"/gofindr-*.archive.gz | head -1)}"
+SCRATCH="gofindr_restore_check"
 [ "$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')" = "$(cat "$ARCHIVE.sha256")" ] || { echo "CHECKSUM MISMATCH: $ARCHIVE"; exit 1; }
 START=$(date +%s)
 mongorestore --uri="$URI" --gzip --archive="$ARCHIVE" --nsInclude="$DB.*" \

@@ -1,4 +1,4 @@
-"""PlayR home: one call for the personalised command centre."""
+"""GoFindr home: one call for the personalised command centre."""
 
 from datetime import timedelta
 from typing import Any

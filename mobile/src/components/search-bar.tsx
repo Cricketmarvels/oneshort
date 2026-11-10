@@ -14,7 +14,7 @@ export function SmartSearchBar({ value, onChange, onSubmit, autoFocus }: { value
     if (voice.listening) return voice.stop();
     if (!voice.available) {
       input.current?.focus();
-      return Alert.alert("Speak using your keyboard", "Voice search needs the installed PlayR app or the website. Here, tap the microphone on your phone's keyboard to dictate.");
+      return Alert.alert("Speak using your keyboard", "Voice search needs the installed GoFindr app or the website. Here, tap the microphone on your phone's keyboard to dictate.");
     }
     await voice.start();
   };
@@ -23,7 +23,7 @@ export function SmartSearchBar({ value, onChange, onSubmit, autoFocus }: { value
     <View style={{ gap: 6 }}>
       <View style={[{ flexDirection: "row", alignItems: "center", gap: 10, height: 50, paddingLeft: 16, paddingRight: 4, borderRadius: R.field, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }, shadow(2)]}>
         <Search size={18} color={T.muted} strokeWidth={ICON.stroke} />
-        <TextInput ref={input} accessibilityLabel="Search PlayR in your own words" value={value} onChangeText={onChange} onSubmitEditing={() => onSubmit(value)} returnKeyType="search" autoFocus={autoFocus}
+        <TextInput ref={input} accessibilityLabel="Search GoFindr in your own words" value={value} onChangeText={onChange} onSubmitEditing={() => onSubmit(value)} returnKeyType="search" autoFocus={autoFocus}
           placeholder={voice.listening ? "Listening…" : "Try “play on Saturday morning”"} placeholderTextColor={T.placeholder}
           style={{ flex: 1, minWidth: 0, height: 48, ...FW.body, fontSize: 15, color: T.ink, outlineStyle: "none" } as object} />
         {canSearch ? (

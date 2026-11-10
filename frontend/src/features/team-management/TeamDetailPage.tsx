@@ -117,7 +117,7 @@ function AddMemberSheet({ teamId, onClose }: { teamId: string; onClose: () => vo
   return (
     <Sheet open onOpenChange={(v) => !v && onClose()} title="Add a team member" description="They'll get a team invitation to accept."
       footer={<Button block size="lg" disabled={!valid} loading={add.isPending} onClick={() => add.mutate(undefined)}>Send invitation</Button>}>
-      <Field label="Player's mobile number" hint="They need a CricketMarvels Play account.">{(id) => <Input id={id} inputMode="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="98765 43210" />}</Field>
+      <Field label="Player's mobile number" hint="They need a GoFindr account.">{(id) => <Input id={id} inputMode="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="98765 43210" />}</Field>
     </Sheet>
   );
 }

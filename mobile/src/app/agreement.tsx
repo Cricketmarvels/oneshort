@@ -49,8 +49,8 @@ export default function Agreement() {
         </Card>
       </ScrollView>
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: SP.page, paddingBottom: SP.xl, gap: SP.md, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.line }}>
-        <Consent label="I agree to the Platform User Agreement" text="I have read and agree to the PlayR Terms of Use." value={ok} onChange={setOk} />
-        <Consent label="I consent under the Privacy Notice" text="I have read the Privacy Notice and consent to PlayR using my data as it describes." value={priv} onChange={setPriv}
+        <Consent label="I agree to the Platform User Agreement" text="I have read and agree to the GoFindr Terms of Use." value={ok} onChange={setOk} />
+        <Consent label="I consent under the Privacy Notice" text="I have read the Privacy Notice and consent to GoFindr using my data as it describes." value={priv} onChange={setPriv}
           link={{ label: "Read the Privacy Notice", onPress: () => router.push("/legal/privacy") }} />
         <Consent label="I am 18 or older" text="I am 18 or older." value={adult} onChange={setAdult} />
         {err ? <Txt v="small" color={T.dangerText} accessibilityRole="alert">{err}</Txt> : null}

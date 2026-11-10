@@ -1,6 +1,6 @@
-# PlayR — existing architecture audit for the cricket iOS beta
+# GoFindr — existing architecture audit for the cricket iOS beta
 
-Date: 2026-11-10 · Branch `develop`. Evidence: 232 backend tests, 11 Playwright journeys (run with `PLAYR_BETA_SPORT=cricket`), live-demo checks, config inspection. Statuses: **READY / PARTIALLY IMPLEMENTED / MISSING / BLOCKED BY EXTERNAL DEPENDENCY**. Nothing is READY because code exists; only because it was executed.
+Date: 2026-11-10 · Branch `develop`. Evidence: 232 backend tests, 11 Playwright journeys (run with `GOFINDR_BETA_SPORT=cricket`), live-demo checks, config inspection. Statuses: **READY / PARTIALLY IMPLEMENTED / MISSING / BLOCKED BY EXTERNAL DEPENDENCY**. Nothing is READY because code exists; only because it was executed.
 
 ## 1. Stack as found
 
@@ -8,7 +8,7 @@ Date: 2026-11-10 · Branch `develop`. Evidence: 232 backend tests, 11 Playwright
 |---|---|---|
 | Mobile | Expo SDK 58, React Native 0.88, TypeScript strict, expo-router (typed routes), TanStack Query, zustand, expo-image, expo-location, expo-notifications, expo-secure-store, expo-speech-recognition; custom token-based design system (`theme.ts`, `#F5F6F0` canvas, `#008C86` teal) | No Gluestack/NativeWind/RHF — not needed |
 | EAS | `eas.json`: development (dev client), simulator, preview, **beta** (store, channel `beta`, auto-increment, m-medium), production; per-profile `EXPO_PUBLIC_API_URL` | No EAS project id yet |
-| iOS identity | bundle `app.playr.cricket`, name PlayR, `ITSAppUsesNonExemptEncryption=false`, When-In-Use location, camera, photos, microphone strings; splash configured | No associated domains (no owned domain yet) |
+| iOS identity | bundle `in.gofindr.app`, name GoFindr, `ITSAppUsesNonExemptEncryption=false`, When-In-Use location, camera, photos, microphone strings; splash configured | No associated domains (no owned domain yet) |
 | Backend | FastAPI, Pydantic strict models, PyMongo async, 32 modules, structured JSON logs with redaction, Sentry wired (off until DSN) | `APP_ENV=beta` added with production guards |
 | Database | MongoDB 8 replica set; 122 index definitions incl. 2dsphere, TTLs, partial uniques; majority writes, retryable ops, 15 s selection timeout; failover drill: 0 lost writes | Managed Atlas not provisioned |
 | CI | GitHub Actions: backend lint/types/tests, OpenAPI contract, frontend, mobile typecheck/jest, dependency scanning | Never executed: 19 commits unpushed (token) |
@@ -17,7 +17,7 @@ Date: 2026-11-10 · Branch `develop`. Evidence: 232 backend tests, 11 Playwright
 
 | # | Capability | Status | Severity if gap | Blocks TestFlight? | Fix / dependency |
 |---|---|---|---|---|---|
-| 1 | Cricket-only beta flag | **READY** (new today) | — | — | `PLAYR_BETA_SPORT=cricket`: single sport offered, racket APIs 404, profiles read as cricket; verified on the live demo |
+| 1 | Cricket-only beta flag | **READY** (new today) | — | — | `GOFINDR_BETA_SPORT=cricket`: single sport offered, racket APIs 404, profiles read as cricket; verified on the live demo |
 | 2 | Phone-OTP auth, sessions, refresh rotation, device sessions, sign-out-everywhere, lockout, no enumeration, takeover fixes | **READY** | — | — | 40+ auth/security tests |
 | 3 | OTP delivery to real Indian numbers (WhatsApp/SMS) | **BLOCKED BY EXTERNAL DEPENDENCY** | Critical for beta | **Yes** | Meta WhatsApp Business sender + approved templates + billing; MSG91 + DLT for SMS fallback (`PLAYR_WHATSAPP_SETUP.md`) |
 | 4 | WhatsApp match-invitation messages (opt-in) | BLOCKED BY EXTERNAL DEPENDENCY | Medium (push + in-app cover it) | No | Same credentials; code tested with a fake provider |
@@ -42,7 +42,7 @@ Date: 2026-11-10 · Branch `develop`. Evidence: 232 backend tests, 11 Playwright
 
 ## 3. Changes made during this audit (all tested)
 
-- `PLAYR_BETA_SPORT` flag (backend setting, public via `/auth/options`, racket router guard, preferred-sport coercion/validation; mobile sport screen, login, root gate).
+- `GOFINDR_BETA_SPORT` flag (backend setting, public via `/auth/options`, racket router guard, preferred-sport coercion/validation; mobile sport screen, login, root gate).
 - `APP_ENV=beta` with production-grade guards.
 - Nearby discovery excludes blocked users both ways.
 - Profile photo: take with camera, remove.

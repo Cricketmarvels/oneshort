@@ -1,4 +1,4 @@
-"""PLAYR_BETA_SPORT: a single-sport release hides the other sports without deleting anything."""
+"""GOFINDR_BETA_SPORT: a single-sport release hides the other sports without deleting anything."""
 
 import httpx
 import pytest
@@ -13,7 +13,7 @@ API = "/api/v1"
 
 @pytest.fixture
 def cricket_beta(container: Container, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(container, "settings", container.settings.model_copy(update={"playr_beta_sport": "cricket"}))
+    monkeypatch.setattr(container, "settings", container.settings.model_copy(update={"gofindr_beta_sport": "cricket"}))
 
 
 async def test_flag_is_public_and_racket_apis_disappear(client: httpx.AsyncClient, cricket_beta: None) -> None:

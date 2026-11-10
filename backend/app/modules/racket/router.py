@@ -5,7 +5,7 @@ a profile, a search and a request always carry exactly one sport, so a Badminton
 never sees Pickleball players unless they switch sports.
 
 Privacy: exact coordinates are stored for distance only and are never returned; distances are
-rounded to the nearest 0.5 km (`approx_km`), as everywhere else in PlayR.
+rounded to the nearest 0.5 km (`approx_km`), as everywhere else in GoFindr.
 Courts: there is no booking or availability provider yet, so courts expose facts only
 (name, area, sports, court count, amenities) and every seeded court is flagged `is_demo`.
 """
@@ -28,7 +28,7 @@ from app.core.exceptions import Conflict, Forbidden, NotFound, ValidationFailed
 async def sport_enabled(request: Request, c: ContainerDep) -> None:
     """Single-sport beta guard: racket endpoints disappear (404) unless the beta sport is this racket sport.
     Reads the path's `sport` when present, so a badminton beta still hides pickleball."""
-    beta = c.settings.playr_beta_sport
+    beta = c.settings.gofindr_beta_sport
     if not beta:
         return
     requested = request.path_params.get("sport")
@@ -139,7 +139,7 @@ class CourtOut(BaseModel):
     phone: str | None
     distance_km: float | None
     is_demo: bool = Field(description="Seeded sample facility, not verified with the venue")
-    booking_available: bool = Field(description="False until a facility shares live slots with PlayR")
+    booking_available: bool = Field(description="False until a facility shares live slots with GoFindr")
 
 
 # ---------------------------------------------------------------- helpers
@@ -210,7 +210,7 @@ async def _request_out(c: ContainerDep, r: dict[str, Any], me: ObjectId) -> Play
         sport=r["sport"],
         status=r["status"],
         direction="sent" if sent else "received",
-        other=_public(other or {"_id": other_id, "full_name": "PlayR player"}),
+        other=_public(other or {"_id": other_id, "full_name": "GoFindr player"}),
         message=r.get("message"),
         proposed_at=r.get("proposed_at"),
         court=CourtBrief(id=str(court["_id"]), name=court["name"], area=court["area"]) if court else None,
@@ -408,7 +408,7 @@ async def send_request(sport: Sport, data: PlayRequestIn, user: UserDep, c: Cont
     if to == user.id:
         raise ValidationFailed("You can't send a play request to yourself", code="SELF_REQUEST")
     if not await c.mongo["racket_profiles"].find_one({"user_id": to, "sport": sport, "discoverable": True}, {"_id": 1}):
-        raise NotFound(f"That player isn't playing {SPORT_LABEL[sport]} on PlayR")
+        raise NotFound(f"That player isn't playing {SPORT_LABEL[sport]} on GoFindr")
     if await c.mongo["play_requests"].find_one(
         {"sport": sport, "from_user_id": user.id, "to_user_id": to, "status": "pending"}, {"_id": 1}
     ):
@@ -434,7 +434,7 @@ async def send_request(sport: Sport, data: PlayRequestIn, user: UserDep, c: Cont
         [to],
         NotificationType.PLAYER_INVITATION,
         f"{user.full_name} wants to play {SPORT_LABEL[sport]}",
-        data.message or "Open PlayR to accept or decline.",
+        data.message or "Open GoFindr to accept or decline.",
         {"play_request_id": doc["_id"], "sport": sport},
     )
     return ok(await _request_out(c, doc, user.id))

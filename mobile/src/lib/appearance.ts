@@ -4,7 +4,7 @@ import { Platform } from "react-native";
 import { create } from "zustand";
 
 export type AppearancePref = "system" | "light" | "dark";
-const KEY = "playr.appearance";
+const KEY = "gofindr.inearance";
 const web = Platform.OS === "web";
 const ls = () => (globalThis as { localStorage?: Storage }).localStorage;
 

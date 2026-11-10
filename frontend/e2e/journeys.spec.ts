@@ -61,7 +61,7 @@ test("captain: find nearby players for a seeded match", async ({ page }, info) =
   await page.getByText("Sector 18 Kings").first().click();
   const ch = page.getByRole("region", { name: "CricHeroes" });
   await expect(ch.getByText("Win %")).toBeVisible();
-  await expect(ch.getByText("On CricketMarvels").first()).toBeVisible();
+  await expect(ch.getByText("On GoFindr").first()).toBeVisible();
   await expect(ch.getByRole("button", { name: "Sync" })).toBeDisabled();
   await ch.getByRole("button", { name: "Link CricHeroes team" }).click();
   await page.getByLabel("CricHeroes team link").fill("https://cricheroes.in/team-profile/1234567/sector-18-kings/members");

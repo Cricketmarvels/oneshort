@@ -1,4 +1,4 @@
-# PlayR Cricket Beta — release readiness report
+# GoFindr Cricket Beta — release readiness report
 
 Date: 2026-11-10 · Branch `develop`. Every status below is backed by something executed in this workspace or explicitly marked BLOCKED / NOT VERIFIED. **TestFlight submission status: not submitted — no build exists yet (accounts pending).**
 
@@ -21,7 +21,7 @@ Date: 2026-11-10 · Branch `develop`. Every status below is backed by something 
 
 ## Implemented in this release pass (tested)
 
-1. **Cricket-only beta flag** `PLAYR_BETA_SPORT=cricket` — server-driven: one sport offered before login, "Change sport" hidden, racket (badminton/pickleball) APIs answer 404 (no hidden-sport data can be created), profiles read as cricket while stored values stay intact. Clearing the flag restores every sport without an app update. Live on the demo.
+1. **Cricket-only beta flag** `GOFINDR_BETA_SPORT=cricket` — server-driven: one sport offered before login, "Change sport" hidden, racket (badminton/pickleball) APIs answer 404 (no hidden-sport data can be created), profiles read as cricket while stored values stay intact. Clearing the flag restores every sport without an app update. Live on the demo.
 2. **`APP_ENV=beta`** with production guards (no console OTP, no on-screen codes, no tester mode, legal identity required).
 3. **Nearby discovery excludes blocked users** in both directions.
 4. **Profile photo**: take with camera, remove (plus existing add/change).
@@ -68,13 +68,13 @@ Owner-reported: Expo organization **`playrrs-team`** created (https://expo.dev/a
 |---|---|
 | EAS CLI | `eas-cli/27.6.0`; **not logged in** on this machine (`eas whoami` → "Not logged in") |
 | EAS project link | none existed (no `extra.eas.projectId`), so no duplicate risk; `app.json` now carries `owner: "playrrs-team"` so `eas init` links the project under the organization, not a personal account |
-| Bundle id / name / version | `app.playr.cricket` / PlayR / 1.0.0 (build 1, auto-increment on the `beta` profile) |
-| `beta` profile | store distribution, `environment: preview`, m-medium, `EXPO_PUBLIC_API_URL=https://beta-api.playr.app/api/v1`; **`channel` removed** — EAS refuses a channel without `expo-updates`, which the beta does not use |
+| Bundle id / name / version | `in.gofindr.app` / GoFindr / 1.0.0 (build 1, auto-increment on the `beta` profile) |
+| `beta` profile | store distribution, `environment: preview`, m-medium, `EXPO_PUBLIC_API_URL=https://beta-api.gofindr.in/api/v1`; **`channel` removed** — EAS refuses a channel without `expo-updates`, which the beta does not use |
 | Backend URL in builds | No profile points at localhost or the Cloudflare demo URL (`localhost` remains only in the `simulator` dev profile and the dev fallback). **The beta API host does not exist yet** — a store build today would ship pointing at an unreachable backend |
 | Expo Doctor | 20/20 checks passed |
 | TypeScript (mobile, classic web) | clean |
 | Backend regression | **233 passed**, ruff + mypy clean |
-| Playwright journeys | **11/11**, run twice consecutively, with `PLAYR_BETA_SPORT=cricket` |
+| Playwright journeys | **11/11**, run twice consecutively, with `GOFINDR_BETA_SPORT=cricket` |
 | Apple membership, certificates, provisioning, APNs, capabilities | **NOT VERIFIED** — needs an active membership and an interactive Apple login through `eas credentials` |
 
 Fixed during this pass: a refresh-token race that signed users out when the app re-requested a refresh while a page reload (or app kill) replayed the token it had just rotated. The server now allows a 10-second reuse grace for a token whose successor is unused (`REFRESH_REUSE_GRACE_SECONDS`); replays outside the window, or after the successor was used, still revoke the family. Found by a 1-in-3 end-to-end failure; regression test added. The client also performs one redundant refresh right after sign-in (the auth provider re-runs its boot effect on web) — harmless now, tracked as a low-priority cleanup.
@@ -89,7 +89,7 @@ Fixed during this pass: a refresh-token race that signed users out when the app 
 
 1. ~~Interactive Expo login + project link~~ — **done** (see above).
 2. **Apple Developer membership active** — enrollment is submitted; Apple typically activates within 24–48 h (longer for organizations needing a D-U-N-S number). Until then `eas credentials` cannot create the distribution certificate, provisioning profile or APNs key, and a store build fails at signing.
-3. **A reachable HTTPS beta backend** — provision per `PLAYR_BETA_DEPLOYMENT_RUNBOOK.md` (paid approval), or point the `beta` profile at a stable named Cloudflare tunnel on an owned domain for the first internal build. Building against `beta-api.playr.app` before it exists produces an app that cannot sign in.
+3. **A reachable HTTPS beta backend** — provision per `PLAYR_BETA_DEPLOYMENT_RUNBOOK.md` (paid approval), or point the `beta` profile at a stable named Cloudflare tunnel on an owned domain for the first internal build. Building against `beta-api.gofindr.in` before it exists produces an app that cannot sign in.
 4. **Approval for the paid build** — once 1–3 are satisfied, I will ask before running `npx eas-cli build --platform ios --profile beta`.
 
 ## Build status

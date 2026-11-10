@@ -18,13 +18,13 @@ def _adapter(templates: dict[str, str | None], reply: httpx.Response, seen: list
 async def test_text_fallback_without_template() -> None:
     seen: list[dict] = []  # type: ignore[type-arg]
     wa = _adapter({}, httpx.Response(200, json={"messages": [{"id": "wamid.1"}]}), seen)
-    assert await wa.send("+919800000001", "PlayR · hello", ["hello"], "notify") == "sent"
+    assert await wa.send("+919800000001", "GoFindr · hello", ["hello"], "notify") == "sent"
     assert seen[0]["url"] == "https://graph.facebook.com/v25.0/PHONE1/messages" and seen[0]["auth"] == "Bearer tok"
     assert seen[0]["json"] == {
         "messaging_product": "whatsapp",
         "to": "919800000001",
         "type": "text",
-        "text": {"body": "PlayR · hello", "preview_url": False},
+        "text": {"body": "GoFindr · hello", "preview_url": False},
     }
 
 
@@ -48,4 +48,4 @@ async def test_meta_error_code_is_kept_and_explained() -> None:
     assert await wa.send("+919800000001", "x", ["x"], "notify") == "failed"
     assert wa.last_error == 131030 and "test list" in failure_reason(wa)
     wa2 = _adapter({}, httpx.Response(400, json={"error": {"code": 131047}}), [])
-    assert await wa2.send("+919800000001", "x", ["x"], "notify") == "failed" and "message PlayR" in failure_reason(wa2)
+    assert await wa2.send("+919800000001", "x", ["x"], "notify") == "failed" and "message GoFindr" in failure_reason(wa2)

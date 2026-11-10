@@ -56,7 +56,7 @@ export default function RacketPlayer() {
             <Button title="Send play request" variant="highlight" size="lg" loading={send.isPending} onPress={() => send.mutate()} />
           </View>
         )}
-      <Txt v="small" color={T.muted}>Ratings for {SPORTS[sport].name.toLowerCase()} start once verified matches are recorded. PlayR never shares exact locations or phone numbers.</Txt>
+      <Txt v="small" color={T.muted}>Ratings for {SPORTS[sport].name.toLowerCase()} start once verified matches are recorded. GoFindr never shares exact locations or phone numbers.</Txt>
     </ScrollView>
   );
 }

@@ -68,7 +68,7 @@ class TwilioOtpSender:
                 data={
                     "To": mobile_number,
                     "From": self._from,
-                    "Body": f"{code} is your CricketMarvels verification code. Valid for 5 minutes.",
+                    "Body": f"{code} is your GoFindr verification code. Valid for 5 minutes.",
                 },
             )
         if resp.status_code >= 400:

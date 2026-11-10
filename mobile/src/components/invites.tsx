@@ -20,7 +20,7 @@ export type ChatThread = S<"ChatThreadOut">;
 export const WHATSAPP_STATUS: Record<string, string> = {
   sent: "WhatsApp message sent",
   failed: "WhatsApp message couldn't be delivered — they still got the in-app invitation",
-  not_configured: "WhatsApp isn't connected to PlayR yet — they got the in-app invitation",
+  not_configured: "WhatsApp isn't connected to GoFindr yet — they got the in-app invitation",
   opted_out: "They haven't switched on WhatsApp updates — they got the in-app invitation",
   no_number: "No verified mobile number — they got the in-app invitation",
 };

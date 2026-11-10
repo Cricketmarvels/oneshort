@@ -29,11 +29,11 @@ class RankingWeights(BaseSettings):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_name: str = "CricketMarvels Play API"
+    app_name: str = "GoFindr API"
     app_env: Literal["development", "test", "staging", "beta", "production"] = "development"
     # Cricket-only TestFlight beta: when set, only this sport is offered, other sports' APIs answer 404 and
     # profiles are read as this sport. Nothing is deleted; clear the flag to re-enable every sport.
-    playr_beta_sport: Literal["cricket", "badminton", "pickleball"] | None = None
+    gofindr_beta_sport: Literal["cricket", "badminton", "pickleball"] | None = None
     debug: bool = False
     log_level: str = "INFO"
     sentry_dsn: str | None = None  # error tracking is off unless set
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
     # Auth
     jwt_secret: str = _INSECURE_DEFAULT
-    jwt_issuer: str = "cricketmarvels-play"
+    jwt_issuer: str = "gofindr"
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 30
     otp_ttl_seconds: int = 300
@@ -105,7 +105,7 @@ class Settings(BaseSettings):
     whatsapp_webhook_verify_token: str | None = None  # random string you also enter in Meta's webhook settings
     whatsapp_meta_app_secret: str | None = None  # App settings → Basic → App secret (verifies webhook signatures)
     whatsapp_meta_waba_id: str | None = None  # WhatsApp Business Account id — only for scripts.whatsapp_meta_setup
-    app_base_url: str | None = Field(default=None, description="Where the PlayR app is served, for links in messages")
+    app_base_url: str | None = Field(default=None, description="Where the GoFindr app is served, for links in messages")
 
     # Rate limiting (requests per minute)
     rate_limit_auth_per_minute: int = 10
@@ -159,7 +159,7 @@ class Settings(BaseSettings):
 
     # Legal identity shown in the Terms and Privacy Notice (DPDP Act 2023 / IT Rules 2021).
     # Required in production; placeholders are shown elsewhere so drafts are obvious.
-    legal_entity_name: str | None = None  # registered company name that operates PlayR (the Data Fiduciary)
+    legal_entity_name: str | None = None  # registered company name that operates GoFindr (the Data Fiduciary)
     legal_entity_address: str | None = None  # registered office address
     grievance_officer_name: str | None = None
     grievance_email: str | None = None  # privacy and grievance requests

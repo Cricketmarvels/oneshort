@@ -98,7 +98,7 @@ export function GroundCoverImage({ name, uri, style }: { name: string; uri?: str
 
 /**
  * Large action-card artwork. ARTWORK holds licensed raster illustrations once approved (drop files in
- * assets/artwork/ and register them here). Until then the interim PlayR pictogram is shown.
+ * assets/artwork/ and register them here). Until then the interim GoFindr pictogram is shown.
  */
 export const ARTWORK: Partial<Record<SportsAction, ImageSource | number>> = {};
 
@@ -110,8 +110,8 @@ export function SportsActionArtwork({ action, size = 56, color }: { action: Spor
 
 /**
  * Manager-only "change photo" control. Picks from the library, uploads with the purpose (server validates, resizes,
- * strips metadata and records the owner), then hands the PlayR URL to `save` (PUT on the entity — the API rejects
- * any URL that isn't a PlayR upload). Errors are shown inline; nothing changes until the save succeeds.
+ * strips metadata and records the owner), then hands the GoFindr URL to `save` (PUT on the entity — the API rejects
+ * any URL that isn't a GoFindr upload). Errors are shown inline; nothing changes until the save succeeds.
  */
 export function MediaEditButton({ label, purpose, save, onDark }: { label: string; purpose: UploadPurpose; save: (url: string) => Promise<unknown>; onDark?: boolean }) {
   const [busy, setBusy] = useState(false);

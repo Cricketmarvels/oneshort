@@ -62,7 +62,7 @@ export default function PrivacyScreen() {
         a.href = g.URL.createObjectURL(new g.Blob([text], { type: "application/json" }));
         a.download = "playr-my-data.json"; a.click();
       } else {
-        await Share.share({ title: "My PlayR data", message: text });
+        await Share.share({ title: "My GoFindr data", message: text });
       }
     } catch (e) { Alert.alert("Couldn't prepare your data", errorText(e)); } finally { setExporting(false); }
   };

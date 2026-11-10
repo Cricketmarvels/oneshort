@@ -79,7 +79,7 @@ export function FindGrounds() {
               <Txt v="body">{focus.address}</Txt>
               <Txt v="small" color={T.muted}>{[focus.area, focus.city].filter(Boolean).join(", ")}{focus.distance_km != null ? ` · ~${focus.distance_km} km away` : ""}</Txt>
             </View>
-            <InlineNotice>Booking isn't available in PlayR. Slots, prices and facilities aren't listed — contact the venue directly; Maps shows its phone number and hours where the venue has published them.</InlineNotice>
+            <InlineNotice>Booking isn't available in GoFindr. Slots, prices and facilities aren't listed — contact the venue directly; Maps shows its phone number and hours where the venue has published them.</InlineNotice>
             <Button title="Contact venue (opens Maps)" icon={<MapPinned size={18} color={T.onPrimary} strokeWidth={ICON.stroke} />} onPress={() => maps(focus)} />
             {myTeam ? <Button title="Challenge a team to play here" variant="secondary" icon={<Swords size={17} color={T.ink} strokeWidth={ICON.stroke} />} onPress={() => { detail.current?.dismiss(); router.push({ pathname: "/challenge/new", params: { from: myTeam } }); }} /> : null}
           </View>

@@ -44,9 +44,9 @@ async def whatsapp_test(user: UserDep, c: ContainerDep) -> Envelope[WhatsAppTest
     if not c.whatsapp.configured:
         return ok(WhatsAppTestOut(status="not_configured"))
     first = user.full_name.split()[0]
-    title, body = "WhatsApp is connected", f"Hi {first}, you'll get PlayR match updates here."
+    title, body = "WhatsApp is connected", f"Hi {first}, you'll get GoFindr match updates here."
     link = c.settings.app_base_url or c.settings.web_base_url
-    status = await c.whatsapp.send(doc["mobile_number"], f"PlayR · {title}\n{body}", [title, body, link], "notify")
+    status = await c.whatsapp.send(doc["mobile_number"], f"GoFindr · {title}\n{body}", [title, body, link], "notify")
     return ok(WhatsAppTestOut(status=status))
 
 

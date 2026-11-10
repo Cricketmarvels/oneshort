@@ -338,7 +338,7 @@ class SkillRatingService:
                 [uid],
                 NotificationType.RATING_UPDATED,
                 f"Rating {sign}{abs(round(delta))}",
-                "Your PlayR rating was updated from a verified match result. Tap to see why.",
+                "Your GoFindr rating was updated from a verified match result. Tap to see why.",
                 {"fixture_id": fx["_id"], "user_id": uid},
             )
 

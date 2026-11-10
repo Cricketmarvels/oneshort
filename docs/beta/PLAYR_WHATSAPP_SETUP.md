@@ -1,4 +1,4 @@
-# PlayR beta — WhatsApp OTP and match notifications: setup
+# GoFindr beta — WhatsApp OTP and match notifications: setup
 
 Status: **BLOCKED on a WhatsApp Business sender, approved templates and billing.** The code paths exist and are tested with a fake provider; nothing has been sent to a real number from this repo. Date: 2026-11-10.
 
@@ -28,11 +28,11 @@ Twilio remains as a fallback adapter; the beta should go direct to Meta.
 ## 3. Setup steps (owner; needs a Meta Business account and a card)
 
 1. **Meta Business + App:** business.facebook.com → verify the business (government ID + business document; 1–5 days). developers.facebook.com → create an app → add the *WhatsApp* product.
-2. **Phone number:** add a number not already registered on WhatsApp (a new SIM or a virtual number). Display name "PlayR". Until business verification completes, the sender can message only 5 test numbers.
+2. **Phone number:** add a number not already registered on WhatsApp (a new SIM or a virtual number). Display name "GoFindr". Until business verification completes, the sender can message only 5 test numbers.
 3. **Templates** (Meta approves in minutes to 24 h). The repo's `uv run python -m scripts.whatsapp_meta_setup` submits these; adjust the names in `.env`:
-   - `WHATSAPP_META_OTP_TEMPLATE` — category **Authentication**, body "{{1}} is your PlayR verification code.", copy-code button, 5-minute expiry text.
-   - `WHATSAPP_META_TEMPLATE` — category **Utility**: "You're invited to a cricket match with {{1}} on {{2}}. Open PlayR to view the invitation." (no personal data).
-   - `WHATSAPP_META_NOTIFY_TEMPLATE` — Utility: "{{1}}: {{2}}. Open PlayR: {{3}}".
+   - `WHATSAPP_META_OTP_TEMPLATE` — category **Authentication**, body "{{1}} is your GoFindr verification code.", copy-code button, 5-minute expiry text.
+   - `WHATSAPP_META_TEMPLATE` — category **Utility**: "You're invited to a cricket match with {{1}} on {{2}}. Open GoFindr to view the invitation." (no personal data).
+   - `WHATSAPP_META_NOTIFY_TEMPLATE` — Utility: "{{1}}: {{2}}. Open GoFindr: {{3}}".
 4. **Webhook:** in the app's WhatsApp settings set the callback URL to `https://<beta-api>/api/v1/whatsapp/webhook`, the verify token to `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, subscribe to `messages`.
 5. **Backend `.env` (beta host, never the app):**
    ```

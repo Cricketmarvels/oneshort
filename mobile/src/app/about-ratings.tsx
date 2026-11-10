@@ -4,7 +4,7 @@ import { Card, Txt } from "@/components/ui";
 import { SP, T } from "@/theme";
 
 const SECTIONS: [string, string][] = [
-  ["Only verified matches count", "A result updates ratings only after the opposing team's captain or vice-captain confirms it, or a PlayR admin resolves a dispute. Disputed or unconfirmed results never change anyone's rating. Stats imported from other apps are shown as \"provided by the team\" and are never ranked."],
+  ["Only verified matches count", "A result updates ratings only after the opposing team's captain or vice-captain confirms it, or a GoFindr admin resolves a dispute. Disputed or unconfirmed results never change anyone's rating. Stats imported from other apps are shown as \"provided by the team\" and are never ranked."],
   ["Skill ratings (Glicko-2)", "Every player has separate batting, bowling, fielding and match-impact ratings, plus an uncertainty (±). Ratings start at 1500 ±350 and settle as verified matches add up. A long break makes a rating less certain again."],
   ["Cricket-aware scoring", "Each match turns your scorecard line into a performance score against a par for the format: 30 runs in a T10 counts for more than 30 in a 40-over game. Batting looks at runs, strike rate, share of the team total and boundaries. Bowling looks at wickets and economy against the format's par. Fielding counts catches, run-outs and stumpings."],
   ["Quality of opposition", "The same performance earns more against a stronger team, and less against a weaker one."],
@@ -22,7 +22,7 @@ export default function AboutRatings() {
     <ScrollView style={{ backgroundColor: T.bg }} contentContainerStyle={{ padding: SP.page, gap: SP.md, paddingBottom: 60 }}>
       <View style={{ padding: SP.xl, borderRadius: 22, backgroundColor: T.heroInk, gap: 6 }}>
         <Txt v="h1" color="#FFFFFF">Earned, not claimed.</Txt>
-        <Txt v="body" color="rgba(255,255,255,0.8)">PlayR ratings come only from verified results, and every rating shows how sure we are about it.</Txt>
+        <Txt v="body" color="rgba(255,255,255,0.8)">GoFindr ratings come only from verified results, and every rating shows how sure we are about it.</Txt>
       </View>
       {SECTIONS.map(([h, b]) => (
         <Card key={h}><Txt v="h3">{h}</Txt><Txt v="small" color={T.text2}>{b}</Txt></Card>

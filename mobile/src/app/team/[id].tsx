@@ -79,7 +79,7 @@ export default function TeamDashboard() {
 
   return (
     <ScrollView style={{ backgroundColor: T.bg }} contentContainerStyle={{ paddingBottom: 60 }} refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={reload} tintColor={T.primary} />}>
-      <Stack.Screen options={{ title: d.can_manage ? "My Team" : "Team Profile", headerTitleAlign: "left", headerRight: () => <ShareButton message={`${d.team.team_name} on PlayR — rating ${d.team.rating ? rating(d.team.rating.rating) : "new"}`} /> }} />
+      <Stack.Screen options={{ title: d.can_manage ? "My Team" : "Team Profile", headerTitleAlign: "left", headerRight: () => <ShareButton message={`${d.team.team_name} on GoFindr — rating ${d.team.rating ? rating(d.team.rating.rating) : "new"}`} /> }} />
       {d.can_manage ? (
         /* My team (captain dashboard) */
         <View style={{ paddingHorizontal: SP.page, paddingTop: SP.sm, gap: SP.lg }}>

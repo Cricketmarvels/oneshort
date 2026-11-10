@@ -98,7 +98,7 @@ export default function CreateMatch() {
               <SelectField icon="place" placeholder="Choose a ground" value={venueId} onChange={setVenueId}
                 options={venues.data.map((v) => ({ v: v.id, l: v.name, sub: `${v.area}, ${v.city}${v.distance_km != null ? ` · ~${v.distance_km} km` : ""}` }))} />
             )}
-            <InlineNotice>PlayR doesn't book grounds. Confirm the slot with the ground before inviting players.</InlineNotice>
+            <InlineNotice>GoFindr doesn't book grounds. Confirm the slot with the ground before inviting players.</InlineNotice>
           </View>
         ) : step === 2 ? (
           <View style={{ gap: SP.lg }}>

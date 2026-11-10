@@ -1,4 +1,4 @@
-# PlayR beta — iOS push notifications: setup and verification
+# GoFindr beta — iOS push notifications: setup and verification
 
 Status: **code complete; BLOCKED on an EAS project, an Apple Developer account (APNs key) and physical iPhones.** Architecture detail: `docs/design/PUSH_NOTIFICATIONS.md`. Date: 2026-11-10.
 
@@ -22,7 +22,7 @@ Lock-screen content: title + one short line, never phone numbers or exact locati
 ## Setup (owner)
 
 1. `cd mobile && npx eas-cli@latest init` → writes `extra.eas.projectId` to `app.json`. Commit.
-2. Apple Developer Program membership (US$99/yr). `npx eas-cli credentials` → iOS → bundle `app.playr.cricket` → let EAS create the **APNs key** and the distribution certificate / provisioning profile. The `aps-environment` entitlement is added by the `expo-notifications` plugin automatically.
+2. Apple Developer Program membership (US$99/yr). `npx eas-cli credentials` → iOS → bundle `in.gofindr.app` → let EAS create the **APNs key** and the distribution certificate / provisioning profile. The `aps-environment` entitlement is added by the `expo-notifications` plugin automatically.
 3. Development build for device testing: `npx eas-cli build --profile development --platform ios` → install via the EAS link on each test iPhone.
 4. Backend: `PUSH_PROVIDER=expo` (+ `EXPO_PUSH_ACCESS_TOKEN` only if push security is enabled on the Expo account).
 

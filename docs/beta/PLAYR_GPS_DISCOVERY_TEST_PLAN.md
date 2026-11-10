@@ -1,4 +1,4 @@
-# PlayR beta — GPS nearby-player discovery: implementation and test plan
+# GoFindr beta — GPS nearby-player discovery: implementation and test plan
 
 Date: 2026-11-10. Decision for the beta: **list-first, foreground location only**.
 

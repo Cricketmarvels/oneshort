@@ -57,7 +57,7 @@ async def options(c: ContainerDep) -> Envelope[AuthOptionsOut]:
             tester_signup_prefix=c.settings.tester_signup_prefix
             if c.settings.app_env not in ("beta", "production")
             else None,
-            beta_sport=c.settings.playr_beta_sport,
+            beta_sport=c.settings.gofindr_beta_sport,
         )
     )
 

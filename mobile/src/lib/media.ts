@@ -1,4 +1,4 @@
-/** Resolve stored media paths. PlayR stores uploads as relative "/uploads/…" paths; resolve them against the API origin. */
+/** Resolve stored media paths. GoFindr stores uploads as relative "/uploads/…" paths; resolve them against the API origin. */
 import { API_URL } from "@/lib/config";
 
 const ORIGIN = /^https?:\/\//i.test(API_URL) ? API_URL.replace(/\/api\/v\d+\/?$/, "") : "";

@@ -65,7 +65,7 @@ def safe_cricheroes_url(raw: str | None, *, media: bool = False) -> str | None:
 
 
 # ---------------------------------------------------------------- profile links (player / team)
-# Strict rules for links people paste into their PlayR profile: https only, exact cricheroes.com host,
+# Strict rules for links people paste into their GoFindr profile: https only, exact cricheroes.com host,
 # no credentials/ports, the right profile type, numeric id. The link is only ever opened by the user's
 # browser — the backend never fetches it.
 _LINK_HOSTS = {"cricheroes.com", "www.cricheroes.com"}

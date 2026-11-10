@@ -109,4 +109,4 @@ async def test_whatsapp_otp_failure_explains_the_join_step(client: httpx.AsyncCl
     finally:
         container.whatsapp = original
     assert r.status_code == 422 and r.json()["error"]["code"] == "OTP_DELIVERY_FAILED"
-    assert "message PlayR" in r.json()["error"]["message"]
+    assert "message GoFindr" in r.json()["error"]["message"]

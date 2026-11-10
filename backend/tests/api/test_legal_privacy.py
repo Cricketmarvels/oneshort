@@ -15,10 +15,10 @@ API = "/api/v1"
 async def test_public_terms_and_privacy_need_no_login(client: httpx.AsyncClient) -> None:
     t = (await client.get(f"{API}/legal/terms")).json()["data"]
     p = (await client.get(f"{API}/legal/privacy")).json()["data"]
-    assert t["title"] == "PlayR Terms of Use" and t["version"] == 2
-    assert p["title"] == "PlayR Privacy Notice" and p["version"] == 1
+    assert t["title"] == "GoFindr Terms of Use" and t["version"] == 2
+    assert p["title"] == "GoFindr Privacy Notice" and p["version"] == 1
     text = " ".join(s["body"] for s in t["sections"] + p["sections"])
-    assert "CricketMarvels" not in text and "Draft" not in t["title"]
+    assert "CricketMarvels" not in text and "PlayR" not in text and "Draft" not in t["title"]
     for must in ("18 or older", "Grievance Officer", "Data Protection Board", "nominate", "48 hours", "one year"):
         assert must in text, must
 
@@ -46,9 +46,9 @@ async def test_acceptance_requires_age_and_privacy_and_records_fingerprints(
 async def test_company_details_render_and_production_requires_them() -> None:
     from app.modules.agreements.legal import privacy
 
-    s = Settings(legal_entity_name="PlayR Sports Pvt Ltd", grievance_email="privacy@playr.app")
+    s = Settings(legal_entity_name="GoFindr Sports Pvt Ltd", grievance_email="privacy@gofindr.in")
     body = " ".join(x["body"] for x in privacy(s)["sections"])
-    assert "PlayR Sports Pvt Ltd" in body and "privacy@playr.app" in body
+    assert "GoFindr Sports Pvt Ltd" in body and "privacy@gofindr.in" in body
     try:
         Settings(app_env="production", jwt_secret="x" * 40, otp_provider="msg91", whatsapp_provider="meta", debug=False)
     except ValueError as e:

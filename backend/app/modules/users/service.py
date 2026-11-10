@@ -46,13 +46,13 @@ class UserService:
             has_captain_profile=bool(has_captain),
             agreement=AgreementState(accepted_version=accepted, required_version=required, satisfied=satisfied),
             notification_prefs=NotificationPrefs(**(doc.get("notification_prefs") or {})),
-            preferred_sport=self.c.settings.playr_beta_sport or doc.get("preferred_sport") or "cricket",
+            preferred_sport=self.c.settings.gofindr_beta_sport or doc.get("preferred_sport") or "cricket",
             created_at=doc["created_at"],
         )
 
     async def update_me(self, user: CurrentUser, data: UpdateMeIn) -> UserOut:
         fields = data.model_dump(exclude_unset=True, mode="json")
-        beta = self.c.settings.playr_beta_sport
+        beta = self.c.settings.gofindr_beta_sport
         if beta and fields.get("preferred_sport") not in (None, beta):
             raise BusinessRuleViolation(f"Only {beta} is available in this release", code="SPORT_NOT_AVAILABLE")
         if "email" in fields and fields["email"]:

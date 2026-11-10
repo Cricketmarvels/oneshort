@@ -11,7 +11,7 @@ def test_sentry_off_without_dsn() -> None:
 def test_event_scrubbing_removes_pii_and_secrets() -> None:
     event = {
         "request": {
-            "url": "https://api.playr.app/api/v1/players/nearby",
+            "url": "https://api.gofindr.in/api/v1/players/nearby",
             "query_string": "lat=28.57&lng=77.32",
             "data": {"password": "hunter2"},
             "cookies": {"session": "x"},

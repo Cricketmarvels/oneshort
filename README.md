@@ -1,4 +1,4 @@
-# CricketMarvels Play
+# GoFindr
 
 **Hyperlocal cricket matchmaking & team management.** Find nearby players, find a team, build a squad, and split match fees.
 

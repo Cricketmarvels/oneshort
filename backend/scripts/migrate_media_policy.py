@@ -3,7 +3,7 @@
     uv run python -m scripts.migrate_media_policy           # dry run: report only
     uv run python -m scripts.migrate_media_policy --apply   # remove and audit each value
 
-Safe to re-run. Valid PlayR uploads are kept. See app/modules/uploads/media_policy.py.
+Safe to re-run. Valid GoFindr uploads are kept. See app/modules/uploads/media_policy.py.
 """
 
 import asyncio
@@ -23,7 +23,7 @@ async def main() -> None:
     finally:
         await mongo.close()
     verb = "Removed" if apply else "Would remove"
-    print(f"Checked {r.checked} media values; kept {r.kept} PlayR uploads. {verb} {r.total_removed}.")
+    print(f"Checked {r.checked} media values; kept {r.kept} GoFindr uploads. {verb} {r.total_removed}.")
     for k, n in sorted(r.removed.items()):
         print(f"  {k}: {n}")
     for h, n in sorted(r.hosts.items()):

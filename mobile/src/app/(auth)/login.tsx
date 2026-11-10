@@ -163,7 +163,7 @@ export default function Login() {
                   hint={testerPrefix ? "Needed to log back in with your email" : "Optional · lets you also log in with email"} />
                 {testerPrefix ? (
                   <View style={{ padding: 12, borderRadius: 14, backgroundColor: T.primarySoft, gap: 2 }}>
-                    <Txt v="smallSemi" color={T.primaryDark}>Testing PlayR?</Txt>
+                    <Txt v="smallSemi" color={T.primaryDark}>Testing GoFindr?</Txt>
                     <Txt v="small" color={T.primaryDark}>Use a test number like {testerPrefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3")}123. Your code shows on screen.</Txt>
                   </View>
                 ) : null}
@@ -174,7 +174,7 @@ export default function Login() {
               <Button variant="ghost" title={mode === "login" ? "New here? Create an account" : "Have an account? Log in"} onPress={() => { setMode(mode === "login" ? "register" : "login"); setErr(null); }} />
               {mode === "login" && <Button variant="ghost" title="Log in with email & password" onPress={() => { setMode("email"); setErr(null); }} />}
               <Txt v="small" color={T.muted} style={{ textAlign: "center" }}>
-                By continuing you agree to the PlayR{" "}
+                By continuing you agree to the GoFindr{" "}
                 <Txt v="small" color={T.primaryDark} accessibilityRole="link" onPress={() => router.push("/legal/terms")} style={{ textDecorationLine: "underline" }}>Terms of Use</Txt>
                 {" "}and{" "}
                 <Txt v="small" color={T.primaryDark} accessibilityRole="link" onPress={() => router.push("/legal/privacy")} style={{ textDecorationLine: "underline" }}>Privacy Notice</Txt>

@@ -6,7 +6,7 @@ A team's captain or admins can:
 - **Import** the team's CricHeroes data:
   - **Manual entry:** players as `Name - Role` lines, stats as `Label: value` lines.
   - **JSON file:** max 2 MB, uploadable on the web or picked on iOS and Android.
-- **View**: anyone signed in sees the team's stats, its CricHeroes squad (members matched by name get an "On CricketMarvels" badge), recent matches and the batting, bowling and fielding leaderboards.
+- **View**: anyone signed in sees the team's stats, its CricHeroes squad (members matched by name get an "On GoFindr" badge), recent matches and the batting, bowling and fielding leaderboards.
 - **Remove**: deletes the link and the data.
 
 Data is stored per team in the `cricheroes_teams` collection, which has a unique index on `team_id`. Every link, import and removal is audited; the audit records counts only.

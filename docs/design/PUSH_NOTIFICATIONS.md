@@ -8,7 +8,7 @@ One token type end to end: the app registers an **Expo push token** (`ExponentPu
 
 ```mermaid
 sequenceDiagram
-  participant App as PlayR app (dev/prod build)
+  participant App as GoFindr app (dev/prod build)
   participant API as FastAPI
   participant Expo as Expo Push Service
   participant FA as FCM / APNs
@@ -49,8 +49,8 @@ Key code: `backend/app/infrastructure/integrations/push.py` (provider), `backend
 ## 3. One-time setup (needs your accounts — exact steps)
 
 1. **EAS project** (free): `cd mobile && npx eas-cli@latest init` with your Expo account → writes `extra.eas.projectId` into `app.json`. Commit it.
-2. **Android (FCM v1)**: Firebase console → create project "PlayR" → add Android app `app.playr.cricket` → download `google-services.json` into `mobile/` and reference it as `expo.android.googleServicesFile`; then Project settings → Service accounts → generate the service-account key and upload: `npx eas-cli credentials` → Android → `Google Service Account Key for FCM v1`.
-3. **iOS (APNs)**: needs the Apple Developer Program (US$99/yr). `npx eas-cli credentials` → iOS → let EAS create/manage the APNs key against bundle id `app.playr.cricket`.
+2. **Android (FCM v1)**: Firebase console → create project "GoFindr" → add Android app `in.gofindr.app` → download `google-services.json` into `mobile/` and reference it as `expo.android.googleServicesFile`; then Project settings → Service accounts → generate the service-account key and upload: `npx eas-cli credentials` → Android → `Google Service Account Key for FCM v1`.
+3. **iOS (APNs)**: needs the Apple Developer Program (US$99/yr). `npx eas-cli credentials` → iOS → let EAS create/manage the APNs key against bundle id `in.gofindr.app`.
 4. **Development builds** (Expo Go cannot receive remote push): `npx eas-cli build --profile development --platform android` and `--platform ios`, install on the two test phones.
 5. **Backend**: set `PUSH_PROVIDER=expo` and restart. Nothing else — FCM/APNs secrets never touch our servers.
 
@@ -60,7 +60,7 @@ Accounts: two fresh registrations on the dev builds (fictional +44 7700 900xxx n
 
 | Scenario | Steps | Pass when |
 |---|---|---|
-| A: iPhone receives | Android captain → Find Players → Invite → iPhone gets "PlayR — invitation" push → tap → Home invitation card → Accept → captain confirms → squad +1 | Push arrives; tap lands on the card; accept→confirm updates both phones |
+| A: iPhone receives | Android captain → Find Players → Invite → iPhone gets "GoFindr — invitation" push → tap → Home invitation card → Accept → captain confirms → squad +1 | Push arrives; tap lands on the card; accept→confirm updates both phones |
 | B: Android receives | Mirror of A | Same |
 | C: App terminated | Force-quit the recipient app before inviting | Cold-start tap still lands on the invitation (parked-tap store) |
 | D: Push unavailable | Deny notification permission on the recipient | Invitation still appears in Home + inbox; no errors |

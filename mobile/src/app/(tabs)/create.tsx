@@ -27,7 +27,7 @@ export default function Create() {
         <SectionRow title="Community & fees" />
         <LinkCard icon="chat" title="Post in your community" sub="Match moments, player requests, announcements" onPress={() => router.push("/community")} />
         <LinkCard icon="community" title="Start a community" sub="For your sector, society or office" onPress={() => router.push("/community/new")} />
-        <LinkCard icon="receipt" title="Split a match fee" sub="Track who has paid — payments happen outside PlayR" onPress={() => router.push("/payments")} />
+        <LinkCard icon="receipt" title="Split a match fee" sub="Track who has paid — payments happen outside GoFindr" onPress={() => router.push("/payments")} />
       </View>
       <Txt v="small" color={T.muted}>Matches and teams are saved to your account. A join request isn't a confirmed spot until the captain accepts.</Txt>
     </StarterScreen>

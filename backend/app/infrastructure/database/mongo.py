@@ -33,7 +33,7 @@ class Mongo:
         server_selection_timeout_ms: int = 15_000,
         connect_timeout_ms: int = 5_000,
         max_pool_size: int = 100,
-        app_name: str = "playr-api",
+        app_name: str = "gofindr-api",
     ) -> None:
         self.client: AsyncMongoClient[Doc] = AsyncMongoClient(
             uri,

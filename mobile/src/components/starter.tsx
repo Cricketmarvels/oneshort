@@ -1,5 +1,5 @@
 /**
- * PlayR starter-v2 building blocks (source: PlayR_Claude_Code_Starter_v2 src/ui.tsx + app/home.tsx):
+ * GoFindr starter-v2 building blocks (source: GoFindr_Claude_Code_Starter_v2 src/ui.tsx + app/home.tsx):
  * heavy page heading with sub line, photo hero with a dark teal overlay, 2-column action tiles,
  * link cards ("Title →"), stat strip, simple screen container. Photos are bundled assets (see assets/images/CREDITS.md).
  */

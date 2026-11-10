@@ -80,7 +80,7 @@ export default function CommunityTab() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["community-feed"] }),
   });
   const open = (p: FeedPost) => router.push({ pathname: "/community/[id]", params: { id: p.community_id } });
-  const share = (p: FeedPost) => void Share.share({ message: `${p.author.full_name} in ${p.community_name ?? "PlayR"}: ${p.body}` });
+  const share = (p: FeedPost) => void Share.share({ message: `${p.author.full_name} in ${p.community_name ?? "GoFindr"}: ${p.body}` });
   const compose = () => (joined[0] ? router.push({ pathname: "/community/[id]", params: { id: joined[0].id } }) : router.push("/community/new"));
 
   return (
@@ -120,7 +120,7 @@ export default function CommunityTab() {
             </>
           )}
         </View>
-        <Txt v="small" color={T.muted}>Be respectful — community guidelines apply. PlayR doesn't verify posts; report anything that looks wrong.</Txt>
+        <Txt v="small" color={T.muted}>Be respectful — community guidelines apply. GoFindr doesn't verify posts; report anything that looks wrong.</Txt>
       </HeroScreen>
       <FilterBottomSheet ref={safety} title="Post options" snap={["78%"]}>
         {focus ? <ReportBlockSheet post={focus} busy={act.isPending} result={result} onHide={() => act.mutate({ kind: "hide" })} onReport={(reason) => act.mutate({ kind: "report", reason })} onBlock={() => act.mutate({ kind: "block" })} /> : null}

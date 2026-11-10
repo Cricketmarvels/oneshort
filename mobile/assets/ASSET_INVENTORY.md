@@ -1,4 +1,4 @@
-# PlayR asset inventory
+# GoFindr asset inventory
 
 Last audited: 2026-11-08. Keep this file in step with `assets/images/CREDITS.md` whenever an asset is added or removed.
 
@@ -15,15 +15,15 @@ The `MAP` in `icons.tsx` is typed `Record<PlayRIconName, …>`, so adding a name
 
 | Asset | Source | Licence | Where |
 |---|---|---|---|
-| `SportsActionIcon`: findPlayers, findTeams, bookGround, splitFees, createMatch, manageTeam, challenge | Drawn in-house as SVG for PlayR | Owned by PlayR | Home quick-action tiles (through `SportsActionArtwork`), ground and match fallbacks |
+| `SportsActionIcon`: findPlayers, findTeams, bookGround, splitFees, createMatch, manageTeam, challenge | Drawn in-house as SVG for GoFindr | Owned by GoFindr | Home quick-action tiles (through `SportsActionArtwork`), ground and match fallbacks |
 | `ARTWORK` registry in `src/components/media.tsx` | **Empty.** Awaiting licensed artwork (see section 5). | — | `SportsActionArtwork` uses an entry here when one exists, otherwise the in-house pictogram |
-| `CricketBanner` (team cover fallback), match fallback tile, `TeamLogo` monogram | Generated in code (gradients and shapes) | Owned by PlayR | Team cards, team page, match cards and match page |
+| `CricketBanner` (team cover fallback), match fallback tile, `TeamLogo` monogram | Generated in code (gradients and shapes) | Owned by GoFindr | Team cards, team page, match cards and match page |
 
 ## 2a. Link-preview card
 
 | Asset | Source | Licence | Where |
 |---|---|---|---|
-| `mobile/public/og/playr-card.png` (1200×630) | Made for PlayR with Pillow: brand teal gradient and wordmark, no sports artwork | Owned by PlayR. Text is set in Inter (SIL OFL 1.1). | `og:image` for every web page, including WhatsApp previews of join links (added by `scripts/serve-web.mjs`) |
+| `mobile/public/og/gofindr-card.png` (1200×630) | Made for GoFindr with Pillow: brand teal gradient and wordmark, no sports artwork | Owned by GoFindr. Text is set in Inter (SIL OFL 1.1). | `og:image` for every web page, including WhatsApp previews of join links (added by `scripts/serve-web.mjs`) |
 
 ## 3. Bundled photography (`assets/images/`)
 
@@ -49,7 +49,7 @@ These are decorative stock photos only. They are never shown as a specific team'
 | Match photo | `match` | Match manager | Same, 1800 px, 16:9 crop |
 | Ground photos | — | **Not built.** Needs a venue-ownership model. | — |
 
-- Media fields accept only PlayR upload paths (`OwnMediaUrl`). External URLs are rejected with 422.
+- Media fields accept only GoFindr upload paths (`OwnMediaUrl`). External URLs are rejected with 422.
 - Every image component falls back when the URL is missing or when the image fails to load. On a failure it shows the monogram, `CricketBanner` or the "No photos from this venue yet" tile.
 
 ## 5. Open items

@@ -1,6 +1,6 @@
 /**
- * PlayR · aqua/teal design tokens — the single source of every colour, font, radius and size.
- * Source: PlayR premium redesign (3-screen reference, Nov 2026) — canvas #F5F6F0, primary #008C86, deep teal #063F3D, mint #DDF5EF, ink #172B2B; Inter.
+ * GoFindr · aqua/teal design tokens — the single source of every colour, font, radius and size.
+ * Source: GoFindr premium redesign (3-screen reference, Nov 2026) — canvas #F5F6F0, primary #008C86, deep teal #063F3D, mint #DDF5EF, ink #172B2B; Inter.
  *
  * Light + dark palettes; applyTheme() swaps them at runtime (lib/appearance.ts: System | Light | Dark).
  * Never hard-code colours in screens — use T.* so both themes work. Legacy aliases (ink, muted, tint…) map onto tokens.

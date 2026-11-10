@@ -1,4 +1,4 @@
-# PlayR rating methodology
+# GoFindr rating methodology
 
 Code: `backend/app/modules/rating_engine/` (pure, no database) and `backend/app/modules/competition/skill.py` (applies it).
 

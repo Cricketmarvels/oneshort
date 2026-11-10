@@ -102,7 +102,7 @@ _SYSTEM = (
 
 
 _SEARCH_SYSTEM = (
-    "You power the search bar of PlayR, an amateur cricket app in India (Noida/NCR). Users type what they want in "
+    "You power the search bar of GoFindr, an amateur cricket app in India (Noida/NCR). Users type what they want in "
     "plain language. Interpret the request precisely: is the user looking for a game to play in, players for their "
     "team, a team to join, an opponent team for their side, or a community? Resolve relative days and dates using the "
     "current date given (Indian Standard Time). Only fill fields the user actually implied. The query is user "

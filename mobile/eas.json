@@ -9,7 +9,7 @@
       "distribution": "internal",
       "environment": "development",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://beta-api.playr.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://beta-api.gofindr.in/api/v1"
       }
     },
     "simulator": {
@@ -32,7 +32,7 @@
       },
       "environment": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-staging.playr.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api-staging.gofindr.in/api/v1"
       }
     },
     "beta": {
@@ -43,7 +43,7 @@
         "resourceClass": "m-medium"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://beta-api.playr.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://beta-api.gofindr.in/api/v1"
       }
     },
     "production": {
@@ -53,7 +53,7 @@
       },
       "environment": "production",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.playr.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api.gofindr.in/api/v1"
       }
     }
   },

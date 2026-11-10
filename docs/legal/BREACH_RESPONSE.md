@@ -1,6 +1,6 @@
 # Personal data breach response runbook
 
-Applies to any unauthorised access to, or loss, disclosure or corruption of, PlayR users' personal data (DPDP Act s.8(6), DPDP Rules 2025 Rule 7).
+Applies to any unauthorised access to, or loss, disclosure or corruption of, GoFindr users' personal data (DPDP Act s.8(6), DPDP Rules 2025 Rule 7).
 
 **Clock:** tell affected users without delay, and send the detailed report to the Data Protection Board **within 72 hours of becoming aware**.
 
@@ -29,7 +29,7 @@ Applies to any unauthorised access to, or loss, disclosure or corruption of, Pla
    - what happened and when;
    - what data was affected;
    - the likely consequences;
-   - what PlayR has done;
+   - what GoFindr has done;
    - what they should do (change password, watch for scam calls, never share an OTP);
    - a contact (the Grievance Officer).
 

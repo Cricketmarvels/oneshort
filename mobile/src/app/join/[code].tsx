@@ -71,7 +71,7 @@ export default function JoinScreen() {
           <View style={{ gap: 10 }}>
             <Txt v="hero">Link not found</Txt>
             <Txt v="body" color={T.muted}>This invite link isn't valid. Ask your captain to share it again.</Txt>
-            <Button title="Open PlayR" onPress={() => { pending.clear(); router.replace("/"); }} />
+            <Button title="Open GoFindr" onPress={() => { pending.clear(); router.replace("/"); }} />
           </View>
         ) : (
           <>
@@ -112,7 +112,7 @@ export default function JoinScreen() {
               </View>
             ) : (
               <View style={{ gap: 14 }}>
-                <Segmented value={mode} onChange={setMode} options={[{ v: "new", l: "I'm new to PlayR" }, { v: "login", l: "I have an account" }]} />
+                <Segmented value={mode} onChange={setMode} options={[{ v: "new", l: "I'm new to GoFindr" }, { v: "login", l: "I have an account" }]} />
                 {mode === "new" ? (
                   <View style={{ gap: 12 }}>
                     <Field label="Full name" value={f.name} onChangeText={(name) => setF({ ...f, name })} autoComplete="name" />

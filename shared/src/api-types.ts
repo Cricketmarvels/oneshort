@@ -907,7 +907,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** PlayR home: rating, rank, fixtures, challenges */
+        /** GoFindr home: rating, rank, fixtures, challenges */
         get: operations["home_api_v1_home_get"];
         put?: never;
         post?: never;
@@ -3732,7 +3732,7 @@ export interface components {
             is_demo: boolean;
             /**
              * Booking Available
-             * @description False until a facility shares live slots with PlayR
+             * @description False until a facility shares live slots with GoFindr
              */
             booking_available: boolean;
         };
@@ -3945,8 +3945,8 @@ export interface components {
         };
         /**
          * CricHeroesStats
-         * @description Career numbers the player copies from their CricHeroes profile. Self-reported: PlayR shows them labelled
-         *     as such, never mixes them into PlayR ratings, and never fetches them from CricHeroes.
+         * @description Career numbers the player copies from their CricHeroes profile. Self-reported: GoFindr shows them labelled
+         *     as such, never mixes them into GoFindr ratings, and never fetches them from CricHeroes.
          */
         CricHeroesStats: {
             /** Matches */
@@ -5274,7 +5274,7 @@ export interface components {
             teams: string[];
             /**
              * Has Cricheroes
-             * @description Player linked a CricHeroes profile (open their PlayR profile to view it)
+             * @description Player linked a CricHeroes profile (open their GoFindr profile to view it)
              * @default false
              */
             has_cricheroes: boolean;
@@ -5865,7 +5865,7 @@ export interface components {
             achievements?: components["schemas"]["AchievementOut"][];
             /**
              * Cricheroes Profile Url
-             * @description Player-supplied CricHeroes link (not verified by PlayR)
+             * @description Player-supplied CricHeroes link (not verified by GoFindr)
              */
             cricheroes_profile_url?: string | null;
             /** Cricheroes Player Id */

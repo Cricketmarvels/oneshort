@@ -88,7 +88,7 @@ function SnapshotView({ snap }: { snap: Snapshot }) {
                 <Text style={{ fontWeight: "600" }}>{pl.name}</Text>
                 {pl.role ? <Muted>{pl.role}</Muted> : null}
               </View>
-              {pl.member_user_id ? <Badge status="success" label="On PlayR" /> : null}
+              {pl.member_user_id ? <Badge status="success" label="On GoFindr" /> : null}
             </Pressable>
           ))}
         </Card>
@@ -115,7 +115,7 @@ function SnapshotView({ snap }: { snap: Snapshot }) {
       )}
       <Text style={{ fontSize: 12, color: C.muted }}>
         {snap.method === "manual" ? "Entered manually" : snap.method === "sync" ? "Synced" : "Imported from file"} {relativeTime(snap.imported_at)}
-        {snap.imported_by ? ` by ${snap.imported_by.full_name}` : ""}. Provided by the team; not verified by PlayR.
+        {snap.imported_by ? ` by ${snap.imported_by.full_name}` : ""}. Provided by the team; not verified by GoFindr.
       </Text>
     </View>
   );

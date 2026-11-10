@@ -79,8 +79,8 @@ class JoinLinkService:
         message = (
             f"🏏 {team_name} — {match.get('title', 'Match')}\n"
             f"📅 {when}{f' · 📍 {venue}' if venue else ''}\n"
-            "Regulars: add yourself to the squad on PlayR — first come, first served. "
-            "New to PlayR? You'll create an account in a minute."
+            "Regulars: add yourself to the squad on GoFindr — first come, first served. "
+            "New to GoFindr? You'll create an account in a minute."
         )  # the client appends the link (it knows the current public address)
         return InviteLinkOut(
             code=link["code"],

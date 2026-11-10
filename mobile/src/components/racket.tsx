@@ -214,7 +214,7 @@ export function RequestCard({ r }: { r: PlayRequest }) {
       ) : r.status === "pending" ? (
         <Button title="Cancel request" variant="ghost" size="sm" onPress={() => act.mutate("cancel")} />
       ) : r.status === "accepted" ? (
-        <Txt v="small" color={T.successText}>Connected — agree the time and court together. PlayR doesn't share phone numbers.</Txt>
+        <Txt v="small" color={T.successText}>Connected — agree the time and court together. GoFindr doesn't share phone numbers.</Txt>
       ) : null}
     </Card>
   );

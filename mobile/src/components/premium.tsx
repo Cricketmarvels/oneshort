@@ -1,5 +1,5 @@
 /**
- * PlayR premium design system (3-screen reference, Nov 2026): app header + role switcher, sports hero,
+ * GoFindr premium design system (3-screen reference, Nov 2026): app header + role switcher, sports hero,
  * pastel quick actions, match / player / team discovery cards, discovery search header and filters.
  * Only real API values are rendered; missing data shows a neutral fallback, never an invented number.
  */
@@ -25,7 +25,7 @@ export type IconT = ComponentType<{ size?: number; color?: string; strokeWidth?:
 // ---------------------------------------------------------------- header
 export function Wordmark({ size = 30 }: { size?: number }) {
   return (
-    <Txt accessibilityRole="header" accessibilityLabel="PlayR" style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", letterSpacing: -1, color: T.ink }}>
+    <Txt accessibilityRole="header" accessibilityLabel="GoFindr" style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", letterSpacing: -1, color: T.ink }}>
       Play<Txt style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", color: T.primary }}>R</Txt>
     </Txt>
   );
@@ -47,7 +47,7 @@ export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" 
         <Txt v="smallSemi" style={{ fontSize: 14 }}>{value === "player" ? "Player" : "Captain"}</Txt>
         <PlayRIcon name="caret" size={15} color={T.ink} weight="bold" />
       </Pressable>
-      <FilterBottomSheet ref={sheet} title="View PlayR as" snap={["44%"]}>
+      <FilterBottomSheet ref={sheet} title="View GoFindr as" snap={["44%"]}>
         <View style={{ gap: 10 }}>
           {opt("player", "Player", "Find games, teams and playing partners")}
           {canCaptain ? opt("captain", "Captain", "Manage your team, matches and invitations") : (

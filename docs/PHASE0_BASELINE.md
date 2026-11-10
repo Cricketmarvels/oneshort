@@ -1,4 +1,4 @@
-# PlayR — Phase 0 baseline audit
+# GoFindr — Phase 0 baseline audit
 
 Date: 2026-11-09 · Branch: `develop` (14 commits ahead of `origin/develop`, push blocked on a GitHub token)
 Evidence base: 215 backend tests, 10 Playwright end-to-end journeys, 17 IDOR probes, failover and restore drills, rendered screenshots — all run in this workspace. Statuses: **PASS / PARTIAL / FAIL / NOT VERIFIED** (nothing is marked working because a screen exists).
@@ -8,7 +8,7 @@ Evidence base: 215 backend tests, 10 Playwright end-to-end journeys, 17 IDOR pro
 ```mermaid
 flowchart LR
   subgraph Clients
-    M[PlayR app · Expo SDK 58<br/>expo-router · TanStack Query · zustand<br/>custom design system, Tabler+Lucide icons]
+    M[GoFindr app · Expo SDK 58<br/>expo-router · TanStack Query · zustand<br/>custom design system, Tabler+Lucide icons]
     W[Classic web · Vite/React<br/>served at /classic]
   end
   M & W --> G[serve-web.mjs → Cloudflare quick tunnel<br/>DEV ONLY — no fixed domain]

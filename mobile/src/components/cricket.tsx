@@ -1,4 +1,4 @@
-/** PlayR domain components (aqua/teal system): game cards, ranked rows, team/community cards, feed items. */
+/** GoFindr domain components (aqua/teal system): game cards, ranked rows, team/community cards, feed items. */
 import { formatPaise, type S } from "@cm/shared";
 import { router } from "expo-router";
 import { Check, Crown, MapPin, MoreHorizontal, MoreVertical, Swords } from "lucide-react-native";
