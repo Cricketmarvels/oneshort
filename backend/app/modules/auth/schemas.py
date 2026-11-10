@@ -30,6 +30,7 @@ class SendOtpIn(StrictModel):
 class AuthOptionsOut(BaseModel):
     sms_otp: bool = Field(description="A real SMS provider is configured (or the dev adapter is active)")
     whatsapp_otp: bool = Field(description="WhatsApp codes can be delivered (provider configured)")
+    email_otp: bool = Field(default=False, description="Sign-up codes can be sent by email")
     whatsapp_simulator: bool = Field(
         default=False, description="Test mode: WhatsApp messages go to the in-app simulator"
     )
@@ -64,6 +65,30 @@ class VerifyOtpIn(StrictModel):
     code: Otp
     purpose: Literal["register", "login"] = "login"
     profile: SignupProfileIn | None = Field(default=None, description="Sign-up details for a new account")
+
+
+class EmailSignupStartIn(StrictModel):
+    """Create-account form. The code goes to the email; the same details are sent again with the code."""
+
+    full_name: Name
+    email: EmailStr
+    mobile_number: MobileNumber
+    password: Password
+    city: ShortText | None = None
+
+
+class EmailSignupVerifyIn(EmailSignupStartIn):
+    code: Otp
+
+
+class EmailResetStartIn(StrictModel):
+    email: EmailStr
+
+
+class EmailResetVerifyIn(StrictModel):
+    email: EmailStr
+    code: Otp
+    new_password: Password
 
 
 class PasswordLoginIn(StrictModel):

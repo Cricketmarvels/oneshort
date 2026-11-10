@@ -195,6 +195,18 @@ class AuthService:
         if not user:
             user = await self._create_verified_user(mobile, profile)
             is_new = True
+        elif not user.get("mobile_verified") and user.get("verified_via") == "email":
+            # Someone proved this number, but the account using it was created by email and never proved it.
+            # The prover may not be that account's owner, so they never get into it: the number moves to them.
+            await self.users.update(user["_id"], {"mobile_number": None})
+            await self.c.audit.log(
+                actor_id=user["_id"],
+                action="user.unverified_mobile_released",
+                entity_type="user",
+                entity_id=user["_id"],
+            )
+            user = await self._create_verified_user(mobile, profile)
+            is_new = True
         else:
             self._ensure_can_login(user)
             if not user.get("mobile_verified"):
@@ -315,7 +327,7 @@ class AuthService:
         await fails.delete_one({"email": key})
         # Players who joined through a captain's invite link can sign in with their password before their
         # mobile is verified (it stays marked unverified until they complete an OTP).
-        if not user.get("mobile_verified") and user.get("verified_via") != "captain_invite":
+        if not user.get("mobile_verified") and user.get("verified_via") not in ("captain_invite", "email"):
             raise Forbidden("Verify your mobile number first", code="MOBILE_NOT_VERIFIED")
         self._ensure_can_login(user)
         return await self._issue_tokens(user, user_agent, family_id=None)

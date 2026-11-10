@@ -11,6 +11,7 @@ from app.core.middleware import InMemoryRateLimiter, MongoRateLimiter
 from app.infrastructure.database.mongo import Mongo
 from app.infrastructure.integrations.ai import AIAssistant, build_ai_assistant
 from app.infrastructure.integrations.cricheroes import CricHeroesSource, build_cricheroes_source
+from app.infrastructure.integrations.email import DisabledEmailSender, EmailSender, build_email_sender
 from app.infrastructure.integrations.push import PushProvider, build_push_provider
 from app.infrastructure.integrations.sms import OtpSender, build_otp_sender
 from app.infrastructure.integrations.storage import StorageProvider, build_storage
@@ -31,6 +32,7 @@ class Container:
     ai: AIAssistant
     cricheroes: CricHeroesSource
     whatsapp: WhatsAppSender = field(default_factory=lambda: DisabledWhatsApp())
+    email: EmailSender = field(default_factory=lambda: DisabledEmailSender())
     limiter: InMemoryRateLimiter | MongoRateLimiter = field(default_factory=InMemoryRateLimiter)
 
     @property
@@ -60,5 +62,6 @@ def build_container(settings: Settings) -> Container:
         ai=build_ai_assistant(settings),
         cricheroes=build_cricheroes_source(settings),
         whatsapp=build_whatsapp_sender(settings, mongo),
+        email=build_email_sender(settings),
         limiter=MongoRateLimiter(mongo) if settings.rate_limiter_backend == "mongo" else InMemoryRateLimiter(),
     )

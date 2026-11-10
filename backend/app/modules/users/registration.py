@@ -6,7 +6,8 @@ phone-verified account with ``registration_completed_at = null``) → email → 
 interrupted at any point resumes where it stopped.
 
 Rules enforced here, never in the client:
-- the phone must already be verified (``mobile_verified``, exposed as ``phone_verified``);
+- the phone (``mobile_verified``, exposed as ``phone_verified``) or, for email sign-ups, the email must
+  already be verified;
 - registration completes once; a second call is refused instead of silently rewriting the account;
 - the email is stored unverified (``email_verified = false``) and is never used for account recovery,
   which stays on the verified mobile number (POST /auth/reset-password needs an OTP to it);
@@ -37,14 +38,17 @@ PLACEHOLDER_NAME = "GoFindr player"  # what /auth/verify-otp names a phone-only 
 
 def _is_tester_number(c: Container, mobile: str | None) -> bool:
     p = c.settings.tester_signup_prefix
-    return bool(mobile and p and p.strip()) and c.settings.app_env not in ("beta", "production") and bool(
-        mobile and mobile.startswith(p or "\x00")
+    return (
+        bool(mobile and p and p.strip())
+        and c.settings.app_env not in ("beta", "production")
+        and bool(mobile and mobile.startswith(p or "\x00"))
     )
 
 
 async def complete_registration(c: Container, user: CurrentUser, data: CompleteRegistrationIn) -> dict[str, Any]:
     doc = user.doc
-    if not doc.get("mobile_verified"):
+    phone_ok, email_ok = bool(doc.get("mobile_verified")), bool(doc.get("email_verified"))
+    if not phone_ok and not email_ok:
         raise Forbidden("Verify your mobile number first", code="PHONE_NOT_VERIFIED")
     if doc.get("registration_completed_at"):
         raise Conflict("Your registration is already complete", code="REGISTRATION_COMPLETE")
@@ -58,16 +62,17 @@ async def complete_registration(c: Container, user: CurrentUser, data: CompleteR
 
     now = utcnow()
     email = str(data.email).lower()
+    keeps_verified_email = email_ok and email == (doc.get("email") or "").lower()  # proven by an email code
     fields: dict[str, Any] = {
         "full_name": data.full_name,
         "email": email,
-        "email_verified": False,
-        "email_verified_at": None,
+        "email_verified": keeps_verified_email,
+        "email_verified_at": doc.get("email_verified_at") if keeps_verified_email else None,
         "preferred_sport": beta or data.sport or doc.get("preferred_sport") or "cricket",
         "registration_completed_at": now,
         "updated_at": now,
     }
-    if not doc.get("phone_verified_at"):
+    if phone_ok and not doc.get("phone_verified_at"):
         fields["phone_verified_at"] = now
     if data.profile_image is not None:
         fields["profile_image"] = data.profile_image
@@ -78,7 +83,11 @@ async def complete_registration(c: Container, user: CurrentUser, data: CompleteR
     try:
         # Conditional on the state checked above, so two racing calls can't both complete (or both succeed).
         updated = await users.find_one_and_update(
-            {"_id": user.id, "mobile_verified": True, "registration_completed_at": None},
+            {
+                "_id": user.id,
+                "registration_completed_at": None,
+                "$or": [{"mobile_verified": True}, {"email_verified": True}],
+            },
             {"$set": fields},
             return_document=ReturnDocument.AFTER,
         )

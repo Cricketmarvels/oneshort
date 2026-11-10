@@ -6,7 +6,7 @@ All configuration lives here; no module should read ``os.environ`` directly.
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _INSECURE_DEFAULT = "change-me-dev-only-secret-change-me-dev-only"
@@ -137,11 +137,22 @@ class Settings(BaseSettings):
     expo_push_access_token: str | None = None  # only if push security is enabled on the Expo account
     fcm_project_id: str | None = None
     fcm_service_account_json: str | None = None
-    email_provider: Literal["console", "smtp"] = "console"
 
     # AI (optional, advisory only)
     anthropic_api_key: str | None = None
     ai_model: str = "claude-opus-5-5"
+
+    # Email codes for sign-up and password reset (app/infrastructure/integrations/email.py).
+    # console = dev adapter (nothing sent) | smtp = real delivery | none = email codes off
+    email_provider: Literal["console", "smtp", "none"] = "console"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    email_from: str | None = Field(default=None, description='Sender, e.g. "GoFindr <yourname@gmail.com>"')
+    email_otp_max_sends_per_hour: int = 5
+    email_otp_max_sends_per_day: int = 10
+    email_otp_daily_budget: int = Field(default=300, description="Global email codes per 24h (Brevo free plan size)")
 
     # Dev OTP adapter: return the code in the API response (dev/test only). Set false whenever the
     # dev server is reachable by others (e.g. a public tunnel); codes are then never shown or logged.
@@ -184,6 +195,8 @@ class Settings(BaseSettings):
                 problems.append("WHATSAPP_PROVIDER=simulator is not allowed in production")
             if self.otp_provider == "console":
                 problems.append("OTP_PROVIDER=console is not allowed in production")
+            if self.email_provider == "console":
+                problems.append("EMAIL_PROVIDER=console is not allowed in production (use smtp or none)")
             if self.debug:
                 problems.append("DEBUG must be false in production")
             if self.tester_signup_prefix:

@@ -4,8 +4,13 @@ from fastapi import APIRouter, Depends, Request
 
 from app.api.dependencies import ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
+from app.modules.auth.email_codes import finish_email_reset, finish_email_signup, start_email_reset, start_email_signup
 from app.modules.auth.schemas import (
     AuthOptionsOut,
+    EmailResetStartIn,
+    EmailResetVerifyIn,
+    EmailSignupStartIn,
+    EmailSignupVerifyIn,
     OtpSentOut,
     PasswordLoginIn,
     RefreshIn,
@@ -47,11 +52,48 @@ async def register(data: RegisterIn, request: Request, svc: Svc) -> Envelope[Reg
     return ok(await svc.register(data, _ip(request)))
 
 
+@router.post("/email-signup/start", response_model=Envelope[OtpSentOut], summary="Create account: email a 6-digit code")
+async def email_signup_start(data: EmailSignupStartIn, request: Request, c: ContainerDep) -> Envelope[OtpSentOut]:
+    return ok(await start_email_signup(c, str(data.email), data.mobile_number, _ip(request)))
+
+
+@router.post(
+    "/email-signup/verify",
+    status_code=201,
+    response_model=Envelope[TokenOut],
+    summary="Create account: verify the email code (mobile stays unverified)",
+)
+async def email_signup_verify(data: EmailSignupVerifyIn, request: Request, c: ContainerDep) -> Envelope[TokenOut]:
+    return ok(
+        await finish_email_signup(
+            c,
+            full_name=data.full_name,
+            email=str(data.email),
+            mobile=data.mobile_number,
+            password=data.password,
+            city=data.city,
+            code=data.code,
+            user_agent=_ua(request),
+        )
+    )
+
+
+@router.post("/email-reset/start", response_model=Envelope[OtpSentOut], summary="Email a password-reset code")
+async def email_reset_start(data: EmailResetStartIn, request: Request, c: ContainerDep) -> Envelope[OtpSentOut]:
+    return ok(await start_email_reset(c, str(data.email), _ip(request)))
+
+
+@router.post("/email-reset/verify", status_code=204, summary="Reset password with an email code")
+async def email_reset_verify(data: EmailResetVerifyIn, c: ContainerDep) -> None:
+    await finish_email_reset(c, str(data.email), data.code, data.new_password)
+
+
 @router.get("/options", response_model=Envelope[AuthOptionsOut], summary="Which login channels are available")
 async def options(c: ContainerDep) -> Envelope[AuthOptionsOut]:
     return ok(
         AuthOptionsOut(
             sms_otp=True,
+            email_otp=c.email.configured,
             whatsapp_otp=c.whatsapp.configured,
             whatsapp_simulator=c.settings.whatsapp_provider == "simulator",
             tester_signup_prefix=c.settings.tester_signup_prefix

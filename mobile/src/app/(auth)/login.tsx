@@ -34,7 +34,7 @@ export default function Login() {
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [channel, setChannel] = useState<"sms" | "whatsapp">("sms");
+  const [channel, setChannel] = useState<"sms" | "whatsapp" | "email">("sms");
   const [signup, setSignup] = useState(false); // same phone flow; only the wording changes for new players
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
@@ -45,6 +45,7 @@ export default function Login() {
   const simulator = !!opts.data?.whatsapp_simulator;
   const singleSport = !!opts.data?.beta_sport;
   const testerPrefix = opts.data?.tester_signup_prefix ?? null; // friends-testing mode (never in production)
+  const emailCodes = !!opts.data?.email_otp; // sign-up and password reset codes by email
 
   // Resend countdown: ticks once a second only while it is running.
   const wait = Math.max(0, Math.ceil((resendAt - now) / 1000));
@@ -83,7 +84,10 @@ export default function Login() {
     setBusy(true);
     try {
       // Sign-up sends the details with the request; the account is only created when the code is verified.
-      if (signup) {
+      if (signup && emailCodes) {
+        setChannel("email"); // the code goes to the email; the mobile number is verified later by SMS
+        sent(await api<S<"OtpSentOut">>("/auth/email-signup/start", { method: "POST", body: signupBody() }));
+      } else if (signup) {
         const r = await api<S<"RegisterOut">>("/auth/register", { method: "POST", body: { full_name: f.name.trim(), mobile_number: mobile, email: f.email.trim(), password: f.password, otp_channel: via } });
         sent(r.otp);
       } else {
@@ -94,10 +98,16 @@ export default function Login() {
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
 
+  const signupBody = () => ({ full_name: f.name.trim(), email: f.email.trim(), mobile_number: mobile, password: f.password });
   const verify = async (code = f.code) => {
     if (!OTP_REGEX.test(code)) return setErr("Enter the 6-digit code");
     setBusy(true); setErr(null);
     try {
+      if (signup && channel === "email") {
+        const t = await api<S<"TokenOut">>("/auth/email-signup/verify", { method: "POST", body: { ...signupBody(), code } });
+        await signIn(t.access_token, t.refresh_token, t.user);
+        return;
+      }
       // Details travel WITH the code, so only the person holding the phone decides them.
       const profile = signup ? { full_name: f.name.trim(), email: f.email.trim(), password: f.password } : undefined;
       const t = await api<S<"TokenOut">>("/auth/verify-otp", { method: "POST", body: { mobile_number: mobile, code, purpose: signup ? "register" : "login", ...(profile ? { profile } : {}) } });
@@ -123,12 +133,17 @@ export default function Login() {
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
 
+  const resetByEmail = f.mobile.includes("@"); // the reset field takes a mobile number or an email
   const sendReset = async (via: "sms" | "whatsapp" = "sms") => {
-    setChannel(via); setErr(null);
-    if (!validMobile()) return setErr("Enter the mobile number on your account");
+    setChannel(resetByEmail ? "email" : via); setErr(null);
+    if (resetByEmail ? !EMAIL_RE.test(f.mobile.trim()) : !validMobile()) return setErr(emailCodes ? "Enter the mobile number or email on your account" : "Enter the mobile number on your account");
     setBusy(true);
-    try { sent(await api<S<"OtpSentOut">>("/auth/send-otp", { method: "POST", body: { mobile_number: mobile, purpose: "reset_password", channel: via } })); setReset("code"); }
-    catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
+    try {
+      sent(resetByEmail
+        ? await api<S<"OtpSentOut">>("/auth/email-reset/start", { method: "POST", body: { email: f.mobile.trim() } })
+        : await api<S<"OtpSentOut">>("/auth/send-otp", { method: "POST", body: { mobile_number: mobile, purpose: "reset_password", channel: via } }));
+      setReset("code");
+    } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
   const doReset = async () => {
     setErr(null);
@@ -136,14 +151,16 @@ export default function Login() {
     if (f.password.length < 8) return setErr("Use at least 8 characters");
     setBusy(true);
     try {
-      await api("/auth/reset-password", { method: "POST", body: { mobile_number: mobile, code: f.code, new_password: f.password } });
+      if (resetByEmail) await api("/auth/email-reset/verify", { method: "POST", body: { email: f.mobile.trim(), code: f.code, new_password: f.password } });
+      else await api("/auth/reset-password", { method: "POST", body: { mobile_number: mobile, code: f.code, new_password: f.password } });
       setReset(null); setMode("email"); setF({ ...f, code: "", password: "" }); setNotice("Password updated. Log in with your new password.");
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
 
   const title = reset ? "Reset password" : mode === "email" ? "Welcome back" : step === "otp" ? "Enter the code" : signup ? "Create your account" : "Log in with your mobile";
-  const sub = reset ? null : mode === "email" ? "Log in with your email and password." : step === "otp" ? `Sent ${channel === "whatsapp" ? "on WhatsApp" : "by SMS"} to ${mobile}`
-    : signup ? "We'll text a 6-digit code to verify your number." : "We'll send a 6-digit code to verify it.";
+  const sentTo = channel === "email" ? `Sent to ${(resetByEmail && reset ? f.mobile : f.email).trim()}. Check your inbox and spam folder.` : `Sent ${channel === "whatsapp" ? "on WhatsApp" : "by SMS"} to ${mobile}`;
+  const sub = reset === "code" ? sentTo : reset ? null : mode === "email" ? "Log in with your email and password." : step === "otp" ? sentTo
+    : signup ? (emailCodes ? "We'll email you a 6-digit code to confirm it's you." : "We'll text a 6-digit code to verify your number.") : "We'll send a 6-digit code to verify it.";
   const back = step === "otp" || reset || (mode === "email" && DEFAULT_LOGIN !== "email")
     ? () => { setErr(null); if (reset) setReset(null); else if (step === "otp") setStep("phone"); else { setMode("phone"); setSignup(false); } }
     : signup && DEFAULT_LOGIN === "email" ? () => { setErr(null); setSignup(false); setMode("email"); }
@@ -168,9 +185,10 @@ export default function Login() {
 
           {reset === "phone" ? (
             <View style={{ gap: 14 }}>
-              <Field label="Mobile number on your account" value={f.mobile} onChangeText={(m) => setF({ ...f, mobile: m })} keyboardType="phone-pad" placeholder="98765 43210" error={err} />
-              <Button title="Send reset code" size="lg" loading={busy && channel === "sms"} onPress={() => void sendReset("sms")} />
-              {waReady ? <WhatsAppCodeButton loading={busy && channel === "whatsapp"} onPress={() => void sendReset("whatsapp")} /> : null}
+              <Field label={emailCodes ? "Mobile number or email on your account" : "Mobile number on your account"} value={f.mobile} onChangeText={(m) => setF({ ...f, mobile: m })}
+                keyboardType={emailCodes ? "email-address" : "phone-pad"} autoCapitalize="none" autoCorrect={false} placeholder={emailCodes ? "98765 43210 or you@example.com" : "98765 43210"} error={err} />
+              <Button title="Send reset code" size="lg" loading={busy && channel !== "whatsapp"} onPress={() => void sendReset("sms")} />
+              {waReady && !resetByEmail ? <WhatsAppCodeButton loading={busy && channel === "whatsapp"} onPress={() => void sendReset("whatsapp")} /> : null}
             </View>
           ) : reset === "code" ? (
             <View style={{ gap: 14 }}>
@@ -206,7 +224,7 @@ export default function Login() {
                 <Txt v="small" color={T.primaryDark}>Testing? Use {testerPrefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3")}123 and your code shows here.</Txt>
               ) : null}
               <Button title="Send code" size="lg" loading={busy && channel === "sms"} disabled={busy} onPress={() => void request("sms")} />
-              {waReady ? <WhatsAppCodeButton loading={busy && channel === "whatsapp"} onPress={() => void request("whatsapp")} /> : null}
+              {waReady && !(signup && emailCodes) ? <WhatsAppCodeButton loading={busy && channel === "whatsapp"} onPress={() => void request("whatsapp")} /> : null}
               {signup
                 ? <Button variant="ghost" size="sm" title="Already have an account? Log in" onPress={() => { setSignup(false); setMode(DEFAULT_LOGIN === "email" ? "email" : "phone"); setErr(null); }} />
                 : <>
@@ -227,10 +245,10 @@ export default function Login() {
               {simulator && channel === "whatsapp" ? <SimButton phone={mobile} /> : null}
               <Button title="Verify" size="lg" loading={busy} disabled={busy || f.code.length !== 6} onPress={() => void verify()} />
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <Button variant="ghost" size="sm" title="Change number" onPress={() => { setStep("phone"); setErr(null); }} />
+                <Button variant="ghost" size="sm" title={channel === "email" ? "Change details" : "Change number"} onPress={() => { setStep("phone"); setErr(null); }} />
                 {wait > 0
                   ? <Txt v="small" color={T.muted} accessibilityLiveRegion="polite">Resend in {wait}s</Txt>
-                  : <Button variant="ghost" size="sm" title="Resend code" disabled={busy} onPress={() => void request(channel)} />}
+                  : <Button variant="ghost" size="sm" title="Resend code" disabled={busy} onPress={() => void request(channel === "email" ? "sms" : channel)} />}
               </View>
             </View>
           )}

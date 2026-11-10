@@ -570,11 +570,15 @@ class InvitationService:
         note: str | None,
     ) -> str:
         """WhatsApp copy of a match invitation — only to players who opted in, and only via a configured provider."""
-        player = await self.c.mongo["users"].find_one({"_id": pid}, {"mobile_number": 1, "notification_prefs": 1})
+        player = await self.c.mongo["users"].find_one(
+            {"_id": pid}, {"mobile_number": 1, "notification_prefs": 1, "mobile_verified": 1, "verified_via": 1}
+        )
         if not player or not (player.get("notification_prefs") or {}).get("whatsapp"):
             return "opted_out"
-        if not player.get("mobile_number"):
-            return "no_number"
+        if not player.get("mobile_number") or (
+            player.get("verified_via") == "email" and not player.get("mobile_verified")
+        ):
+            return "no_number"  # an unproven number from email sign-up is never messaged
         if not self.c.whatsapp.configured:
             return "not_configured"
         tz = ZoneInfo(match.get("timezone") or "Asia/Kolkata")

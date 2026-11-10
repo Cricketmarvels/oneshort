@@ -67,7 +67,7 @@ function Gate() {
   // Sign-up isn't finished until the server says so: a verified number without registration_completed_at
   // reopens registration (also after the app was closed mid-way). Accounts from before this flow are backfilled.
   const onRegister = (seg as string[])[0] === "register";
-  const mustRegister = !!user && user.agreement.satisfied && user.phone_verified && !user.registration_completed_at;
+  const mustRegister = !!user && user.agreement.satisfied && (user.phone_verified || user.email_verified) && !user.registration_completed_at;
   if (mustRegister && !onRegister && !onLegal) return <Redirect href="/register" />;
   if (user && !mustRegister && onRegister) return <Redirect href="/" />;
   if (user && user.agreement.satisfied && pending.code && !onJoin) return <Redirect href={{ pathname: "/join/[code]", params: { code: pending.code } }} />;

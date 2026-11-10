@@ -113,7 +113,17 @@ class MongoRateLimiter:
 # Endpoints that take a credential (password or one-time code), so guessing is possible: strict per-IP limit.
 # Other /auth routes (options, refresh, sessions, logout) run on every page load and use the normal limit;
 # counting them as logins signed people out after a few reloads, or when friends shared one network.
-CREDENTIAL_PATHS = ("/auth/login", "/auth/send-otp", "/auth/verify-otp", "/auth/register", "/auth/reset-password")
+CREDENTIAL_PATHS = (
+    "/auth/login",
+    "/auth/send-otp",
+    "/auth/verify-otp",
+    "/auth/register",
+    "/auth/reset-password",
+    "/auth/email-signup/start",
+    "/auth/email-signup/verify",
+    "/auth/email-reset/start",
+    "/auth/email-reset/verify",
+)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):

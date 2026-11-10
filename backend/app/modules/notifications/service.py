@@ -69,7 +69,7 @@ class NotificationService:
             u["_id"]: u
             async for u in self.mongo["users"].find(
                 {"_id": {"$in": list(set(user_ids))}, "account_status": {"$ne": "deleted"}},
-                {"notification_prefs": 1, "mobile_number": 1},
+                {"notification_prefs": 1, "mobile_number": 1, "mobile_verified": 1, "verified_via": 1},
             )
         }
         now = utcnow()
@@ -93,7 +93,7 @@ class NotificationService:
             )
             if prefs.get("push", True):
                 push_targets.append(uid)
-            if prefs.get("whatsapp") and users[uid].get("mobile_number") and ntype in WHATSAPP_TYPES:
+            if prefs.get("whatsapp") and _whatsapp_number_ok(users[uid]) and ntype in WHATSAPP_TYPES:
                 wa_targets.append(users[uid]["mobile_number"])
         if not docs:
             return
@@ -187,3 +187,10 @@ async def check_push_receipts(c: Any) -> int:
     if done_ids:
         await c.mongo["push_receipts"].delete_many({"receipt_id": {"$in": done_ids}})
     return len(done_ids)
+
+
+def _whatsapp_number_ok(u: dict[str, Any]) -> bool:
+    """A number given at email sign-up isn't proven: never message it until an SMS code verifies it."""
+    if not u.get("mobile_number"):
+        return False
+    return bool(u.get("mobile_verified")) or u.get("verified_via") != "email"
