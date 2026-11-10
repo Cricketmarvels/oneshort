@@ -15,6 +15,8 @@ import { useSimCode } from "@/lib/simulator";
 import { SPORTS, useSport } from "@/lib/sports";
 import { SP, T } from "@/theme";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 /**
  * Sign in and sign up are one flow: mobile number → 6-digit code. A new number gets a phone-verified account and
  * the app then opens registration (email, Player/Captain, name and photo; see app/register.tsx). Email + password
@@ -27,7 +29,7 @@ export default function Login() {
   const [mode, setMode] = useState<"phone" | "email">(DEFAULT_LOGIN === "email" ? "email" : "phone");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [reset, setReset] = useState<null | "phone" | "code">(null);
-  const [f, setF] = useState({ mobile: "", email: "", code: "", password: "" });
+  const [f, setF] = useState({ name: "", mobile: "", email: "", code: "", password: "" });
   const [dev, setDev] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -64,12 +66,29 @@ export default function Login() {
   const sent = (r: S<"OtpSentOut">) => { setDev(r.dev_otp ?? null); setResendAt(Date.now() + r.resend_after * 1000); setNow(Date.now()); };
   const validMobile = () => MOBILE_REGEX.test(f.mobile.replace(/\s/g, ""));
 
+  const [fieldErr, setFieldErr] = useState<Partial<Record<"name" | "email" | "password", string>>>({});
+  const checkSignup = () => {
+    const e: typeof fieldErr = {};
+    if (f.name.trim().length < 2) e.name = "Enter your full name";
+    if (!EMAIL_RE.test(f.email.trim())) e.email = "Enter a valid email address";
+    if (f.password.length < 8 || !/[A-Za-z]/.test(f.password) || !/\d/.test(f.password)) e.password = "At least 8 characters, with a letter and a number";
+    setFieldErr(e);
+    return Object.keys(e).length === 0;
+  };
+
   const request = async (via: "sms" | "whatsapp" = "sms") => {
     setChannel(via); setErr(null); setNotice(null);
+    if (signup && !checkSignup()) return;
     if (!validMobile()) return setErr("Enter a valid 10-digit mobile number");
     setBusy(true);
     try {
-      sent(await api<S<"OtpSentOut">>("/auth/send-otp", { method: "POST", body: { mobile_number: mobile, purpose: "login", channel: via } }));
+      // Sign-up sends the details with the request; the account is only created when the code is verified.
+      if (signup) {
+        const r = await api<S<"RegisterOut">>("/auth/register", { method: "POST", body: { full_name: f.name.trim(), mobile_number: mobile, email: f.email.trim(), password: f.password, otp_channel: via } });
+        sent(r.otp);
+      } else {
+        sent(await api<S<"OtpSentOut">>("/auth/send-otp", { method: "POST", body: { mobile_number: mobile, purpose: "login", channel: via } }));
+      }
       setF((p) => ({ ...p, code: "" }));
       setStep("otp");
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
@@ -79,7 +98,9 @@ export default function Login() {
     if (!OTP_REGEX.test(code)) return setErr("Enter the 6-digit code");
     setBusy(true); setErr(null);
     try {
-      const t = await api<S<"TokenOut">>("/auth/verify-otp", { method: "POST", body: { mobile_number: mobile, code, purpose: "login" } });
+      // Details travel WITH the code, so only the person holding the phone decides them.
+      const profile = signup ? { full_name: f.name.trim(), email: f.email.trim(), password: f.password } : undefined;
+      const t = await api<S<"TokenOut">>("/auth/verify-otp", { method: "POST", body: { mobile_number: mobile, code, purpose: signup ? "register" : "login", ...(profile ? { profile } : {}) } });
       await signIn(t.access_token, t.refresh_token, t.user); // the root gate opens registration if it isn't finished
     } catch (e) { setErr(errorText(e)); setF((p) => ({ ...p, code: "" })); } finally { setBusy(false); }
   };
@@ -122,7 +143,7 @@ export default function Login() {
 
   const title = reset ? "Reset password" : mode === "email" ? "Welcome back" : step === "otp" ? "Enter the code" : signup ? "Create your account" : "Log in with your mobile";
   const sub = reset ? null : mode === "email" ? "Log in with your email and password." : step === "otp" ? `Sent ${channel === "whatsapp" ? "on WhatsApp" : "by SMS"} to ${mobile}`
-    : signup ? "Start with your mobile number. We'll text you a 6-digit code." : "We'll send a 6-digit code to verify it.";
+    : signup ? "We'll text a 6-digit code to verify your number." : "We'll send a 6-digit code to verify it.";
   const back = step === "otp" || reset || (mode === "email" && DEFAULT_LOGIN !== "email")
     ? () => { setErr(null); if (reset) setReset(null); else if (step === "otp") setStep("phone"); else { setMode("phone"); setSignup(false); } }
     : signup && DEFAULT_LOGIN === "email" ? () => { setErr(null); setSignup(false); setMode("email"); }
@@ -172,7 +193,15 @@ export default function Login() {
             </View>
           ) : step === "phone" ? (
             <View style={{ gap: 14 }}>
-              <Field label="Mobile number" value={f.mobile} onChangeText={(m) => { setF({ ...f, mobile: m }); if (err) setErr(null); }} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="+91  98765 43210" error={err} autoFocus />
+              {signup ? <>
+                <Field label="Full name" value={f.name} onChangeText={(name) => { setF({ ...f, name }); setFieldErr({ ...fieldErr, name: undefined }); }} autoComplete="name" textContentType="name" autoCapitalize="words" autoFocus error={fieldErr.name} />
+                <Field label="Email" value={f.email} onChangeText={(email) => { setF({ ...f, email }); setFieldErr({ ...fieldErr, email: undefined }); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" error={fieldErr.email} />
+              </> : null}
+              <Field label="Mobile number" value={f.mobile} onChangeText={(m) => { setF({ ...f, mobile: m }); if (err) setErr(null); }} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="+91  98765 43210" error={err} autoFocus={!signup} />
+              {signup ? (
+                <Field label="Set password" value={f.password} onChangeText={(password) => { setF({ ...f, password }); setFieldErr({ ...fieldErr, password: undefined }); }} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword"
+                  hint="At least 8 characters, with a letter and a number. Lets you also log in with your email." error={fieldErr.password} />
+              ) : null}
               {testerPrefix ? (
                 <Txt v="small" color={T.primaryDark}>Testing? Use {testerPrefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3")}123 and your code shows here.</Txt>
               ) : null}

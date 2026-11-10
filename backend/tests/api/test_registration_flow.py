@@ -247,3 +247,53 @@ async def test_password_reset_needs_the_verified_phone_not_the_email(client: htt
         f"{API}/auth/reset-password", json={"email": f"{mobile[1:]}@example.in", "new_password": "x" * 12}
     )
     assert r.status_code == 422
+
+
+async def test_signup_form_details_travel_with_the_code(client: httpx.AsyncClient, container: Container) -> None:
+    """The app's sign-up form: name, email, mobile and password, then the code. Registration stays open until
+    Player/Captain is chosen, and the email is stored unverified."""
+    mobile = unique_mobile()
+    form = {
+        "full_name": "Kiran Rao",
+        "mobile_number": mobile,
+        "email": f"{mobile[1:]}@example.in",
+        "password": "KiranPass2026",
+    }
+    r = await client.post(f"{API}/auth/register", json=form)
+    assert r.status_code == 201, r.text
+    code = r.json()["data"]["otp"]["dev_otp"]
+    profile = {k: form[k] for k in ("full_name", "email", "password")}
+    r = await client.post(
+        f"{API}/auth/verify-otp",
+        json={"mobile_number": mobile, "code": code, "purpose": "register", "profile": profile},
+    )
+    assert r.status_code == 200, r.text
+    t = r.json()["data"]
+    u = t["user"]
+    assert u["full_name"] == "Kiran Rao" and u["email"] == form["email"] and u["has_password"] is True
+    assert u["phone_verified"] is True and u["email_verified"] is False and u["registration_completed_at"] is None
+    # the password works for email login straight away
+    r = await client.post(f"{API}/auth/login", json={"email": form["email"], "password": form["password"]})
+    assert r.status_code == 200
+    # the role step finishes registration with the same name and email
+    r = await client.post(
+        f"{API}/users/me/registration",
+        headers=auth(t),
+        json={"full_name": "Kiran Rao", "email": form["email"], "play_as": "captain"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["data"]["registration_completed_at"] is not None
+
+
+async def test_signup_without_the_code_creates_nothing(client: httpx.AsyncClient, container: Container) -> None:
+    mobile = unique_mobile()
+    form = {
+        "full_name": "No Code",
+        "mobile_number": mobile,
+        "email": f"{mobile[1:]}@example.in",
+        "password": "NoCodePass2026",
+    }
+    assert (await client.post(f"{API}/auth/register", json=form)).status_code == 201
+    assert await container.mongo["users"].count_documents({"mobile_number": mobile}) == 0
+    r = await client.post(f"{API}/auth/login", json={"email": form["email"], "password": form["password"]})
+    assert r.status_code == 401

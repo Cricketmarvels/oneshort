@@ -222,9 +222,9 @@ class AuthService:
             "email_verified_at": None,
             "mobile_verified": True,  # exposed as phone_verified
             "phone_verified_at": now,
-            # Legacy clients send the sign-up details with the code; the current app completes registration
-            # afterwards (POST /users/me/registration), so a phone-only sign-up starts incomplete.
-            "registration_completed_at": now if profile else None,
+            # Sign-up details (name, email, password) may arrive with the code, but registration is finished
+            # only by POST /users/me/registration (Player/Captain), so every new account starts incomplete.
+            "registration_completed_at": None,
             "password_hash": hash_secret(profile.password) if profile and profile.password else None,
             "profile_image": None,
             "roles": [Role.PLAYER.value],
@@ -258,7 +258,7 @@ class AuthService:
             "email": None,
             "email_verified": False,
             "email_verified_at": None,
-            "registration_completed_at": now if profile else None,
+            "registration_completed_at": None,  # finished by POST /users/me/registration
         }
         had_credentials = bool(user.get("password_hash") or user.get("email"))
         if profile:

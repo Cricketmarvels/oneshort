@@ -112,6 +112,12 @@ async def register(
     assert r.status_code == 200, r.text
     d = r.json()["data"]
     user = TestUser(d["user"]["id"], d["access_token"], d["refresh_token"], mobile, name)
+    r = await client.post(
+        "/api/v1/users/me/registration",
+        headers=user.h,
+        json={"full_name": name, "email": email, "play_as": "player"},
+    )
+    assert r.status_code == 200, r.text
     if agree:
         cur = (await client.get("/api/v1/agreements/current")).json()["data"]["version"]
         r = await client.post(

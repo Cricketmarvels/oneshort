@@ -1,7 +1,7 @@
 /**
  * Registration, opened by the root gate for a phone-verified account whose sign-up isn't finished
  * (`registration_completed_at` is null). Three short steps, one primary action each:
- *   1 · Email (collected, not verified in this release)
+ *   1 · Email (collected, not verified in this release) — skipped when the sign-up form already sent one
  *   2 · Player or Captain
  *   3 · Name, main role (cricket) and profile photo → POST /users/me/registration
  *       (test numbers also set a password here, so an interruption can't lose it: it is never stored)
@@ -47,12 +47,21 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (user) void reg.load(user.id); }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { // prefill once from the account (e.g. a name kept from an invite link)
-    if (user && reg.userId === user.id && !reg.draft.name && user.full_name !== PLACEHOLDER) reg.update({ name: user.full_name });
+  const hasEmail = !!user?.email; // the sign-up form collected it
+  useEffect(() => { // prefill once from the account (sign-up form, or a name kept from an invite link)
+    if (!user || reg.userId !== user.id) return;
+    const patch: Partial<typeof reg.draft> = {};
+    if (!reg.draft.name && user.full_name !== PLACEHOLDER) patch.name = user.full_name;
+    if (!reg.draft.email && user.email) patch.email = user.email;
+    if (user.email && reg.draft.step === 1) patch.step = 2;
+    if (Object.keys(patch).length) reg.update(patch);
   }, [reg.userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user || reg.userId !== user.id) return <View style={{ flex: 1, backgroundColor: T.bg }} />;
   const { step, email, playAs, name, role } = reg.draft;
+  const first = hasEmail ? 2 : 1; // steps shown: [email?] → role → profile
+  const total = 4 - first;
+  const shown = step - first + 1;
   const cricket = (sport ?? user.preferred_sport) === "cricket";
 
   const next = () => {
@@ -83,24 +92,24 @@ export default function Register() {
       router.replace(playAs === "captain" ? "/teams" : "/");
     } catch (e) {
       const code = e instanceof ApiError ? e.code : null;
-      if (code === "EMAIL_IN_USE") { reg.update({ step: 1 }); setErr({ field: "email", text: "This email is already used by another account" }); }
+      if (code === "EMAIL_IN_USE") { reg.update({ step: 1 }); setErr({ field: "email", text: "This email is already used by another account" }); } // shown even if the form sent it
       else if (code === "PASSWORD_REQUIRED") setErr({ field: "password", text: errorText(e) });
       else if (code === "REGISTRATION_COMPLETE") { await reload(); router.replace("/"); }
       else setErr({ field: "form", text: errorText(e) });
     } finally { setBusy(false); }
   };
 
-  const back = () => { setErr(null); if (step > 1) reg.update({ step: (step - 1) as 1 | 2 }); else void signOut(); };
+  const back = () => { setErr(null); if (step > first) reg.update({ step: (step - 1) as 1 | 2 }); else void signOut(); };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: T.bg }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: SP.page, paddingBottom: insets.bottom + SP.xl, gap: SP.xl, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, height: 40 }}>
-          <Button variant="ghost" size="sm" title={step > 1 ? "‹ Back" : "‹ Use another number"} onPress={back} style={{ paddingHorizontal: 0 }} />
+          <Button variant="ghost" size="sm" title={step > first ? "‹ Back" : "‹ Use another number"} onPress={back} style={{ paddingHorizontal: 0 }} />
           <View style={{ flex: 1 }} />
-          <KickerChip label={`STEP ${step} OF 3`} />
+          <KickerChip label={`STEP ${shown} OF ${total}`} />
         </View>
-        <View style={{ flexDirection: "row", gap: 4 }}>{[1, 2, 3].map((i) => <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? T.primary : T.line }} />)}</View>
+        <View style={{ flexDirection: "row", gap: 4 }}>{Array.from({ length: total }, (_, i) => i + 1).map((i) => <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= shown ? T.primary : T.line }} />)}</View>
 
         {step === 1 ? (
           <View style={{ gap: 16 }}>
