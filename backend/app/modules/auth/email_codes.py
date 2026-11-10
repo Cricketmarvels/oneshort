@@ -123,7 +123,8 @@ class EmailCodes:
             raise Unauthorized("Too many incorrect attempts. Request a new code.", code="OTP_LOCKED")
         if not verify_secret(code, doc["code_hash"]):
             raise Unauthorized("Incorrect code", code="OTP_INVALID")
-        await self.col.delete_one({"_id": doc["_id"]})
+        if (await self.col.delete_one({"_id": doc["_id"]})).deleted_count != 1:  # single use under concurrency
+            raise Unauthorized("Code expired or not requested", code="OTP_EXPIRED")
 
 
 def _tester(c: Container, mobile: str) -> bool:

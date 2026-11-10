@@ -1,6 +1,6 @@
 import { MOBILE_REGEX, normaliseMobile, OTP_REGEX, type S } from "@cm/shared";
 import { useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { MessageCircle } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
@@ -18,15 +18,18 @@ import { SP, T } from "@/theme";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
- * Sign in and sign up are one flow: mobile number → 6-digit code. A new number gets a phone-verified account and
- * the app then opens registration (email, Player/Captain, name and photo; see app/register.tsx). Email + password
- * stays available for existing accounts that set one; password reset always goes through the mobile number.
+ * Sign in and sign up are one flow: mobile number → 6-digit SMS code. Nothing else is asked before the number is
+ * proven. A new number gets a phone-verified account and the app then opens registration (name and email,
+ * Player/Captain, profile; see app/register.tsx). Email + password stays available for existing accounts that set
+ * one; password reset always goes through the mobile number. The email-code sign-up form (name, email, mobile,
+ * password) only appears when the deferred EMAIL_OTP_ENABLED switch is on.
  */
 export default function Login() {
   const { signIn } = useAuth();
   const insets = useSafeAreaInsets();
   const { sport } = useSport();
-  const [mode, setMode] = useState<"phone" | "email">(DEFAULT_LOGIN === "email" ? "email" : "phone");
+  const startSignup = useLocalSearchParams<{ signup?: string }>().signup === "1"; // e.g. from an invite link
+  const [mode, setMode] = useState<"phone" | "email">(startSignup || DEFAULT_LOGIN !== "email" ? "phone" : "email");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [reset, setReset] = useState<null | "phone" | "code">(null);
   const [f, setF] = useState({ name: "", mobile: "", email: "", code: "", password: "", confirm: "" });
@@ -35,7 +38,7 @@ export default function Login() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [channel, setChannel] = useState<"sms" | "whatsapp" | "email">("sms");
-  const [signup, setSignup] = useState(false); // same phone flow; only the wording changes for new players
+  const [signup, setSignup] = useState(startSignup); // same phone flow; only the wording changes for new players
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
   const mobile = normaliseMobile(f.mobile);
@@ -82,7 +85,7 @@ export default function Login() {
 
   const request = async (via: "sms" | "whatsapp" = "sms") => {
     setChannel(via); setErr(null); setNotice(null);
-    if (signup && !checkSignup()) return;
+    if (signup && emailCodes && !checkSignup()) return;
     if (!validMobile()) return setErr("Enter a valid 10-digit mobile number");
     setBusy(true);
     try {
@@ -90,11 +93,9 @@ export default function Login() {
       if (signup && emailCodes) {
         setChannel("email"); // the code goes to the email; the mobile number is verified later by SMS
         sent(await api<S<"OtpSentOut">>("/auth/email-signup/start", { method: "POST", body: signupBody() }));
-      } else if (signup) {
-        const r = await api<S<"RegisterOut">>("/auth/register", { method: "POST", body: { full_name: f.name.trim(), mobile_number: mobile, email: f.email.trim(), password: f.password, otp_channel: via } });
-        sent(r.otp);
       } else {
-        sent(await api<S<"OtpSentOut">>("/auth/send-otp", { method: "POST", body: { mobile_number: mobile, purpose: "login", channel: via } }));
+        // New and returning numbers get the same request and the same reply; the code decides which account opens.
+        sent(await api<S<"OtpSentOut">>("/auth/send-otp", { method: "POST", body: { mobile_number: mobile, purpose: signup ? "register" : "login", channel: via } }));
       }
       setF((p) => ({ ...p, code: "" }));
       setStep("otp");
@@ -111,9 +112,8 @@ export default function Login() {
         await signIn(t.access_token, t.refresh_token, t.user);
         return;
       }
-      // Details travel WITH the code, so only the person holding the phone decides them.
-      const profile = signup ? { full_name: f.name.trim(), email: f.email.trim(), password: f.password } : undefined;
-      const t = await api<S<"TokenOut">>("/auth/verify-otp", { method: "POST", body: { mobile_number: mobile, code, purpose: signup ? "register" : "login", ...(profile ? { profile } : {}) } });
+      // Name and email are asked after this, on the registration screen, by the person who proved the number.
+      const t = await api<S<"TokenOut">>("/auth/verify-otp", { method: "POST", body: { mobile_number: mobile, code, purpose: signup ? "register" : "login" } });
       await signIn(t.access_token, t.refresh_token, t.user); // the root gate opens registration if it isn't finished
     } catch (e) { setErr(errorText(e)); setF((p) => ({ ...p, code: "" })); } finally { setBusy(false); }
   };
@@ -216,16 +216,16 @@ export default function Login() {
             </View>
           ) : step === "phone" ? (
             <View style={{ gap: 14 }}>
-              {signup ? <>
+              {signup && emailCodes ? <>
                 <Field label="Full name" value={f.name} onChangeText={(name) => { setF({ ...f, name }); setFieldErr({ ...fieldErr, name: undefined }); }} autoComplete="name" textContentType="name" autoCapitalize="words" autoFocus error={fieldErr.name} />
                 <Field label="Email" value={f.email} onChangeText={(email) => { setF({ ...f, email }); setFieldErr({ ...fieldErr, email: undefined }); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" error={fieldErr.email} />
               </> : null}
               <Field label="Mobile number" value={f.mobile} onChangeText={(m) => { setF({ ...f, mobile: m }); if (err) setErr(null); }} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="+91  98765 43210" error={err} autoFocus={!signup} />
-              {signup ? (
+              {signup && emailCodes ? (
                 <Field label="Set password" value={f.password} onChangeText={(password) => { setF({ ...f, password }); setFieldErr({ ...fieldErr, password: undefined }); }} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword"
                   hint="At least 8 characters, with a letter and a number." error={fieldErr.password} />
               ) : null}
-              {signup ? (
+              {signup && emailCodes ? (
                 <Field label="Confirm password" value={f.confirm} onChangeText={(confirm) => { setF({ ...f, confirm }); setFieldErr({ ...fieldErr, confirm: undefined }); }} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword"
                   error={fieldErr.confirm} />
               ) : null}
@@ -233,7 +233,7 @@ export default function Login() {
               {testerPrefix ? (
                 <Txt v="small" color={T.primaryDark}>Testing? Use {testerPrefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3")}123 and your code shows here.</Txt>
               ) : null}
-              <Button title="Send code" size="lg" loading={busy && channel === "sms"} disabled={busy} onPress={() => void request("sms")} />
+              <Button title={signup ? "Continue" : "Send code"} size="lg" loading={busy && channel === "sms"} disabled={busy} onPress={() => void request("sms")} />
               {waReady && !(signup && emailCodes) ? <WhatsAppCodeButton loading={busy && channel === "whatsapp"} onPress={() => void request("whatsapp")} /> : null}
               {signup
                 ? <Button variant="ghost" size="sm" title="Already have an account? Log in" onPress={() => { setSignup(false); setMode(DEFAULT_LOGIN === "email" ? "email" : "phone"); setErr(null); }} />

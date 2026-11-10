@@ -70,6 +70,10 @@ async def get_current_user(
     if valid_after is not None and int(payload.get("iat", 0)) < int(ensure_utc(valid_after).timestamp()):
         # "Sign out everywhere": access tokens minted before the cut-off die immediately, not at expiry.
         raise Unauthorized("You were signed out on this device", code="TOKEN_REVOKED")
+    fam = payload.get("fam")
+    if fam and await c.mongo["revoked_sessions"].find_one({"_id": fam}, {"_id": 1}):
+        # This device was signed out (or its session was revoked): its access token dies now, not at expiry.
+        raise Unauthorized("You were signed out on this device", code="TOKEN_REVOKED")
     tag_user(str(uid))  # error reports carry the internal id only
     return CurrentUser(
         id=uid,

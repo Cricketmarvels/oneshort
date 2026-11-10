@@ -54,10 +54,17 @@ def create_access_token(
         "iat": int(now.timestamp()),
         "exp": int((now + ttl).timestamp()),
         "iss": settings.jwt_issuer,
+        "aud": _audience(settings),
         **(extra or {}),
     }
     token = jwt.encode(payload, settings.jwt_secret, algorithm=_ALGORITHM)
     return token, int(ttl.total_seconds())
+
+
+def _audience(settings: Settings) -> str:
+    """Tokens are bound to one environment: a staging token never authenticates against production, even if
+    the two were ever misconfigured to share a JWT secret."""
+    return f"{settings.jwt_issuer}:{settings.app_env}"
 
 
 def decode_access_token(settings: Settings, token: str) -> dict[str, Any]:
@@ -67,8 +74,12 @@ def decode_access_token(settings: Settings, token: str) -> dict[str, Any]:
             settings.jwt_secret,
             algorithms=[_ALGORITHM],
             issuer=settings.jwt_issuer,
-            options={"require": ["exp", "sub", "iss", "type"]},
+            options={"require": ["exp", "sub", "iss", "type"], "verify_aud": False},
         )
+        # Tokens minted before the audience claim existed (at most one access-token lifetime) are still accepted,
+        # so the release signs nobody out. Any token that names an environment must name this one.
+        if "aud" in payload and payload["aud"] != _audience(settings):
+            raise jwt.InvalidAudienceError("token is for another environment")
     except jwt.ExpiredSignatureError as exc:
         raise Unauthorized("Access token expired", code="TOKEN_EXPIRED") from exc
     except jwt.PyJWTError as exc:

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Request
 from app.api.dependencies import ContainerDep, MatchmakerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
 from app.common.types import parse_object_id
+from app.core.exceptions import AppError
 from app.modules.auth.schemas import TokenOut
 from app.modules.joinlinks.schemas import InviteLinkOut, InviteRegisterIn, JoinIn, JoinPreviewOut, JoinResultOut
 from app.modules.joinlinks.service import JoinLinkService
@@ -54,4 +55,10 @@ async def join(code: str, data: JoinIn, user: MatchmakerDep, svc: Svc) -> Envelo
     summary="Register via a captain's invite link (password account)",
 )
 async def invite_register(data: InviteRegisterIn, request: Request, svc: Svc) -> Envelope[TokenOut]:
+    if not svc.c.settings.invite_register_enabled:
+        raise AppError(
+            "Sign up with your mobile number to join. Your invite opens straight after.",
+            code="INVITE_REGISTER_DISABLED",
+            status_code=410,
+        )
     return ok(await svc.register(data, request.headers.get("user-agent")))

@@ -3,7 +3,7 @@
  * Shows the match (area only, no exact venue), then: new here → create an account; have one → log in;
  * signed in → pick a role if needed → "Add me to the squad" (joins the team and the match squad).
  */
-import { MOBILE_REGEX, normaliseMobile, type S } from "@cm/shared";
+import type { S } from "@cm/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { CalendarDays, CheckCircle2, MapPin, Users } from "lucide-react-native";
@@ -12,7 +12,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Wordmark } from "@/components/premium";
-import { Button, Chip, Field, InlineNotice, LoadingSkeleton, Segmented, Txt } from "@/components/ui";
+import { Button, Chip, InlineNotice, LoadingSkeleton, Txt } from "@/components/ui";
 import { api, ApiError, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { when } from "@/lib/format";
@@ -26,29 +26,16 @@ const ROLES = [["batsman", "Batter"], ["bowler", "Bowler"], ["all_rounder", "All
 export default function JoinScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const insets = useSafeAreaInsets();
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const pending = usePendingJoin();
   useEffect(() => { if (code && pending.code !== code) pending.set(code); }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pv = useQuery({ queryKey: ["join", code], queryFn: () => api<Preview>(`/join/${code}`), retry: false });
   const profile = useQuery({ enabled: !!user, queryKey: ["player", "me"], queryFn: () => api<{ primary_role: string }>("/players/me").catch(() => null) });
-  const [mode, setMode] = useState<"new" | "login">("new");
-  const [f, setF] = useState({ name: "", mobile: "", email: "", password: "" });
   const [role, setRole] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState<Result | null>(null);
 
-  const register = useMutation({
-    mutationFn: async () => {
-      if (f.name.trim().length < 2) throw new Error("Enter your full name");
-      if (!MOBILE_REGEX.test(f.mobile.replace(/\s/g, ""))) throw new Error("Enter a valid 10-digit mobile number");
-      if (!f.email.includes("@")) throw new Error("Enter your email");
-      if (f.password.length < 8) throw new Error("Use at least 8 characters for your password");
-      return api<S<"TokenOut">>("/auth/invite-register", { method: "POST", body: { code, full_name: f.name.trim(), mobile_number: normaliseMobile(f.mobile), email: f.email.trim(), password: f.password } });
-    },
-    onSuccess: async (t) => { setErr(null); await signIn(t.access_token, t.refresh_token, t.user as never); },
-    onError: (e) => setErr(e instanceof ApiError ? errorText(e) : (e as Error).message),
-  });
   const join = useMutation({
     mutationFn: async () => {
       if (!profile.data) {
@@ -112,23 +99,9 @@ export default function JoinScreen() {
               </View>
             ) : (
               <View style={{ gap: 14 }}>
-                <Segmented value={mode} onChange={setMode} options={[{ v: "new", l: "I'm new to GoFindr" }, { v: "login", l: "I have an account" }]} />
-                {mode === "new" ? (
-                  <View style={{ gap: 12 }}>
-                    <Field label="Full name" value={f.name} onChangeText={(name) => setF({ ...f, name })} autoComplete="name" />
-                    <Field label="Mobile number" value={f.mobile} onChangeText={(mobile) => setF({ ...f, mobile })} keyboardType="phone-pad" placeholder="98765 43210" hint="Indian mobile (+91). Not shown to other players." />
-                    <Field label="Email" value={f.email} onChangeText={(email) => setF({ ...f, email })} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
-                    <Field label="Password" value={f.password} onChangeText={(password) => setF({ ...f, password })} secureTextEntry autoCapitalize="none" textContentType="newPassword" hint="At least 8 characters. You'll log in with your email and this password." />
-                    {err ? <InlineNotice tone="warning">{err}</InlineNotice> : null}
-                    <Button title="Create account & continue" size="lg" loading={register.isPending} onPress={() => register.mutate()} />
-                    <Txt v="small" color={T.muted}>Your mobile number is saved as not yet verified; you can verify it later in the app.</Txt>
-                  </View>
-                ) : (
-                  <View style={{ gap: 10 }}>
-                    <Txt v="body" color={T.muted}>Log in, and you'll come straight back here to add yourself.</Txt>
-                    <Button title="Log in" size="lg" onPress={() => router.push("/login")} />
-                  </View>
-                )}
+                <Txt v="body" color={T.muted}>Verify your mobile number to join. You'll come straight back here to add yourself.</Txt>
+                <Button title="I'm new: create an account" size="lg" onPress={() => router.push({ pathname: "/login", params: { signup: "1" } })} />
+                <Button title="I have an account: log in" variant="secondary" size="lg" onPress={() => router.push("/login")} />
               </View>
             )}
           </>

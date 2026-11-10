@@ -12,6 +12,7 @@ from datetime import timedelta
 from typing import Any
 
 from bson import ObjectId
+from pymongo.errors import DuplicateKeyError
 
 from app.common.enums import AccountStatus, Role
 from app.common.types import ensure_utc, utcnow
@@ -82,6 +83,9 @@ class AuthService:
         last = await self.otps.find_one({"kind": "send_log", "mobile_number": mobile}, sort=[("created_at", -1)])
         if last and (now - ensure_utc(last["created_at"])).total_seconds() < self.s.otp_resend_cooldown_seconds:
             raise RateLimited("Please wait before requesting another OTP.", code="OTP_COOLDOWN")
+        # The checks above read counts, so simultaneous requests could all pass them. One atomic send slot per
+        # number closes that race: only one request per cooldown window gets past this point.
+        await self._claim_send_slot(mobile, now)
 
         if not deliver:  # same limits and same reply, no code (password reset for an unusable number)
             await self.otps.insert_one({"kind": "send_log", "mobile_number": mobile, "ip": ip, "created_at": now})
@@ -117,7 +121,11 @@ class AuthService:
                 raise AppError(failure_reason(self.c.whatsapp), code="OTP_DELIVERY_FAILED", status_code=422)
             expose = False  # a real channel delivered it; never echo the code
         else:
-            await self.c.otp_sender.send(mobile, code)
+            try:
+                await self.c.otp_sender.send(mobile, code)
+            except Exception:
+                await self.otps.delete_one({"kind": "send_slot", "mobile_number": mobile})  # let them retry now
+                raise
             expose = self.c.otp_sender.exposes_code and (
                 (self.s.is_dev_like and self.s.dev_otp_in_response)
                 or (
@@ -134,6 +142,17 @@ class AuthService:
             resend_after=self.s.otp_resend_cooldown_seconds,
             dev_otp=code if expose else None,
         )
+
+    async def _claim_send_slot(self, mobile: str, now: Any) -> None:
+        until = now + timedelta(seconds=self.s.otp_resend_cooldown_seconds)
+        try:
+            await self.otps.update_one(
+                {"kind": "send_slot", "mobile_number": mobile, "next_at": {"$lte": now}},
+                {"$set": {"next_at": until, "expires_at": until + timedelta(minutes=5)}},
+                upsert=True,
+            )
+        except DuplicateKeyError as exc:  # another request holds the slot for this window
+            raise RateLimited("Please wait before requesting another OTP.", code="OTP_COOLDOWN") from exc
 
     def _is_tester_number(self, mobile: str) -> bool:
         p = self.s.tester_signup_prefix
@@ -152,7 +171,9 @@ class AuthService:
             raise Unauthorized("Too many incorrect attempts. Request a new OTP.", code="OTP_LOCKED")
         if not verify_secret(code, doc["code_hash"]):
             raise Unauthorized("Incorrect OTP", code="OTP_INVALID")
-        await self.otps.delete_one({"_id": doc["_id"]})
+        # Single use even under concurrency: only the request that actually deletes the code may continue.
+        if (await self.otps.delete_one({"_id": doc["_id"]})).deleted_count != 1:
+            raise Unauthorized("OTP expired or not requested", code="OTP_EXPIRED")
 
     # --------------------------------------------------------- sign-up and sign-in
     # Every reply below is identical whether or not the number has an account (auth review H2): a code is
@@ -280,6 +301,8 @@ class AuthService:
                 "email": await self._email_free(str(profile.email) if profile.email else None, user["_id"]),
                 "password_hash": hash_secret(profile.password) if profile.password else None,
             }
+        if had_credentials:
+            fields["sessions_valid_after"] = now  # access tokens from the old credentials stop at once
         updated = await self.users.update(user["_id"], fields)
         assert updated is not None
         if had_credentials:
@@ -337,7 +360,10 @@ class AuthService:
         user = await self.users.by_mobile(mobile)
         if not user:
             raise NotFound("Account not found", code="ACCOUNT_NOT_FOUND")
-        await self.users.update(user["_id"], {"password_hash": hash_secret(new_password)})
+        # sessions_valid_after: access tokens issued before the reset stop working now, not in 15 minutes.
+        await self.users.update(
+            user["_id"], {"password_hash": hash_secret(new_password), "sessions_valid_after": utcnow()}
+        )
         await self.tokens.update_many({"user_id": user["_id"], "revoked_at": None}, {"$set": {"revoked_at": utcnow()}})
         await self.c.audit.log(
             actor_id=user["_id"], action="user.password_reset", entity_type="user", entity_id=user["_id"]
@@ -445,6 +471,7 @@ class AuthService:
         )
         if res.matched_count == 0:
             raise NotFound("Session not found")
+        await self._mark_revoked(family_id)
 
     async def logout_all(self, user: Any) -> None:
         """Revoke every refresh token AND invalidate access tokens already issued (checked via iat)."""
@@ -470,6 +497,15 @@ class AuthService:
 
     async def _revoke_family(self, family_id: str) -> None:
         await self.tokens.update_many({"family_id": family_id, "revoked_at": None}, {"$set": {"revoked_at": utcnow()}})
+        await self._mark_revoked(family_id)
+
+    async def _mark_revoked(self, family_id: str) -> None:
+        """Access tokens carry their session ("fam"). Recording the ended session lets the API refuse them at once
+        instead of at expiry. Kept only as long as such a token could still be valid."""
+        until = utcnow() + timedelta(minutes=self.s.access_token_ttl_minutes, seconds=60)
+        await self.c.mongo["revoked_sessions"].update_one(
+            {"_id": family_id}, {"$set": {"expires_at": until}}, upsert=True
+        )
 
     async def user_id_from_mobile(self, mobile: str) -> ObjectId | None:
         u = await self.users.by_mobile(mobile)

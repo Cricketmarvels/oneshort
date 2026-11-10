@@ -9,7 +9,7 @@ import { Platform, useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { Loading } from "@/components/ui";
+import { Button, Loading, Txt } from "@/components/ui";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { useBetaSport } from "@/lib/beta";
@@ -37,7 +37,7 @@ const makeHeader = () => ({
 function Gate() {
   const header = makeHeader();
   const darkHeader = header;
-  const { user, ready, reload } = useAuth();
+  const { user, ready, reload, offline, retry } = useAuth();
   const seg = useSegments();
   const sport = useSport();
   const betaSport = useBetaSport();
@@ -53,12 +53,14 @@ function Gate() {
     if (!sport.sport) sport.choose(user.preferred_sport);
     else if (sport.sport !== user.preferred_sport) void api("/users/me", { method: "PUT", body: { preferred_sport: sport.sport } }).then(() => reload()).catch(() => undefined);
   }, [user?.id, sport.ready, sport.sport]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (offline) return <OfflineStart onRetry={retry} />;
   if (!ready || !sport.ready || !pending.ready) return <Loading />;
   const inAuth = seg[0] === "(auth)";
   const onJoin = (seg as string[])[0] === "join"; // captain invite links are reachable before login
   const onLegal = (seg as string[])[0] === "legal"; // Terms and Privacy Notice are public, and readable mid-consent
   const onSport = inAuth && ["sport", "welcome", "server"].includes((seg as string[])[1] ?? ""); // server = beta server picker
-  if (!user && !sport.sport && !onSport && !onJoin && !onLegal) return <Redirect href="/welcome" />;
+  // An invited newcomer goes straight from the invite to sign-up; the sport is then taken from their profile.
+  if (!user && !sport.sport && !onSport && !onJoin && !onLegal && !(pending.code && inAuth)) return <Redirect href="/welcome" />;
   const onSim = (seg as string[])[0] === "whatsapp-sim"; // WhatsApp simulator (test mode) is reachable before login
   if (!user && !inAuth && !onSim && !onJoin && !onLegal) return <Redirect href="/login" />;
   if (user && inAuth) return <Redirect href="/" />;
@@ -137,5 +139,16 @@ export default function RootLayout() {
       </SafeAreaProvider>
       </View>
     </GestureHandlerRootView>
+  );
+}
+
+/** Opened offline (or the server is down): the saved session is kept and retried instead of signing out. */
+function OfflineStart({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: T.bg, alignItems: "center", justifyContent: "center", padding: 32, gap: 14 }}>
+      <Txt v="h2" accessibilityRole="header" style={{ textAlign: "center" }}>Can't reach GoFindr</Txt>
+      <Txt v="body" color={T.muted} style={{ textAlign: "center" }}>Check your connection. You're still signed in.</Txt>
+      <Button title="Try again" size="lg" onPress={onRetry} style={{ alignSelf: "stretch" }} />
+    </View>
   );
 }

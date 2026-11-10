@@ -1,11 +1,19 @@
 """Captain invite links: share in WhatsApp group → register (if new) → add myself to team + squad."""
 
 import httpx
+import pytest
 
+from app.core.container import Container
 from tests.api.test_competition import SECTOR_18, player, team
 from tests.conftest import future, make_match
 
 API = "/api/v1"
+
+
+@pytest.fixture(autouse=True)
+def _legacy_invite_signup(container: Container, monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests cover existing invite-link accounts, so the (now off by default) sign-up is switched on."""
+    monkeypatch.setattr(container, "settings", container.settings.model_copy(update={"invite_register_enabled": True}))
 
 
 async def test_invite_link_register_join_and_revoke(client: httpx.AsyncClient) -> None:

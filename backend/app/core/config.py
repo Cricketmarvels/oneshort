@@ -146,6 +146,10 @@ class Settings(BaseSettings):
     # DEFERRED: phone OTP is the only verification in this release. Emails are collected but not verified,
     # and no email codes or links are sent, until EMAIL_OTP_ENABLED=true is set deliberately.
     email_otp_enabled: bool = False
+    # Legacy invite-link sign-up (name, number, email, password, no SMS code). Off: anyone holding a shared link
+    # could open an account on someone else's number. Invited players sign up with an SMS code instead and the
+    # invite opens afterwards. Existing invite-link accounts keep working either way.
+    invite_register_enabled: bool = False
     # console = dev adapter (nothing sent) | smtp = real delivery | none = email codes off
     email_provider: Literal["console", "smtp", "none"] = "console"
     smtp_host: str | None = None
@@ -190,6 +194,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _validate_production(self) -> "Settings":
+        if self.app_env == "staging":  # TestFlight backend: real secrets, no debug, never shows codes
+            staging: list[str] = []
+            if self.jwt_secret == _INSECURE_DEFAULT or len(self.jwt_secret) < 32:
+                staging.append("JWT_SECRET must be a strong secret (>=32 chars) in staging")
+            if self.debug:
+                staging.append("DEBUG must be false in staging")
+            if staging:
+                raise ValueError("; ".join(staging))
         if self.app_env in ("beta", "production"):  # beta serves real users: same guards as production
             problems: list[str] = []
             if self.jwt_secret == _INSECURE_DEFAULT or len(self.jwt_secret) < 32:

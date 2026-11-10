@@ -45,7 +45,22 @@ INDEXES: dict[str, list[IndexModel]] = {
             partialFilterExpression={"kind": "send_log"},
         ),
         IndexModel([("kind", ASCENDING), ("created_at", ASCENDING)], name="otp_budget_counts"),
+        IndexModel(
+            [("created_at", ASCENDING)],
+            expireAfterSeconds=86400,
+            name="email_send_log_ttl_24h",
+            partialFilterExpression={"kind": "email_send_log"},
+        ),
+        # one send slot per number: makes the resend cooldown atomic (see AuthService._claim_send_slot)
+        IndexModel(
+            [("mobile_number", ASCENDING)],
+            unique=True,
+            name="otp_send_slot",
+            partialFilterExpression={"kind": "send_slot"},
+        ),
     ],
+    # ended device sessions, so their access tokens are refused before they expire (TTL = token lifetime)
+    "revoked_sessions": [IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0)],
     "refresh_tokens": [
         IndexModel([("token_hash", ASCENDING)], unique=True),
         IndexModel([("family_id", ASCENDING)]),

@@ -1,9 +1,9 @@
 /**
  * Registration, opened by the root gate for a phone-verified account whose sign-up isn't finished
  * (`registration_completed_at` is null). Three short steps, one primary action each:
- *   1 · Email (collected, not verified in this release) — skipped when the sign-up form already sent one
+ *   1 · Full name and email (email is format-checked, not verified in this release)
  *   2 · Player or Captain
- *   3 · Name, main role (cricket) and profile photo → POST /users/me/registration
+ *   3 · Profile photo (optional) and main role for cricket players → POST /users/me/registration
  *       (test numbers also set a password here, so an interruption can't lose it: it is never stored)
  * Progress is kept on the device (lib/registration.ts), so closing the app resumes on the same step.
  */
@@ -47,42 +47,41 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (user) void reg.load(user.id); }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hasEmail = !!user?.email; // the sign-up form collected it
   useEffect(() => { // prefill once from the account (sign-up form, or a name kept from an invite link)
     if (!user || reg.userId !== user.id) return;
     const patch: Partial<typeof reg.draft> = {};
     if (!reg.draft.name && user.full_name !== PLACEHOLDER) patch.name = user.full_name;
     if (!reg.draft.email && user.email) patch.email = user.email;
-    if (user.email && reg.draft.step === 1) patch.step = 2;
     if (Object.keys(patch).length) reg.update(patch);
   }, [reg.userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user || reg.userId !== user.id) return <View style={{ flex: 1, backgroundColor: T.bg }} />;
   const { step, email, playAs, name, role } = reg.draft;
-  const first = hasEmail ? 2 : 1; // steps shown: [email?] → role → profile
-  const total = 4 - first;
-  const shown = step - first + 1;
+  const first = 1;
+  const total = 3;
+  const shown = step;
   const cricket = (sport ?? user.preferred_sport) === "cricket";
 
   const next = () => {
     setErr(null);
     if (step === 1) {
+      if (name.trim().length < 2) return setErr({ field: "name", text: "Enter your full name" });
       if (!EMAIL_RE.test(email.trim())) return setErr({ field: "email", text: "Enter a valid email address" });
-      return reg.update({ step: 2, email: email.trim() });
+      return reg.update({ step: 2, name: name.trim(), email: email.trim() });
     }
     if (step === 2) return reg.update({ step: 3 });
     void submit();
   };
 
   const submit = async () => {
-    if (name.trim().length < 2) return setErr({ field: "name", text: "Enter your name" });
+    if (name.trim().length < 2) { reg.update({ step: 1 }); return setErr({ field: "name", text: "Enter your full name" }); }
     if (tester && password.length < 8) return setErr({ field: "password", text: "Use at least 8 characters" });
     setBusy(true);
     try {
       await api("/users/me/registration", { method: "POST", body: {
         full_name: name.trim(), email: email.trim(), play_as: playAs,
         ...(sport ? { sport } : {}),
-        ...(cricket && role ? { primary_role: role } : {}),
+        ...(cricket && role && playAs !== "captain" ? { primary_role: role } : {}),
         ...(tester && password ? { password } : {}),
       } });
       finishOnboarding(user.id); // the older onboarding screens are covered by this flow
@@ -113,9 +112,11 @@ export default function Register() {
 
         {step === 1 ? (
           <View style={{ gap: 16 }}>
-            <H title="Your email" sub="For match updates and receipts. No verification needed right now." />
-            <Field label="Email" value={email} onChangeText={(v) => { reg.update({ email: v }); if (err) setErr(null); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
-              autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" autoFocus error={err?.field === "email" ? err.text : null} returnKeyType="next" onSubmitEditing={next} />
+            <H title="Your details" sub="Your number is verified. Captains and players see your name." />
+            <Field label="Full name" value={name} onChangeText={(v) => { reg.update({ name: v }); if (err) setErr(null); }} autoComplete="name" textContentType="name" autoCapitalize="words"
+              autoFocus error={err?.field === "name" ? err.text : null} returnKeyType="next" />
+            <Field label="Email" hint="For match updates and receipts. No verification needed." value={email} onChangeText={(v) => { reg.update({ email: v }); if (err) setErr(null); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+              autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" error={err?.field === "email" ? err.text : null} returnKeyType="next" onSubmitEditing={next} />
           </View>
         ) : step === 2 ? (
           <View style={{ gap: 12 }} accessibilityRole="radiogroup">
@@ -125,7 +126,7 @@ export default function Register() {
           </View>
         ) : (
           <View style={{ gap: 18 }}>
-            <H title="Your profile" sub="This is what captains and players see." />
+            <H title="Your profile" sub={playAs === "captain" ? "Next you'll create your team and invite players." : "This is what captains see when picking players."} />
             <View style={{ alignItems: "center", gap: 8 }}>
               <Pressable accessibilityRole="button" accessibilityLabel={user.profile_image ? "Change profile photo" : "Add profile photo"} disabled={photo.busy} onPress={() => void photo.upload("library")}>
                 <Avatar uri={user.profile_image} name={name.trim() || "?"} size={96} />
@@ -133,12 +134,11 @@ export default function Register() {
               </Pressable>
               <Txt v="small" color={T.primaryDark}>{photo.busy ? "Uploading…" : user.profile_image ? "Tap to change" : "Add a photo (optional)"}</Txt>
             </View>
-            <Field label="Full name" value={name} onChangeText={(v) => { reg.update({ name: v }); if (err) setErr(null); }} autoComplete="name" textContentType="name" autoCapitalize="words" error={err?.field === "name" ? err.text : null} />
             {tester ? (
               <Field label="Password (test mode)" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" textContentType="newPassword"
                 hint="Test numbers only get a code once, so you'll log back in with email and this password." error={err?.field === "password" ? err.text : null} />
             ) : null}
-            {cricket ? (
+            {cricket && playAs !== "captain" ? (
               <View style={{ gap: 8 }}>
                 <Txt v="label">Main role (optional)</Txt>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>

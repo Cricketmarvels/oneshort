@@ -189,8 +189,12 @@ async def check_push_receipts(c: Any) -> int:
     return len(done_ids)
 
 
+UNPROVEN_SIGNUPS = ("email", "captain_invite")  # self-typed numbers, not yet proven by SMS
+
+
 def _whatsapp_number_ok(u: dict[str, Any]) -> bool:
-    """A number given at email sign-up isn't proven: never message it until an SMS code verifies it."""
+    """A number someone typed in at email or invite-link sign-up isn't proven: never message it until an SMS code
+    verifies it. Captain-added players (no verified_via) keep getting their invites."""
     if not u.get("mobile_number"):
         return False
-    return bool(u.get("mobile_verified")) or u.get("verified_via") != "email"
+    return bool(u.get("mobile_verified")) or u.get("verified_via") not in UNPROVEN_SIGNUPS

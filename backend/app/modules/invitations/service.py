@@ -576,7 +576,7 @@ class InvitationService:
         if not player or not (player.get("notification_prefs") or {}).get("whatsapp"):
             return "opted_out"
         if not player.get("mobile_number") or (
-            player.get("verified_via") == "email" and not player.get("mobile_verified")
+            player.get("verified_via") in ("email", "captain_invite") and not player.get("mobile_verified")
         ):
             return "no_number"  # an unproven number from email sign-up is never messaged
         if not self.c.whatsapp.configured:
