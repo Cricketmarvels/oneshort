@@ -95,10 +95,10 @@ export function Wordmark({ size = 20 }: { size?: number; dark?: boolean; tone?: 
   return (
     <View accessibilityRole="header" accessibilityLabel="GoFindr" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
       <View style={{ width: m, height: m, borderRadius: m * 0.32, backgroundColor: T.primary, alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ ...FW.display, fontSize: m * 0.58, lineHeight: m * 0.72, color: T.surface }}>P</Text>
+        <Text style={{ ...FW.display, fontSize: m * 0.58, lineHeight: m * 0.72, color: T.surface }}>G</Text>
         <View style={{ position: "absolute", right: m * 0.16, bottom: m * 0.16, width: m * 0.2, height: m * 0.2, borderRadius: m, backgroundColor: T.limeAccent }} />
       </View>
-      <Text style={{ ...FW.display, fontSize: size, color: T.ink, letterSpacing: -0.4 }}>Play<Text style={{ color: T.primaryDark }}>R</Text></Text>
+      <Text style={{ ...FW.display, fontSize: size, color: T.ink, letterSpacing: -0.4 }}>Go<Text style={{ color: T.primaryDark }}>Findr</Text></Text>
     </View>
   );
 }

@@ -26,7 +26,7 @@ export type IconT = ComponentType<{ size?: number; color?: string; strokeWidth?:
 export function Wordmark({ size = 30 }: { size?: number }) {
   return (
     <Txt accessibilityRole="header" accessibilityLabel="GoFindr" style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", letterSpacing: -1, color: T.ink }}>
-      Play<Txt style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", color: T.primary }}>R</Txt>
+      Go<Txt style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", color: T.primary }}>Findr</Txt>
     </Txt>
   );
 }

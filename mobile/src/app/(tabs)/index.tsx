@@ -17,6 +17,7 @@ import { PlayRIcon } from "@/components/icons";
 import { InvitationCard } from "@/components/invites";
 import { AppHeader, AvailabilityPill, MatchDiscoveryCard, QuickActionsGrid, SectionHeader, SportsHeroBanner } from "@/components/premium";
 import { RacketHome } from "@/components/racket";
+import { SmartSearchBar } from "@/components/search-bar";
 import { FilterBottomSheet } from "@/components/sheet";
 import { SportSwitcher } from "@/components/sports";
 import { Avatar, Badge, Button, Chip, Txt } from "@/components/ui";
@@ -61,6 +62,7 @@ function GameCard({ o }: { o: Opp }) {
 
 function CricketHome() {
   const insets = useSafeAreaInsets();
+  const [ask, setAsk] = useState("");
   const { width } = useWindowDimensions();
   const { user } = useAuth();
   const { lat, lng, label, radius } = useLocation();
@@ -110,7 +112,7 @@ function CricketHome() {
 
   return (
     <>
-      <ScrollView style={{ flex: 1, backgroundColor: T.bg }} showsVerticalScrollIndicator={false}
+      <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1, backgroundColor: T.bg }} showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: SP.page, paddingTop: insets.top + 8, paddingBottom: 56, gap: 22 }}
         refreshControl={<RefreshControl refreshing={home.isRefetching} onRefresh={refresh} tintColor={T.primary} />}>
         <View style={{ gap: 14 }}>
@@ -127,6 +129,8 @@ function CricketHome() {
             </View>
           </View>
         </View>
+
+        <SmartSearchBar value={ask} onChange={setAsk} onSubmit={(v) => { const t = v.trim(); if (t.length >= 2) router.push({ pathname: "/search", params: { q: t } }); }} />
 
         {ctx === "player" ? (
           <SportsHeroBanner eyebrow={weekend ? "WEEKEND MATCHES" : "NEAR YOU"} title={"Game on\nthis weekend?"}

@@ -5,7 +5,7 @@ export function SplashScreen() {
         <div className="relative">
           <img src="/icon.svg" alt="" className="size-20 animate-[spin_3s_linear_infinite] rounded-3xl" />
         </div>
-        <p className="font-display text-2xl font-extrabold">GoFindr <span className="text-ball-500">Play</span></p>
+        <p className="font-display text-2xl font-extrabold">Go<span className="text-ball-500">Findr</span></p>
         <p className="text-sm text-white/70">Your next match is nearby</p>
       </div>
     </div>
