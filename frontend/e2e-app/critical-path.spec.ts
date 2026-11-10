@@ -251,3 +251,19 @@ test("a new player adds their CricHeroes profile and stats at sign-up, and a cap
   await expect(captain.getByRole("link", { name: /View CricHeroes Player Stats/ })).toBeVisible();
   await expect(captain.getByText("Opening bat, weekend T20s in Noida.")).toBeVisible();
 });
+
+test("a number with no account gets the same code on Log in and is taken to onboarding", async ({ browser }) => {
+  const page = await (await browser.newContext()).newPage();
+  const mobile = `+447700900${(Number(run) % 60) + 880}`;
+  await chooseSport(page);
+  await page.getByLabel("Mobile number").fill(mobile);
+  await page.getByRole("button", { name: "Continue with OTP" }).click();
+  // Same screen as for a registered number: no "no account" message to learn from
+  await expect(page.getByText("Verify your number")).toBeVisible();
+  await expect(page.getByText(/No account/i)).toHaveCount(0);
+  const code = ((await page.getByText(/Development mode: your code is \d{6}/).innerText()).match(/\d{6}/) ?? [""])[0];
+  await page.getByLabel("6-digit code").fill(code);
+  await acceptAgreementIfShown(page);
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await expect(page.getByLabel("Your name").or(page.getByText("Your Role"))).toBeVisible();
+});

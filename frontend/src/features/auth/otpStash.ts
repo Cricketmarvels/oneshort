@@ -22,3 +22,9 @@ export function clearOtp(): void {
   try { sessionStorage.removeItem(KEY); } catch { /* ignore */ }
   memo = null;
 }
+
+/** Sign-up details for the verify step. Memory only (never sessionStorage): it holds a password. */
+export type SignupProfile = { full_name: string; email?: string; city?: string; timezone: string; password?: string };
+let pendingProfile: SignupProfile | null = null;
+export function stashProfile(p: SignupProfile | null): void { pendingProfile = p; }
+export function takeProfile(): SignupProfile | null { const p = pendingProfile; pendingProfile = null; return p; }

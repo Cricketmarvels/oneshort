@@ -37,13 +37,20 @@ async def test_tester_signup_shows_code_only_for_new_test_numbers(
     r = await client.post(f"{API}/auth/register", json=body)
     code = r.json()["data"]["otp"]["dev_otp"]
     assert code and len(code) == 6
+    profile = {k: body[k] for k in ("full_name", "email", "password")}
     v = await client.post(
-        f"{API}/auth/verify-otp", json={"mobile_number": body["mobile_number"], "code": code, "purpose": "register"}
+        f"{API}/auth/verify-otp",
+        json={"mobile_number": body["mobile_number"], "code": code, "purpose": "register", "profile": profile},
     )
-    assert v.status_code == 200
+    assert v.status_code == 200 and v.json()["data"]["is_new_user"] is True
     assert (
         await client.post(f"{API}/auth/login", json={"email": body["email"], "password": body["password"]})
     ).status_code == 200
+
+    # Signing up AGAIN on a taken test number shows no code either (it would open the existing account)
+    await container.mongo["otp_codes"].delete_many({"kind": "send_log", "mobile_number": body["mobile_number"]})
+    again = await client.post(f"{API}/auth/register", json={**body, "email": "someone.else@example.in"})
+    assert again.status_code == 201 and again.json()["data"]["otp"]["dev_otp"] is None
 
     # LOGIN codes are never shown, so another tester can't enter this account by its number
     await container.mongo["otp_codes"].delete_many({"kind": "send_log", "mobile_number": body["mobile_number"]})

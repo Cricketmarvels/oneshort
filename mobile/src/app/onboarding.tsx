@@ -38,7 +38,7 @@ export default function Onboarding() {
   const done = useOnboarding((s) => s.finish);
   const [step, setStep] = useState(1);
   const [playAs, setPlayAs] = useState<PlayAs>("player");
-  const [name, setName] = useState(user?.full_name ?? "");
+  const [name, setName] = useState(user?.full_name && user.full_name !== "PlayR player" ? user.full_name : ""); // placeholder for phone-only sign-ups
   const [area, setArea] = useState(PLACES.find((p) => p.label === loc.label) ?? null);
   const [role, setRole] = useState<string | null>(null);
   const [days, setDays] = useState<string[]>(["sat", "sun"]);

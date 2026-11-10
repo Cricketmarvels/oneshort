@@ -6,7 +6,7 @@ Scored with the `playr-launch-readiness` skill: fresh evidence from `collect_evi
 |---|---|---|---|
 | Features | 8 | = | All cricket journeys plus onboarding, CricHeroes, privacy pass end to end (10/10 Playwright). Badminton/pickleball still 2 screens deep. Push journey not device-verified |
 | Quality and testing | 7.5 | = | 224 backend tests pass, ruff + mypy clean, 10 e2e journeys pass, mobile typecheck clean. CI has never run on GitHub (17 commits unpushed); mobile has 2 unit tests |
-| Security and privacy | 7.5 | = | Takeover paths C1/C2 fixed with tests, device sessions + sign-out-everywhere, OTP spend budgets, shared limiter available. **Phone-number enumeration (High, H2) still open**, which caps this band. Pasted GitHub tokens not yet confirmed rotated |
+| Security and privacy | 8.5 | +1 | **Updated same day:** phone-number enumeration (H2) fixed — every sign-in/sign-up reply is identical for registered and unknown numbers (226 backend tests, 11/11 e2e). No open Critical/High. Residual Medium: invite-link sign-up reveals existence (needs a valid link, rate-limited). Pasted GitHub tokens not yet confirmed rotated |
 | Data and performance | 8 | +1 | Query-plan audit (no hot-path scans), caps, failover drill with 0 lost writes, backup + restore verified. Backups not scheduled (0 jobs); no load test |
 | Production setup | 2.5 | = | Still a Mac behind a temporary tunnel (it went down overnight and was restarted with new links). Console OTP, WhatsApp simulator, push off, local media, no Sentry DSN, no fixed domain |
 | App store distribution | 3 | +1 | Bundle ids, EAS profiles, splash, production API URL, push code client + server in place. No EAS project id, no google-services.json, no builds, no store assets |
@@ -34,7 +34,7 @@ Scored with the `playr-launch-readiness` skill: fresh evidence from `collect_evi
 |---|---|---|
 | Features → 9 | Push invitation journey verified on a real iPhone and Android | Owner: EAS + Firebase + Apple accounts, then Claude runs the A–E device plan |
 | Quality → 8.5 | Commits pushed and CI green on GitHub | Owner: new GitHub token |
-| Security → 8.5 | Close H2 (unified "phone → code" sign-in with identical replies) | Owner approves the login-flow change; Claude implements |
+| Security → 9 | Rotate the pasted GitHub tokens, switch on the shared rate limiter in a deployment, move web sessions to an httpOnly cookie | Owner rotates tokens; Claude does the rest |
 | Data → 8.5 | Backups running on a schedule with an off-machine copy | Owner runs `scripts/db/schedule.sh install` and sets `BACKUP_RCLONE_REMOTE` |
 | Production → 3.5 | Fixed domain via named tunnel (or scheduled backups) | Owner: domain on Cloudflare + `cloudflared tunnel login` |
 | App store → 5 | EAS project id and development builds on devices | Owner: `npx eas-cli init`, then build |
@@ -43,7 +43,6 @@ Scored with the `playr-launch-readiness` skill: fresh evidence from `collect_evi
 ## Blocked on the owner
 - **GitHub token** with repo write access → push 17 commits; CI starts running.
 - **Rotate the GitHub tokens pasted into chat earlier** (Settings → Developer settings → Personal access tokens → delete).
-- **Approve the unified OTP sign-in** (closes H2).
 - **`scripts/db/schedule.sh install`** on this Mac (hourly backups, daily restore check).
 - **Cloudflare:** a domain on your account + `cloudflared tunnel login`, then `scripts/cloudflare-setup.sh yourdomain.com`.
 - **Expo/Firebase/Apple accounts** for push and builds (steps in `docs/design/PUSH_NOTIFICATIONS.md`).

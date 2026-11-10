@@ -155,7 +155,12 @@ class Seeder:
         tok = await self.call(
             "POST",
             "/auth/verify-otp",
-            json={"mobile_number": mobile, "code": reg["otp"]["dev_otp"], "purpose": "register"},
+            json={
+                "mobile_number": mobile,
+                "code": reg["otp"]["dev_otp"],
+                "purpose": "register",
+                "profile": {"full_name": name, "email": email, "city": AREA_CITY.get(area, "Noida")},
+            },
         )
         self.tokens[key], self.ids[key] = tok["access_token"], tok["user"]["id"]
         cur = (await self.call("GET", "/agreements/current", key))["version"]

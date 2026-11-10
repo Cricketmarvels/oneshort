@@ -104,4 +104,4 @@ async def test_unfinished_registration_can_finish_with_a_login_code(client: http
     nobody = await client.post(
         f"{API}/auth/send-otp", json={"mobile_number": "+919800099999", "purpose": "login", "channel": "whatsapp"}
     )
-    assert nobody.status_code == 404 and nobody.json()["error"]["code"] == "ACCOUNT_NOT_FOUND"
+    assert nobody.status_code == 200  # H2: unknown numbers get the same reply as registered ones

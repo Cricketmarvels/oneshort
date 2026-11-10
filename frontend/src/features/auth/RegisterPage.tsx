@@ -11,7 +11,7 @@ import { ApiError, errorMessage } from "@/services/api/client";
 import { auth } from "@/services/api/endpoints";
 
 import { AuthLayout } from "./AuthLayout";
-import { stashOtp } from "./otpStash";
+import { stashOtp, stashProfile } from "./otpStash";
 
 const schema = z.object({
   full_name: z.string().trim().min(2, "Enter your full name").max(80),
@@ -36,6 +36,7 @@ export function RegisterPage() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata", password: v.password || null,
       });
       stashOtp({ mobile: mobile_number, purpose: "register", devOtp: r.otp.dev_otp ?? null, resendAfter: r.otp.resend_after });
+      stashProfile({ full_name: v.full_name, email: v.email, city: v.city, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata", ...(v.password ? { password: v.password } : {}) });
       nav("/verify");
     } catch (err) {
       if (err instanceof ApiError) {

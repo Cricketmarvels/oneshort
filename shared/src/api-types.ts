@@ -6482,8 +6482,11 @@ export interface components {
         };
         /** RegisterOut */
         RegisterOut: {
-            /** User Id */
-            user_id: string;
+            /**
+             * User Id
+             * @description Deprecated, always null: the account is created when the code is verified
+             */
+            user_id?: string | null;
             otp: components["schemas"]["OtpSentOut"];
         };
         /** RemarksIn */
@@ -6940,6 +6943,26 @@ export interface components {
              * @default Opens WhatsApp with the message pre-filled. Delivery is not tracked by the app.
              */
             note: string;
+        };
+        /**
+         * SignupProfileIn
+         * @description Sign-up details, sent WITH the code by the person holding the phone. Only used when the number has
+         *     no verified account yet; an existing account is opened as-is.
+         */
+        SignupProfileIn: {
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email?: string | null;
+            /** City */
+            city?: string | null;
+            /**
+             * Timezone
+             * @default Asia/Kolkata
+             */
+            timezone: string;
+            /** Password */
+            password?: string | null;
         };
         /** SimMessage */
         SimMessage: {
@@ -7414,6 +7437,12 @@ export interface components {
             /** Expires In */
             expires_in: number;
             user: components["schemas"]["UserOut"];
+            /**
+             * Is New User
+             * @description True when this sign-in created the account: show onboarding
+             * @default false
+             */
+            is_new_user: boolean;
         };
         /** TransitionIn */
         TransitionIn: {
@@ -7577,6 +7606,8 @@ export interface components {
              * @enum {string}
              */
             purpose: "register" | "login";
+            /** @description Sign-up details for a new account */
+            profile?: components["schemas"]["SignupProfileIn"] | null;
         };
         /**
          * Visibility

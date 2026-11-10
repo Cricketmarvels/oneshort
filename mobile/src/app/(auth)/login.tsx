@@ -75,8 +75,10 @@ export default function Login() {
     if (!OTP_REGEX.test(code)) return setErr("Enter the 6-digit code");
     setBusy(true); setErr(null);
     try {
-      const t = await api<S<"TokenOut">>("/auth/verify-otp", { method: "POST", body: { mobile_number: mobile, code, purpose: mode === "register" ? "register" : "login" } });
-      if (mode === "register") startOnboarding();
+      // Sign-up details travel WITH the code, so only the person holding the phone decides them.
+      const profile = mode === "register" ? { full_name: f.name, city: f.city || undefined, ...(f.email ? { email: f.email } : {}), ...(f.password ? { password: f.password } : {}) } : undefined;
+      const t = await api<S<"TokenOut">>("/auth/verify-otp", { method: "POST", body: { mobile_number: mobile, code, purpose: mode === "register" ? "register" : "login", ...(profile ? { profile } : {}) } });
+      if (t.is_new_user) startOnboarding(); // new account, whether it started on Sign up or Log in
       await signIn(t.access_token, t.refresh_token, t.user);
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
@@ -166,9 +168,6 @@ export default function Login() {
                 ) : null}
               </>}
               <Field label="Mobile number" value={f.mobile} onChangeText={(m) => setF({ ...f, mobile: m })} keyboardType="phone-pad" placeholder="+91  98765 43210" hint={mode === "login" ? "Indian mobile number (+91)" : undefined} error={err} />
-              {mode === "login" && errCode === "ACCOUNT_NOT_FOUND" ? (
-                <Button title="Create an account with this number" variant="highlight" onPress={() => { setMode("register"); setErr(null); setErrCode(null); }} />
-              ) : null}
               <Button title="Continue with OTP" size="lg" loading={busy && channel === "sms"} onPress={() => void request("sms")} />
               <WhatsAppCodeButton ready={waReady} loading={busy && channel === "whatsapp"} onPress={() => void request("whatsapp")} />
               <Button variant="ghost" title={mode === "login" ? "New here? Create an account" : "Have an account? Log in"} onPress={() => { setMode(mode === "login" ? "register" : "login"); setErr(null); }} />

@@ -8,7 +8,7 @@ import { errorMessage } from "@/services/api/client";
 import { auth } from "@/services/api/endpoints";
 
 import { AuthLayout } from "./AuthLayout";
-import { clearOtp, readOtp, stashOtp } from "./otpStash";
+import { clearOtp, readOtp, stashOtp, takeProfile } from "./otpStash";
 
 export function VerifyOtpPage() {
   const ctx = readOtp();
@@ -35,7 +35,8 @@ export function VerifyOtpPage() {
     setBusy(true);
     setError(null);
     try {
-      const t = await auth.verifyOtp({ mobile_number: ctx.mobile, code: c, purpose: ctx.purpose });
+      const profile = ctx.purpose === "register" ? takeProfile() : null; // details travel with the code
+      const t = await auth.verifyOtp({ mobile_number: ctx.mobile, code: c, purpose: ctx.purpose, ...(profile ? { profile } : {}) });
       clearOtp();
       setSession(t.access_token, t.refresh_token, t.user);
       nav(t.user.agreement.satisfied ? "/" : "/agreement", { replace: true });

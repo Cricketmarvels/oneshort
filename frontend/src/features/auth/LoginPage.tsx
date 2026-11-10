@@ -9,7 +9,7 @@ import { useAuth } from "@/app/store/auth";
 import { Segmented } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { ApiError, errorMessage } from "@/services/api/client";
+import { errorMessage } from "@/services/api/client";
 import { auth } from "@/services/api/endpoints";
 
 import { AuthLayout } from "./AuthLayout";
@@ -41,7 +41,7 @@ function OtpLogin() {
       stashOtp({ mobile: mobile_number, purpose: "login", devOtp: r.dev_otp ?? null, resendAfter: r.resend_after });
       nav("/verify");
     } catch (e) {
-      setServerError(e instanceof ApiError && e.code === "ACCOUNT_NOT_FOUND" ? "No account for this number yet. Create one to get started." : errorMessage(e));
+      setServerError(errorMessage(e));
     }
   });
   return (

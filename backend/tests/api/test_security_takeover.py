@@ -2,7 +2,6 @@
 proven must never survive against the number's real owner."""
 
 import httpx
-from bson import ObjectId
 
 from app.core.container import Container
 from tests.api.test_competition import SECTOR_18, player, team
@@ -44,7 +43,7 @@ async def test_register_cannot_take_over_an_invite_account(client: httpx.AsyncCl
             "password": "AttackerPass2026",
         },
     )
-    assert r.status_code == 422 and r.json()["error"]["code"] == "ACCOUNT_EXISTS"
+    assert r.status_code == 201  # identical reply (H2); nothing changes until the code is verified
     # attacker's credentials never attached; the victim still signs in
     bad = await client.post(
         f"{API}/auth/login", json={"email": "attacker.c1@example.in", "password": "AttackerPass2026"}
@@ -55,7 +54,8 @@ async def test_register_cannot_take_over_an_invite_account(client: httpx.AsyncCl
 
 
 async def test_login_otp_removes_preverification_credentials(client: httpx.AsyncClient, container: Container) -> None:
-    """C2: an attacker pre-registers a number with their own password; the real owner's first OTP login kills it."""
+    """C2: an attacker 'registers' a number with their own password. Nothing is stored until the code is
+    verified, so the real owner's first OTP sign-in creates a clean account the attacker can't enter."""
     num = "+447700900932"
     r = await client.post(
         f"{API}/auth/register",
@@ -66,25 +66,49 @@ async def test_login_otp_removes_preverification_credentials(client: httpx.Async
             "password": "AttackerPass2026",
         },
     )
-    assert r.status_code == 201
-    uid = ObjectId(r.json()["data"]["user_id"])
+    assert r.status_code == 201 and r.json()["data"]["user_id"] is None
+    assert await container.mongo["users"].count_documents({"mobile_number": num}) == 0
 
     owner = await _login_otp(client, container, num)
-    assert owner.status_code == 200
-    assert owner.json()["data"]["user"]["email"] is None  # unproven email detached
+    assert owner.status_code == 200 and owner.json()["data"]["is_new_user"] is True
+    assert owner.json()["data"]["user"]["email"] is None
 
     after = await client.post(
         f"{API}/auth/login", json={"email": "attacker.c2@example.in", "password": "AttackerPass2026"}
     )
     assert after.status_code == 401
-    doc = await container.mongo["users"].find_one({"_id": uid})
+    doc = await container.mongo["users"].find_one({"mobile_number": num})
     assert doc is not None and doc["password_hash"] is None and doc["mobile_verified"] is True
-    assert (
-        await container.mongo["audit_logs"].count_documents(
-            {"action": "user.preverification_credentials_removed", "entity_id": uid}
-        )
-        == 1
+
+
+async def test_signup_details_come_from_the_verifier(client: httpx.AsyncClient, container: Container) -> None:
+    """Race: the owner starts sign-up, then an attacker re-registers the number with their own details.
+    The account gets whatever the person entering the code sends, never the attacker's form."""
+    num = "+447700900935"
+    owner_form = {"full_name": "Owner", "email": "owner.race@example.in", "password": "OwnerPass2026"}
+    await client.post(f"{API}/auth/register", json={**owner_form, "mobile_number": num})
+    await container.mongo["otp_codes"].delete_many({"kind": "send_log", "mobile_number": num})
+    atk = await client.post(
+        f"{API}/auth/register",
+        json={
+            "full_name": "Attacker",
+            "mobile_number": num,
+            "email": "atk.race@example.in",
+            "password": "AttackerPass2026",
+        },
     )
+    code = atk.json()["data"]["otp"]["dev_otp"]  # the owner's phone receives the newest code
+    v = await client.post(
+        f"{API}/auth/verify-otp",
+        json={"mobile_number": num, "code": code, "purpose": "register", "profile": owner_form},
+    )
+    assert v.status_code == 200 and v.json()["data"]["user"]["email"] == "owner.race@example.in"
+    bad = await client.post(f"{API}/auth/login", json={"email": "atk.race@example.in", "password": "AttackerPass2026"})
+    assert bad.status_code == 401
+    good = await client.post(
+        f"{API}/auth/login", json={"email": owner_form["email"], "password": owner_form["password"]}
+    )
+    assert good.status_code == 200
 
 
 async def test_invite_account_otp_login_revokes_password_and_sessions(
@@ -132,7 +156,17 @@ async def test_normal_registration_keeps_its_own_password(client: httpx.AsyncCli
     )
     code = r.json()["data"]["otp"]["dev_otp"]
     v = await client.post(
-        f"{API}/auth/verify-otp", json={"mobile_number": "+447700900934", "code": code, "purpose": "register"}
+        f"{API}/auth/verify-otp",
+        json={
+            "mobile_number": "+447700900934",
+            "code": code,
+            "purpose": "register",
+            "profile": {
+                "full_name": "Honest Signup",
+                "email": "honest.signup@example.in",
+                "password": "HonestPass2026",
+            },
+        },
     )
     assert v.status_code == 200
     assert (

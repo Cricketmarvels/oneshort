@@ -102,8 +102,10 @@ async def register(
     r = await client.post("/api/v1/auth/register", json=body)
     assert r.status_code == 201, r.text
     code = r.json()["data"]["otp"]["dev_otp"]
+    profile = {k: v for k, v in body.items() if k in ("full_name", "email", "city", "password")}
     r = await client.post(
-        "/api/v1/auth/verify-otp", json={"mobile_number": mobile, "code": code, "purpose": "register"}
+        "/api/v1/auth/verify-otp",
+        json={"mobile_number": mobile, "code": code, "purpose": "register", "profile": profile},
     )
     assert r.status_code == 200, r.text
     d = r.json()["data"]

@@ -70,7 +70,7 @@ async def send_otp(data: SendOtpIn, request: Request, svc: Svc) -> Envelope[OtpS
     summary="Verify OTP (completes registration or logs in) and issue tokens",
 )
 async def verify_otp(data: VerifyOtpIn, request: Request, svc: Svc) -> Envelope[TokenOut]:
-    return ok(await svc.verify_otp(data.mobile_number, data.code, data.purpose, _ua(request)))
+    return ok(await svc.verify_otp(data.mobile_number, data.code, data.purpose, _ua(request), data.profile))
 
 
 @router.post("/login", response_model=Envelope[TokenOut], summary="Email + password login")

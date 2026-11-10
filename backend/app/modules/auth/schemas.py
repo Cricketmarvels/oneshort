@@ -47,10 +47,22 @@ class OtpSentOut(BaseModel):
     )
 
 
+class SignupProfileIn(StrictModel):
+    """Sign-up details, sent WITH the code by the person holding the phone. Only used when the number has
+    no verified account yet; an existing account is opened as-is."""
+
+    full_name: Name
+    email: EmailStr | None = None
+    city: ShortText | None = None
+    timezone: Timezone = "Asia/Kolkata"
+    password: Password | None = None
+
+
 class VerifyOtpIn(StrictModel):
     mobile_number: MobileNumber
     code: Otp
     purpose: Literal["register", "login"] = "login"
+    profile: SignupProfileIn | None = Field(default=None, description="Sign-up details for a new account")
 
 
 class PasswordLoginIn(StrictModel):
@@ -74,6 +86,7 @@ class TokenOut(BaseModel):
     token_type: Literal["bearer"] = "bearer"  # noqa: S105 - token scheme name, not a secret
     expires_in: int
     user: UserOut
+    is_new_user: bool = Field(default=False, description="True when this sign-in created the account: show onboarding")
 
 
 class SessionOut(BaseModel):
@@ -85,5 +98,7 @@ class SessionOut(BaseModel):
 
 
 class RegisterOut(BaseModel):
-    user_id: str
+    user_id: str | None = Field(
+        default=None, description="Deprecated, always null: the account is created when the code is verified"
+    )
     otp: OtpSentOut

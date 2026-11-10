@@ -32810,8 +32810,16 @@
       "RegisterOut": {
         "properties": {
           "user_id": {
-            "type": "string",
-            "title": "User Id"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "Deprecated, always null: the account is created when the code is verified"
           },
           "otp": {
             "$ref": "#/components/schemas/OtpSentOut"
@@ -32819,7 +32827,6 @@
         },
         "type": "object",
         "required": [
-          "user_id",
           "otp"
         ],
         "title": "RegisterOut"
@@ -34192,6 +34199,64 @@
           "whatsapp_url"
         ],
         "title": "ShareOut"
+      },
+      "SignupProfileIn": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Full Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "Asia/Kolkata"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "full_name"
+        ],
+        "title": "SignupProfileIn",
+        "description": "Sign-up details, sent WITH the code by the person holding the phone. Only used when the number has\nno verified account yet; an existing account is opened as-is."
       },
       "SimMessage": {
         "properties": {
@@ -35822,6 +35887,12 @@
           },
           "user": {
             "$ref": "#/components/schemas/UserOut"
+          },
+          "is_new_user": {
+            "type": "boolean",
+            "title": "Is New User",
+            "description": "True when this sign-in created the account: show onboarding",
+            "default": false
           }
         },
         "type": "object",
@@ -36299,6 +36370,17 @@
             ],
             "title": "Purpose",
             "default": "login"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignupProfileIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sign-up details for a new account"
           }
         },
         "additionalProperties": false,

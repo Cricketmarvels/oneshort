@@ -17,13 +17,34 @@ async def test_register_and_verify_otp(client: httpx.AsyncClient) -> None:
     assert me["agreement"]["satisfied"] is False
 
 
-async def test_duplicate_registration_rejected(client: httpx.AsyncClient) -> None:
+async def test_registering_an_existing_number_reveals_nothing_and_changes_nothing(client: httpx.AsyncClient) -> None:
+    """H2: sign-up replies are identical for new and registered numbers, and can't alter the account."""
     u = await register(client, agree=False)
-    r = await client.post(
+    fresh = unique_mobile()
+    a = await client.post(
         f"{API}/auth/register", json={"full_name": "Someone", "mobile_number": u.mobile, "email": "other@example.com"}
     )
-    assert r.status_code == 422
-    assert r.json()["error"]["code"] == "ACCOUNT_EXISTS"
+    b = await client.post(
+        f"{API}/auth/register", json={"full_name": "Someone", "mobile_number": fresh, "email": "other2@example.com"}
+    )
+    assert a.status_code == b.status_code == 201
+    da, db = a.json()["data"], b.json()["data"]
+    assert da.keys() == db.keys() and da["user_id"] is None and db["user_id"] is None
+    assert {k: v for k, v in da["otp"].items() if k != "dev_otp"} == {
+        k: v for k, v in db["otp"].items() if k != "dev_otp"
+    }
+    # the existing account is untouched; verifying the code opens it as-is (profile ignored)
+    v = await client.post(
+        f"{API}/auth/verify-otp",
+        json={
+            "mobile_number": u.mobile,
+            "code": da["otp"]["dev_otp"],
+            "purpose": "register",
+            "profile": {"full_name": "Hijacker", "email": "hijack@example.com"},
+        },
+    )
+    assert v.status_code == 200 and v.json()["data"]["is_new_user"] is False
+    assert v.json()["data"]["user"]["full_name"] == u.name
 
 
 async def test_wrong_otp_and_attempt_lockout(client: httpx.AsyncClient) -> None:
@@ -52,8 +73,26 @@ async def test_login_via_otp_and_unknown_number(client: httpx.AsyncClient) -> No
     r = await client.post(f"{API}/auth/verify-otp", json={"mobile_number": u.mobile, "code": code})
     assert r.status_code == 200 and r.json()["data"]["access_token"]
 
-    r = await client.post(f"{API}/auth/send-otp", json={"mobile_number": unique_mobile()})
-    assert r.status_code == 404
+    # H2: an unknown number gets the same reply; verifying its code creates the account (new user → onboarding)
+    known = r = await client.post(f"{API}/auth/send-otp", json={"mobile_number": u.mobile})  # noqa: F841
+    new_mobile = unique_mobile()
+    r = await client.post(f"{API}/auth/send-otp", json={"mobile_number": new_mobile})
+    assert r.status_code == 200 and set(r.json()["data"]) == {"sent", "expires_in", "resend_after", "dev_otp"}
+    v = await client.post(
+        f"{API}/auth/verify-otp", json={"mobile_number": new_mobile, "code": r.json()["data"]["dev_otp"]}
+    )
+    assert v.status_code == 200 and v.json()["data"]["is_new_user"] is True
+    assert v.json()["data"]["user"]["mobile_verified"] is True
+
+
+async def test_password_reset_replies_identically_for_unknown_numbers(client: httpx.AsyncClient) -> None:
+    u = await register(client, agree=False, password="ResetPass2026")
+    known = await client.post(f"{API}/auth/send-otp", json={"mobile_number": u.mobile, "purpose": "reset_password"})
+    unknown = await client.post(
+        f"{API}/auth/send-otp", json={"mobile_number": unique_mobile(), "purpose": "reset_password"}
+    )
+    assert known.status_code == unknown.status_code == 200
+    assert known.json()["data"]["dev_otp"] and unknown.json()["data"]["dev_otp"] is None  # nothing sent to unknown
 
 
 async def test_otp_is_single_use(client: httpx.AsyncClient) -> None:
