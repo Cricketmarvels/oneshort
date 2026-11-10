@@ -51,3 +51,24 @@ async def test_normal_requests_and_list_caps(client: httpx.AsyncClient) -> None:
         f"{API}/players/me", headers=u.h, json={"cricheroes_profile_url": "https://cricheroes.com/" + "a" * 400}
     )
     assert r.status_code == 422
+
+
+async def test_strict_auth_limit_only_counts_credential_endpoints() -> None:
+    """Page loads call /auth/options and /auth/refresh; they must not use up the login budget and sign people out."""
+    from fastapi import FastAPI
+
+    from app.core.config import Settings
+    from app.core.middleware import InMemoryRateLimiter, RateLimitMiddleware
+
+    mini = FastAPI()
+    for path in ("/auth/options", "/auth/refresh", "/auth/sessions", "/auth/login"):
+        mini.add_api_route(f"{API}{path}", lambda: {"ok": True}, methods=["GET", "POST"])
+    s = Settings(rate_limit_auth_per_minute=3, rate_limit_default_per_minute=1000)
+    mini.add_middleware(RateLimitMiddleware, settings=s, limiter=InMemoryRateLimiter())
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=mini), base_url="http://t") as c:
+        for _ in range(20):
+            assert (await c.get(f"{API}/auth/options")).status_code == 200
+            assert (await c.post(f"{API}/auth/refresh")).status_code == 200
+            assert (await c.get(f"{API}/auth/sessions")).status_code == 200
+        codes = [(await c.post(f"{API}/auth/login")).status_code for _ in range(5)]
+    assert codes == [200, 200, 200, 429, 429]

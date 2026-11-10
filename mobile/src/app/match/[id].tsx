@@ -2,7 +2,7 @@ import { formatDay, formatPaise, MATCH_STATUS_LABELS, timeRange, type S } from "
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Calendar, MapPin, Share2, Users, Wallet } from "lucide-react-native";
+import { MapPin, Share2, Users, Wallet } from "lucide-react-native";
 import { Alert, Linking, ScrollView, Share, View } from "react-native";
 
 import { ManagedInvitationRow } from "@/components/invites";
@@ -79,7 +79,6 @@ export default function MatchDetail() {
         <InviteRegularsCard matchId={m.id} confirmed={m.composition.confirmed_total} capacity={m.composition.capacity} />
       ) : null}
       <Card style={{ gap: SP.md }}>
-        <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}><Calendar size={18} color={T.ink} strokeWidth={1.5} /><Txt v="bodyMed">{formatDay(m.start_at, m.timezone)} · {timeRange(m.start_at, m.end_at, m.timezone)}</Txt></View>
         <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
           <MapPin size={18} color={T.ink} strokeWidth={1.5} />
           <View style={{ flex: 1 }}>
@@ -124,7 +123,7 @@ export default function MatchDetail() {
           <List>{invs.data.map((inv, k) => <ManagedInvitationRow key={inv.id} inv={inv} last={k === invs.data!.length - 1} />)}</List>
         </Section>
       ) : null}
-      <Button title="Share match" variant="secondary" icon={<Share2 size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => void share()} />
+      {manager && ["published", "recruiting"].includes(m.match_status) ? null : <Button title="Share match" variant="secondary" icon={<Share2 size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => void share()} />}
       {m.viewer_relation === "roster" && !["completed", "cancelled"].includes(m.match_status) ? <Button title="Withdraw from squad" variant="ghost" onPress={withdraw} /> : null}
     </ScrollView>
   );

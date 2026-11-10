@@ -110,6 +110,12 @@ class MongoRateLimiter:
         return None
 
 
+# Endpoints that take a credential (password or one-time code), so guessing is possible: strict per-IP limit.
+# Other /auth routes (options, refresh, sessions, logout) run on every page load and use the normal limit;
+# counting them as logins signed people out after a few reloads, or when friends shared one network.
+CREDENTIAL_PATHS = ("/auth/login", "/auth/send-otp", "/auth/verify-otp", "/auth/register", "/auth/reset-password")
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: Any, settings: Settings, limiter: "InMemoryRateLimiter | MongoRateLimiter") -> None:
         super().__init__(app)
@@ -119,7 +125,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Call) -> Response:
         ip = request.client.host if request.client else "unknown"
         path = request.url.path
-        is_auth = "/auth/" in path
+        is_auth = path.rstrip("/").endswith(CREDENTIAL_PATHS)
         group = "auth" if is_auth else "default"
         limit = self.settings.rate_limit_auth_per_minute if is_auth else self.settings.rate_limit_default_per_minute
         if request.method != "OPTIONS" and not await self.limiter.allow(f"{group}:{ip}", limit):

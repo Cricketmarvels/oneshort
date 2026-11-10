@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { type ChatThread, useChatThread } from "@/components/invites";
 import { Avatar, EmptyState, ErrorBox, InlineNotice, LoadingSkeleton, Txt } from "@/components/ui";
-import { api } from "@/lib/api";
+import { api, errorText } from "@/lib/api";
 import { when } from "@/lib/format";
 import { FW, R, SP, T } from "@/theme";
 
@@ -16,15 +16,15 @@ export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const q = useChatThread(id, true);
+  const q = useChatThread(id, true, true);
   const [text, setText] = useState("");
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
-  useEffect(() => { const t = setInterval(() => void q.refetch(), 4000); return () => clearInterval(t); }, [q]);
   useEffect(() => { setTimeout(() => scroll.current?.scrollToEnd({ animated: false }), 50); }, [q.data?.messages.length]);
   const send = useMutation({
     mutationFn: (body: string) => api(`/invitations/${id}/chat`, { method: "POST", body: { body } }),
     onSuccess: () => { setText(""); void qc.invalidateQueries({ queryKey: ["chat", id] }); },
   });
+  const sendError = send.isError ? errorText(send.error) : null;
   const t: ChatThread | undefined = q.data;
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: T.bg }} keyboardVerticalOffset={90}>
@@ -55,6 +55,8 @@ export default function Chat() {
             ))}
           </ScrollView>
           {t!.can_send ? (
+            <View>
+            {sendError ? <Txt v="small" color={T.dangerText} style={{ paddingHorizontal: SP.page, paddingTop: 6 }}>Not sent: {sendError}</Txt> : null}
             <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: SP.page, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.line }}>
               <TextInput accessibilityLabel="Message" value={text} onChangeText={setText} placeholder="Message" placeholderTextColor={T.placeholder} multiline maxLength={1000}
                 style={{ flex: 1, minHeight: 44, maxHeight: 120, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 22, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line, ...FW.body, fontSize: 15, color: T.ink }} />
@@ -62,6 +64,7 @@ export default function Chat() {
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: text.trim() ? T.primary : T.line, alignItems: "center", justifyContent: "center" }}>
                 <Send size={18} color={text.trim() ? T.onPrimary : T.muted} strokeWidth={2.2} />
               </Pressable>
+            </View>
             </View>
           ) : <View style={{ padding: SP.page }}><InlineNotice>This chat is closed because the invitation is no longer active.</InlineNotice></View>}
         </>

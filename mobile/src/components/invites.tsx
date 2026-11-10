@@ -30,8 +30,8 @@ function WaDot() {
   return <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#25D366", alignItems: "center", justifyContent: "center" }}><MessageCircle size={11} color="#FFFFFF" strokeWidth={2.6} /></View>;
 }
 
-export function useChatThread(invitationId: string, enabled: boolean) {
-  return useQuery({ queryKey: ["chat", invitationId], enabled, queryFn: () => api<ChatThread>(`/invitations/${invitationId}/chat`) });
+export function useChatThread(invitationId: string, enabled: boolean, live = false) {
+  return useQuery({ queryKey: ["chat", invitationId], enabled, refetchInterval: live ? 4000 : false, queryFn: () => api<ChatThread>(`/invitations/${invitationId}/chat`) });
 }
 
 /** Chat buttons shown once an invitation is accepted. */
