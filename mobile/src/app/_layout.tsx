@@ -54,7 +54,7 @@ function Gate() {
   const inAuth = seg[0] === "(auth)";
   const onJoin = (seg as string[])[0] === "join"; // captain invite links are reachable before login
   const onLegal = (seg as string[])[0] === "legal"; // Terms and Privacy Notice are public, and readable mid-consent
-  const onSport = inAuth && ["sport", "welcome"].includes((seg as string[])[1] ?? "");
+  const onSport = inAuth && ["sport", "welcome", "server"].includes((seg as string[])[1] ?? ""); // server = beta server picker
   if (!user && !sport.sport && !onSport && !onJoin && !onLegal) return <Redirect href="/welcome" />;
   const onSim = (seg as string[])[0] === "whatsapp-sim"; // WhatsApp simulator (test mode) is reachable before login
   if (!user && !inAuth && !onSim && !onJoin && !onLegal) return <Redirect href="/login" />;

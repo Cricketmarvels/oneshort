@@ -1,6 +1,6 @@
 import type { ApiErrorBody, S } from "@cm/shared";
 
-import { API_URL } from "./config";
+import { API_URL, configReady } from "./config";
 import { tokens } from "./tokens";
 
 export class ApiError extends Error {
@@ -14,6 +14,7 @@ let refreshing: Promise<S<"TokenOut"> | null> | null = null;
 export function refresh(): Promise<S<"TokenOut"> | null> {
   if (refreshing) return refreshing;
   refreshing = (async () => {
+    await configReady();
     const rt = await tokens.getRefresh();
     if (!rt) return null;
     const r = await fetch(`${API_URL}/auth/refresh`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token: rt }) });
@@ -30,6 +31,7 @@ type Opts = { method?: string; body?: unknown; query?: Record<string, string | n
 
 /** Typed fetch wrapper: unwraps `{data}`, retries once after refreshing an expired token. */
 export async function api<T>(path: string, opts: Opts = {}, retried = false): Promise<T> {
+  await configReady(); // a beta build may have a saved server override
   const qs = opts.query ? "?" + Object.entries(opts.query).filter(([, v]) => v != null && v !== "").map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&") : "";
   const headers: Record<string, string> = { ...(opts.headers ?? {}) };
   if (tokens.access) headers.Authorization = `Bearer ${tokens.access}`;

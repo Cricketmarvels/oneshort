@@ -12,8 +12,8 @@
       "bundleIdentifier": "in.gofindr.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "GoFindr uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared.",
-        "NSCameraUsageDescription": "Take a profile photo.",
-        "NSPhotoLibraryUsageDescription": "Choose a profile photo.",
+        "NSCameraUsageDescription": "GoFindr uses the camera only when you choose to take a profile photo or a team photo.",
+        "NSPhotoLibraryUsageDescription": "GoFindr opens your photo library only when you choose a profile photo or a team photo. Nothing else is read.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "buildNumber": "1"
@@ -62,8 +62,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Choose a profile photo.",
-          "cameraPermission": "Take a profile photo."
+          "photosPermission": "GoFindr opens your photo library only when you choose a profile photo or a team photo. Nothing else is read.",
+          "cameraPermission": "GoFindr uses the camera only when you choose to take a profile photo or a team photo."
         }
       ],
       [

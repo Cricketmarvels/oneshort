@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PHOTO } from "@/components/identity";
 import { Button, Txt } from "@/components/ui";
+import { API_URL, SERVER_OVERRIDE_ALLOWED } from "@/lib/config";
 import { SP, T } from "@/theme";
 
 export default function Welcome() {
@@ -18,6 +19,11 @@ export default function Welcome() {
       </View>
       <Button title="Get Started" size="lg" onPress={() => router.push("/sport")} />
       <Txt v="small" color={T.muted} style={{ textAlign: "center", marginTop: 12 }} onPress={() => router.push("/login")}>Already have an account? <Txt v="smallSemi" color={T.primary}>Log in</Txt></Txt>
+      {SERVER_OVERRIDE_ALLOWED ? (
+        <Txt v="small" color={T.muted} style={{ textAlign: "center", marginTop: 10, fontSize: 12 }} onPress={() => router.push("/server")} accessibilityRole="button" accessibilityLabel="Change server">
+          Beta · server {API_URL.replace(/^https?:\/\//, "").replace(/\/api\/v\d+$/, "")}
+        </Txt>
+      ) : null}
     </View>
   );
 }
