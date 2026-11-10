@@ -97,10 +97,19 @@ export function GroundCoverImage({ name, uri, style }: { name: string; uri?: str
 }
 
 /**
- * Large action-card artwork. ARTWORK holds licensed raster illustrations once approved (drop files in
- * assets/artwork/ and register them here). Until then the interim GoFindr pictogram is shown.
+ * Large action-card artwork. ARTWORK holds the raster illustrations (assets/images/art/); an action
+ * without an entry falls back to the in-house GoFindr pictogram.
  */
-export const ARTWORK: Partial<Record<SportsAction, ImageSource | number>> = {};
+export const ARTWORK: Partial<Record<SportsAction, ImageSource | number>> = {
+  // Microsoft Fluent Emoji 3D (MIT licence); see assets/images/CREDITS.md
+  findPlayers: require("../../assets/images/art/find-players.png"),
+  findTeams: require("../../assets/images/art/find-teams.png"),
+  bookGround: require("../../assets/images/art/book-ground.png"),
+  splitFees: require("../../assets/images/art/split-fees.png"),
+  createMatch: require("../../assets/images/art/create-match.png"),
+  manageTeam: require("../../assets/images/art/manage-team.png"),
+  challenge: require("../../assets/images/art/challenge.png"),
+};
 
 export function SportsActionArtwork({ action, size = 56, color }: { action: SportsAction; size?: number; color?: string }) {
   const art = ARTWORK[action];

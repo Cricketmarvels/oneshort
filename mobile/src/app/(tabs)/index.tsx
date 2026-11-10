@@ -12,7 +12,7 @@ import { FlatList, Pressable, RefreshControl, ScrollView, useWindowDimensions, V
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ago, LocationOptions } from "@/components/cricket";
-import { CricHeroesCard } from "@/components/cricheroes-link";
+import { CricHeroesCard, CricHeroesEditor, HomeCricHeroesCard } from "@/components/cricheroes-link";
 import { PlayRIcon } from "@/components/icons";
 import { InvitationCard } from "@/components/invites";
 import { AppHeader, AvailabilityPill, MatchDiscoveryCard, QuickActionsGrid, SectionHeader, SportsHeroBanner } from "@/components/premium";
@@ -23,6 +23,7 @@ import { SportSwitcher } from "@/components/sports";
 import { Avatar, Badge, Button, Chip, Txt } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { savePlayerCricHeroes } from "@/lib/cricheroes";
 import { useHomeContext } from "@/lib/context";
 import { roleCount, roleLabel, when } from "@/lib/format";
 import { useHome } from "@/lib/hooks";
@@ -63,8 +64,10 @@ function GameCard({ o }: { o: Opp }) {
 function CricketHome() {
   const insets = useSafeAreaInsets();
   const [ask, setAsk] = useState("");
+  const [chEdit, setChEdit] = useState(false);
   const { width } = useWindowDimensions();
   const { user } = useAuth();
+  const me = useQuery({ enabled: !!user, queryKey: ["rating", user?.id], queryFn: () => api<S<"PlayerRatingOut">>(`/ratings/players/${user!.id}`) });
   const { lat, lng, label, radius } = useLocation();
   const home = useHome();
   const h = home.data;
@@ -150,6 +153,10 @@ function CricketHome() {
 
         {ctx === "captain" && team?.cricheroes_team_url ? <CricHeroesCard kind="team" url={team.cricheroes_team_url} compact /> : null}
         <QuickActionsGrid tiles={ctx === "player" ? playerTiles : captainTiles} />
+        {chEdit ? (
+          <CricHeroesEditor kind="player" current={me.data?.cricheroes_profile_url} currentStats={me.data?.cricheroes_stats}
+            save={async (u, st) => { await savePlayerCricHeroes(u, st); await me.refetch(); }} onClose={() => setChEdit(false)} />
+        ) : me.data ? <HomeCricHeroesCard url={me.data.cricheroes_profile_url} stats={me.data.cricheroes_stats} onEdit={() => setChEdit(true)} /> : null}
 
         {inviteCards.length ? (
           <View style={{ gap: 12 }}>

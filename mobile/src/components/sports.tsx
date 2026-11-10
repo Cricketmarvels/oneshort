@@ -10,6 +10,7 @@ import { FilterBottomSheet } from "@/components/sheet";
 import { Row, Txt } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useBetaSport } from "@/lib/beta";
 import { SPORT_ORDER, SPORTS, type SportId, useSport } from "@/lib/sports";
 import { R, T } from "@/theme";
 
@@ -57,6 +58,7 @@ export function SportIcon({ sport, size = 96, active }: { sport: SportId; size?:
 
 /** Compact pill in the header: current sport + chevron; opens a sheet to switch. Syncs to the profile. */
 export function SportSwitcher({ compact }: { compact?: boolean }) {
+  const beta = useBetaSport();
   const { sport, choose } = useSport();
   const { user, reload } = useAuth();
   const sheet = useRef<BottomSheetModal>(null);
@@ -68,6 +70,7 @@ export function SportSwitcher({ compact }: { compact?: boolean }) {
     if (user) { await api("/users/me", { method: "PUT", body: { preferred_sport: s } }).catch(() => undefined); void reload().catch(() => undefined); }
     router.replace("/");
   };
+  if (beta !== null) return null; // single-sport beta (or options still loading): nothing to switch
   return (
     <>
       <Pressable accessibilityRole="button" accessibilityLabel={`Sport: ${SPORTS[cur].name}. Switch sport`} onPress={() => sheet.current?.present()} hitSlop={6}

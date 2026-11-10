@@ -16,7 +16,7 @@ The `MAP` in `icons.tsx` is typed `Record<PlayRIconName, …>`, so adding a name
 | Asset | Source | Licence | Where |
 |---|---|---|---|
 | `SportsActionIcon`: findPlayers, findTeams, bookGround, splitFees, createMatch, manageTeam, challenge | Drawn in-house as SVG for GoFindr | Owned by GoFindr | Home quick-action tiles (through `SportsActionArtwork`), ground and match fallbacks |
-| `ARTWORK` registry in `src/components/media.tsx` | **Empty.** Awaiting licensed artwork (see section 5). | — | `SportsActionArtwork` uses an entry here when one exists, otherwise the in-house pictogram |
+| `ARTWORK` registry in `src/components/media.tsx` | Microsoft Fluent Emoji 3D, 7 images in `assets/images/art/` (see CREDITS.md) | MIT | Home quick-action tiles for players and captains; the in-house pictogram remains the fallback |
 | `CricketBanner` (team cover fallback), match fallback tile, `TeamLogo` monogram | Generated in code (gradients and shapes) | Owned by GoFindr | Team cards, team page, match cards and match page |
 
 ## 2a. Link-preview card
@@ -54,7 +54,7 @@ These are decorative stock photos only. They are never shown as a specific team'
 
 ## 5. Open items
 
-1. **Licensed sports artwork (Phase 3): not supplied.** Needed:
+1. **Action-tile artwork: done (2026-11-10)** with Fluent Emoji 3D (MIT). Still open: custom sports illustrations if wanted later:
    - 7 action illustrations matching the `SportsAction` keys.
    - A hero illustration each for cricket, badminton and pickleball.
    - Sources considered: IconScout or Streamline, commercial licence. Purchase and approval are with the product owner.

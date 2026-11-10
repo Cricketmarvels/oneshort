@@ -206,3 +206,52 @@ export function CricHeroesEditor({ kind, current, currentStats, save, onClose }:
     </View>
   );
 }
+
+/**
+ * Home card for the signed-in player's own CricHeroes record. Linked: three headline stats and a link out.
+ * Not linked (or no stats yet): a nudge to complete it, since captains see it when choosing players.
+ */
+export function HomeCricHeroesCard({ url, stats, onEdit }: { url: string | null | undefined; stats: CHStatsOut | null | undefined; onEdit: () => void }) {
+  const [err, setErr] = useState<string | null>(null);
+  const headline = (["matches", "runs", "wickets", "batting_average", "strike_rate", "economy"] as const)
+    .filter((k) => stats?.[k] != null).slice(0, 3)
+    .map((k) => ({ k, l: STAT_FIELDS.find((d) => d.k === k)!.l, v: stats![k] as number }));
+  if (!url || !headline.length) {
+    return (
+      <Pressable accessibilityRole="button" accessibilityLabel="Complete your CricHeroes profile" onPress={onEdit}
+        style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 16, borderRadius: R.card, backgroundColor: pressed ? T.pressedSoft : T.primarySoft, borderWidth: 1, borderColor: T.primary })}>
+        <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: T.surface, alignItems: "center", justifyContent: "center" }}>
+          <PlayRIcon name="stats" size={24} weight="duotone" />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <Txt v="h3" color={T.primaryDark}>{url ? "Add your CricHeroes stats" : "Complete your CricHeroes profile"}</Txt>
+          <Txt v="small" color={T.text2}>Captains see it when picking players. Players with stats get noticed more.</Txt>
+        </View>
+        <PlayRIcon name="chevronRight" size={20} color={T.primaryDark} />
+      </Pressable>
+    );
+  }
+  return (
+    <View style={{ gap: 12, padding: 16, borderRadius: R.card, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <PlayRIcon name="stats" size={22} weight="duotone" />
+        <Txt v="h3" style={{ flex: 1 }}>Your CricHeroes stats</Txt>
+        <Pressable accessibilityRole="button" accessibilityLabel="Update CricHeroes stats" onPress={onEdit} hitSlop={10}><Txt v="smallSemi" color={T.primaryDark}>Update</Txt></Pressable>
+      </View>
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        {headline.map((h) => (
+          <View key={h.k} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: T.surface2, alignItems: "center", gap: 2 }}>
+            <Txt v="h3" style={{ fontSize: 18 }}>{Number.isInteger(h.v) ? h.v.toLocaleString("en-IN") : String(h.v)}</Txt>
+            <Txt v="small" color={T.muted} style={{ fontSize: 11.5 }}>{h.l}</Txt>
+          </View>
+        ))}
+      </View>
+      <Pressable accessibilityRole="link" accessibilityLabel="View full profile on CricHeroes, opens cricheroes.com" onPress={() => { setErr(null); void openLink(url, setErr); }} hitSlop={6}
+        style={{ flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start" }}>
+        <Txt v="smallSemi" color={T.primaryDark}>View full profile on CricHeroes</Txt>
+        <PlayRIcon name="external" size={16} color={T.primaryDark} />
+      </Pressable>
+      {err ? <Txt v="small" color={T.dangerText}>{err}</Txt> : null}
+    </View>
+  );
+}

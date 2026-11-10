@@ -17,6 +17,7 @@ import { PHOTO } from "@/components/identity";
 import { MatchCoverImage, SportsActionArtwork, TeamCoverImage, TeamLogo } from "@/components/media";
 import { FilterBottomSheet } from "@/components/sheet";
 import { Avatar, Txt } from "@/components/ui";
+import { useProfilePhoto } from "@/lib/profile-photo";
 import { useSaved } from "@/lib/saved";
 import { FW, R, shadow, SP, T } from "@/theme";
 
@@ -74,9 +75,28 @@ export function AppHeader({ role, canCaptain, onRole, unread, avatarUri, name }:
         <PlayRIcon name="bell" size={24} color={T.ink} weight={unread ? "fill" : "regular"} />
         {unread ? <View style={{ position: "absolute", top: 8, right: 9, width: 10, height: 10, borderRadius: 5, backgroundColor: "#F2554A", borderWidth: 2, borderColor: T.bg }} /> : null}
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel="Your profile" onPress={() => router.push("/me")}>
-        <View style={{ borderRadius: 26, borderWidth: 2, borderColor: "#F5C044", padding: 1 }}><Avatar uri={avatarUri} name={name} size={42} /></View>
-      </Pressable>
+      <HeaderAvatar uri={avatarUri} name={name} />
+    </View>
+  );
+}
+
+/** Header avatar. With no photo yet it shows a camera badge and tapping it adds one; otherwise it opens the profile. */
+function HeaderAvatar({ uri, name }: { uri?: string | null; name: string }) {
+  const photo = useProfilePhoto();
+  const missing = !uri;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={missing ? "Add profile photo" : "Your profile"} disabled={photo.busy}
+      onPress={() => (missing ? void photo.upload() : router.push("/me"))}>
+      <View style={{ borderRadius: 26, borderWidth: 2, borderColor: "#F5C044", padding: 1, opacity: photo.busy ? 0.5 : 1 }}><Avatar uri={uri} name={name} size={42} /></View>
+      {missing ? <CameraBadge /> : null}
+    </Pressable>
+  );
+}
+
+export function CameraBadge({ size = 20 }: { size?: number }) {
+  return (
+    <View style={{ position: "absolute", right: -2, bottom: -2, width: size, height: size, borderRadius: size / 2, backgroundColor: T.primary, borderWidth: 2, borderColor: T.bg, alignItems: "center", justifyContent: "center" }}>
+      <PlayRIcon name="camera" size={size * 0.55} color="#FFFFFF" />
     </View>
   );
 }
