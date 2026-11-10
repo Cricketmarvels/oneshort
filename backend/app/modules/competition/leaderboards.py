@@ -591,7 +591,14 @@ class LeaderboardService:
     ) -> list[NearbyPlayerOut]:
         """Find a Player: everyone discoverable nearby, rated or not (finding is not ranking)."""
         origin = await self._origin(user, at)
-        query: dict[str, Any] = {"user_id": {"$ne": user.id}, "availability_visibility": {"$ne": "private"}}
+        blocks = self.c.mongo["user_blocks"]
+        hidden = {b["blocked_id"] async for b in blocks.find({"user_id": user.id}, {"blocked_id": 1})} | {
+            b["user_id"] async for b in blocks.find({"blocked_id": user.id}, {"user_id": 1})
+        }
+        query: dict[str, Any] = {
+            "user_id": {"$nin": [user.id, *hidden]},
+            "availability_visibility": {"$ne": "private"},
+        }
         if role:
             query["$or"] = [{"primary_role": role}, {"secondary_roles": role}]
         pipe: list[dict[str, Any]] = [

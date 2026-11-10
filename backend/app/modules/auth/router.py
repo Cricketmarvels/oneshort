@@ -54,7 +54,10 @@ async def options(c: ContainerDep) -> Envelope[AuthOptionsOut]:
             sms_otp=True,
             whatsapp_otp=c.whatsapp.configured,
             whatsapp_simulator=c.settings.whatsapp_provider == "simulator",
-            tester_signup_prefix=c.settings.tester_signup_prefix if c.settings.app_env != "production" else None,
+            tester_signup_prefix=c.settings.tester_signup_prefix
+            if c.settings.app_env not in ("beta", "production")
+            else None,
+            beta_sport=c.settings.playr_beta_sport,
         )
     )
 

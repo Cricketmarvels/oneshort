@@ -12,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Loading } from "@/components/ui";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { useBetaSport } from "@/lib/beta";
 import { useSport } from "@/lib/sports";
 import { registerForPush } from "@/lib/device";
 import { applyTheme, FW, scheme, type Scheme, T } from "@/theme";
@@ -36,6 +37,8 @@ function Gate() {
   const { user, ready, reload } = useAuth();
   const seg = useSegments();
   const sport = useSport();
+  const betaSport = useBetaSport();
+  useEffect(() => { if (betaSport && sport.ready && sport.sport !== betaSport) sport.choose(betaSport); }, [betaSport, sport.ready, sport.sport]); // eslint-disable-line react-hooks/exhaustive-deps
   const pending = usePendingJoin();
   useEffect(() => { void sport.load(); void pending.load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (user) void registerForPush(); }, [user]);
@@ -43,6 +46,7 @@ function Gate() {
   // keep the device selection and the profile in step: a fresh pre-login choice wins; otherwise adopt the profile's
   useEffect(() => {
     if (!user || !sport.ready) return;
+    if (betaSport && sport.sport !== betaSport) return; // the beta effect above settles the store first
     if (!sport.sport) sport.choose(user.preferred_sport);
     else if (sport.sport !== user.preferred_sport) void api("/users/me", { method: "PUT", body: { preferred_sport: sport.sport } }).then(() => reload()).catch(() => undefined);
   }, [user?.id, sport.ready, sport.sport]); // eslint-disable-line react-hooks/exhaustive-deps

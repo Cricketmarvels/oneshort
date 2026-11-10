@@ -6,7 +6,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; D="$ROOT/.data/e2e"; mkdir -p "$D"
 export MONGODB_DB=cricket_e2e APP_ENV=development DEV_OTP_IN_RESPONSE=true SCHEDULER_ENABLED=false WHATSAPP_PROVIDER=simulator \
-  RATE_LIMIT_AUTH_PER_MINUTE=10000 RATE_LIMIT_DEFAULT_PER_MINUTE=100000 APP_BASE_URL=http://127.0.0.1:4174 SENTRY_DSN= TESTER_SIGNUP_PREFIX=
+  RATE_LIMIT_AUTH_PER_MINUTE=10000 RATE_LIMIT_DEFAULT_PER_MINUTE=100000 APP_BASE_URL=http://127.0.0.1:4174 SENTRY_DSN= TESTER_SIGNUP_PREFIX= PLAYR_BETA_SPORT=cricket
 stop() { pkill -f "port 8002" || true; pkill -f "PORT=4174" || true; lsof -ti tcp:4174 | xargs kill 2>/dev/null || true; }
 wait_for() { for _ in $(seq 1 90); do curl -s -o /dev/null "$1" && return 0; sleep 1; done; echo "timed out: $1"; exit 1; }
 case "${1:-start}" in

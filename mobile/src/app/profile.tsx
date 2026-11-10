@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { Bell, CalendarDays, ChevronRight, LogOut, MapPin, Plus, Trophy, Users, Wallet } from "lucide-react-native";
 import { type ComponentType, useState } from "react";
-import { Alert, Pressable, ScrollView, Switch, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, Switch, View } from "react-native";
 
 import { TeamLogo } from "@/components/cricket";
 import { Avatar, Button, Card, Divider, Section, Segmented, Txt } from "@/components/ui";
@@ -69,9 +69,13 @@ export default function Profile() {
     if (on && !meQ.data?.mobile_number) return Alert.alert("Add your mobile number first", "WhatsApp messages go to your verified mobile number.");
     try { await api("/users/me", { method: "PUT", body: { notification_prefs: { ...meQ.data!.notification_prefs, whatsapp: on } } }); void meQ.refetch(); } catch (e) { Alert.alert("Couldn't save", errorText(e)); }
   };
-  const photo = async () => {
-    try { const url = await pickAndUpload("library"); if (url) { await api("/users/me", { method: "PUT", body: { profile_image: url } }); await reload(); } }
+  const photo = async (source: "library" | "camera" = "library") => {
+    try { const url = await pickAndUpload(source); if (url) { await api("/users/me", { method: "PUT", body: { profile_image: url } }); await reload(); } }
     catch (e) { Alert.alert("Upload failed", errorText(e)); }
+  };
+  const removePhoto = async () => {
+    try { await api("/users/me", { method: "PUT", body: { profile_image: null } }); await reload(); }
+    catch (e) { Alert.alert("Couldn't remove photo", errorText(e)); }
   };
   const updateLocation = async () => {
     const loc = await currentLocation();
@@ -88,6 +92,11 @@ export default function Profile() {
         <Pressable accessibilityRole="button" accessibilityLabel="Change profile photo" onPress={() => void photo()}>
           <Avatar uri={user?.profile_image} name={user?.full_name ?? "Me"} size={88} />
         </Pressable>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Button title={user?.profile_image ? "Change photo" : "Add photo"} variant="secondary" size="sm" onPress={() => void photo("library")} />
+          {Platform.OS !== "web" ? <Button title="Take photo" variant="secondary" size="sm" onPress={() => void photo("camera")} /> : null}
+          {user?.profile_image ? <Button title="Remove" variant="ghost" size="sm" onPress={() => void removePhoto()} /> : null}
+        </View>
         <Txt v="h1" color={T.ink}>{user?.full_name}</Txt>
         <Txt v="small" color={T.muted}>{[prof.data?.locality, user?.city].filter(Boolean).join(", ")} · {prof.data ? ROLE_LABELS[prof.data.primary_role] : ""}</Txt>
         {user ? <Button title="View my rating & stats" variant="lime" size="sm" icon={<Trophy size={15} color={T.ink} strokeWidth={1.5} />} onPress={() => router.push({ pathname: "/player/[id]", params: { id: user.id } })} /> : null}

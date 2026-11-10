@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 
 from bson import ObjectId
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Depends, Path, Query, Request
 from pydantic import BaseModel, Field
 
 from app.api.dependencies import ContainerDep, CurrentUser, UserDep
@@ -24,7 +24,21 @@ from app.common.response import ERROR_RESPONSES, Envelope, ok
 from app.common.types import GeoPointIn, StrictModel, approx_km, parse_object_id, utcnow
 from app.core.exceptions import Conflict, Forbidden, NotFound, ValidationFailed
 
-router = APIRouter(prefix="/racket", tags=["Racket sports"], responses=ERROR_RESPONSES)
+
+async def sport_enabled(request: Request, c: ContainerDep) -> None:
+    """Single-sport beta guard: racket endpoints disappear (404) unless the beta sport is this racket sport.
+    Reads the path's `sport` when present, so a badminton beta still hides pickleball."""
+    beta = c.settings.playr_beta_sport
+    if not beta:
+        return
+    requested = request.path_params.get("sport")
+    if beta == "cricket" or (requested and requested != beta):
+        raise NotFound("This sport isn't available in this release", code="SPORT_NOT_AVAILABLE")
+
+
+router = APIRouter(
+    prefix="/racket", tags=["Racket sports"], responses=ERROR_RESPONSES, dependencies=[Depends(sport_enabled)]
+)
 
 Sport = Literal["badminton", "pickleball"]
 Level = Literal["beginner", "intermediate", "advanced", "professional"]

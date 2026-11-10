@@ -2,6 +2,7 @@ import type { UserMe } from "@cm/shared";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { api, refresh, setSessionExpiredHandler } from "./api";
+import { unregisterPush } from "./device";
 import { tokens } from "./tokens";
 
 type Ctx = {
@@ -17,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserMe | null>(null);
   const [ready, setReady] = useState(false);
   const signOut = useCallback(async () => {
+    await unregisterPush(); // before the tokens go: the request needs the session
     const rt = await tokens.getRefresh();
     if (rt) await api("/auth/logout", { method: "POST", body: { refresh_token: rt } }).catch(() => undefined);
     await tokens.clear();

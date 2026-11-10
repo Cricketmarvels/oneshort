@@ -36,6 +36,7 @@ export default function Login() {
   const opts = useQuery({ queryKey: ["auth-options"], queryFn: () => api<S<"AuthOptionsOut">>("/auth/options"), staleTime: 60_000 });
   const waReady = !!opts.data?.whatsapp_otp;
   const simulator = !!opts.data?.whatsapp_simulator;
+  const singleSport = !!opts.data?.beta_sport;
   const testerPrefix = opts.data?.tester_signup_prefix ?? null; // friends-testing mode (never in production)
   const simCode = useSimCode((x) => x.code);
   const clearSim = useSimCode((x) => x.setCode);
@@ -111,15 +112,15 @@ export default function Login() {
             <View style={{ gap: 6 }}>
               <Txt v="hero" accessibilityRole="header">Find your people. Play more.</Txt>
               {sport ? (
-                <Txt v="small" color={T.muted}>Selected sport: <Txt v="smallSemi" color={T.ink}>{SPORTS[sport].name}</Txt> · <Txt v="smallSemi" color={T.primary} onPress={() => router.replace("/sport")}>Change</Txt></Txt>
+                <Txt v="small" color={T.muted}>Selected sport: <Txt v="smallSemi" color={T.ink}>{SPORTS[sport].name}</Txt>{singleSport ? null : <Txt v="small" color={T.muted}> · <Txt v="smallSemi" color={T.primary} onPress={() => router.replace("/sport")}>Change</Txt></Txt>}</Txt>
               ) : null}
             </View>
           ) : null}
           <View style={{ gap: 6, display: mode === "login" && step === "phone" && !reset ? "none" : "flex" }}>
             <Txt v="hero" accessibilityRole="header">{title}</Txt>
             {sport ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={`Playing ${SPORTS[sport].name}. Change sport`} onPress={() => router.replace("/sport")} hitSlop={8} style={{ alignSelf: "flex-start" }}>
-                <Txt v="body" color={T.muted}>Playing <Txt v="bodyMed" color={T.ink}>{SPORTS[sport].name}</Txt> · <Txt v="smallSemi" color={T.primaryDark}>Change</Txt></Txt>
+              <Pressable accessibilityRole="button" accessibilityLabel={singleSport ? `Playing ${SPORTS[sport].name}` : `Playing ${SPORTS[sport].name}. Change sport`} disabled={singleSport} onPress={() => router.replace("/sport")} hitSlop={8} style={{ alignSelf: "flex-start" }}>
+                <Txt v="body" color={T.muted}>Playing <Txt v="bodyMed" color={T.ink}>{SPORTS[sport].name}</Txt>{singleSport ? null : <Txt v="body" color={T.muted}> · <Txt v="smallSemi" color={T.primaryDark}>Change</Txt></Txt>}</Txt>
               </Pressable>
             ) : null}
             {step === "otp" && !reset ? <Muted>Code sent {channel === "whatsapp" ? "on WhatsApp" : "by SMS"} to {mobile}</Muted> : null}

@@ -55,6 +55,11 @@ async def register_device(data: DeviceIn, user: UserDep, svc: Svc) -> None:
     await svc.register_device(user, data)
 
 
+@router.delete("/me/devices/{push_token:path}", status_code=204, summary="Forget this device's push token (logout)")
+async def unregister_device(push_token: str, user: UserDep, svc: Svc) -> None:
+    await svc.unregister_device(user, push_token)
+
+
 @router.get("/me/export", response_model=Envelope[dict[str, Any]], summary="Export my data (privacy)")
 async def export_me(user: UserDep, svc: Svc) -> Envelope[dict[str, Any]]:
     return ok(await svc.export_data(user))

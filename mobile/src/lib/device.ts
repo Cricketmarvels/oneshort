@@ -31,6 +31,16 @@ export async function currentLocation(): Promise<{ lat: number; lng: number } | 
  * Remote push needs a development/production build with an EAS project id; Expo Go has no remote
  * push, so registration quietly skips there instead of storing undeliverable native tokens.
  */
+let registeredPushToken: string | null = null;
+
+/** Called on logout: this device stops receiving pushes for the account that just signed out. */
+export async function unregisterPush(): Promise<void> {
+  const t = registeredPushToken;
+  registeredPushToken = null;
+  if (!t) return;
+  await api(`/users/me/devices/${encodeURIComponent(t)}`, { method: "DELETE" }).catch(() => undefined);
+}
+
 export async function registerForPush(): Promise<void> {
   if (!Device.isDevice) return;
   if (Platform.OS === "android") {
@@ -44,7 +54,9 @@ export async function registerForPush(): Promise<void> {
     (Constants as { easConfig?: { projectId?: string } }).easConfig?.projectId;
   if (!projectId) return; // Expo Go / no EAS project yet: remote push unavailable on this install
   const token = await Notifications.getExpoPushTokenAsync({ projectId });
-  await api("/users/me/devices", { method: "POST", body: { platform: Platform.OS === "ios" ? "ios" : "android", push_token: token.data } }).catch(() => undefined);
+  await api("/users/me/devices", { method: "POST", body: { platform: Platform.OS === "ios" ? "ios" : "android", push_token: token.data } })
+    .then(() => { registeredPushToken = token.data; })
+    .catch(() => undefined);
 }
 
 /** Pick or capture a photo and upload it. Returns the hosted URL. */

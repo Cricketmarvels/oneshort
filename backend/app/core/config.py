@@ -30,7 +30,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_name: str = "CricketMarvels Play API"
-    app_env: Literal["development", "test", "staging", "production"] = "development"
+    app_env: Literal["development", "test", "staging", "beta", "production"] = "development"
+    # Cricket-only TestFlight beta: when set, only this sport is offered, other sports' APIs answer 404 and
+    # profiles are read as this sport. Nothing is deleted; clear the flag to re-enable every sport.
+    playr_beta_sport: Literal["cricket", "badminton", "pickleball"] | None = None
     debug: bool = False
     log_level: str = "INFO"
     sentry_dsn: str | None = None  # error tracking is off unless set
@@ -166,7 +169,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _validate_production(self) -> "Settings":
-        if self.app_env == "production":
+        if self.app_env in ("beta", "production"):  # beta serves real users: same guards as production
             problems: list[str] = []
             if self.jwt_secret == _INSECURE_DEFAULT or len(self.jwt_secret) < 32:
                 problems.append("JWT_SECRET must be a strong secret (>=32 chars)")
@@ -177,7 +180,7 @@ class Settings(BaseSettings):
             if self.debug:
                 problems.append("DEBUG must be false in production")
             if self.tester_signup_prefix:
-                problems.append("TESTER_SIGNUP_PREFIX must not be set in production")
+                problems.append(f"TESTER_SIGNUP_PREFIX must not be set in {self.app_env}")
             for field in ("legal_entity_name", "legal_entity_address", "grievance_officer_name", "grievance_email"):
                 if not getattr(self, field):
                     problems.append(
