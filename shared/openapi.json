@@ -17412,6 +17412,116 @@
         }
       }
     },
+    "/api/v1/matches/{match_id}/commitment": {
+      "post": {
+        "tags": [
+          "Matches"
+        ],
+        "summary": "Mark myself tentative or confirmed in the squad",
+        "operationId": "set_commitment_api_v1_matches__match_id__commitment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitmentIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/matches/{match_id}/withdraw": {
       "post": {
         "tags": [
@@ -18260,6 +18370,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CommitmentIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Data"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -24554,6 +24681,36 @@
         ],
         "title": "ChatThreadOut"
       },
+      "CommitmentIn": {
+        "properties": {
+          "commitment": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "tentative"
+            ],
+            "title": "Commitment",
+            "default": "confirmed"
+          },
+          "commitment_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commitment Note",
+            "description": "Required when tentative"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CommitmentIn",
+        "description": "How sure the player is. Tentative needs a note saying by when they can confirm."
+      },
       "CommunityActivity": {
         "properties": {
           "community_id": {
@@ -27908,6 +28065,27 @@
             "title": "Whatsapp Status",
             "description": "WhatsApp delivery for this invitation (captain view only)"
           },
+          "commitment": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "tentative"
+            ],
+            "title": "Commitment",
+            "description": "confirmed, or tentative with a note",
+            "default": "confirmed"
+          },
+          "commitment_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commitment Note"
+          },
           "can_chat": {
             "type": "boolean",
             "title": "Can Chat",
@@ -28265,6 +28443,28 @@
       },
       "JoinRequestIn": {
         "properties": {
+          "commitment": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "tentative"
+            ],
+            "title": "Commitment",
+            "default": "confirmed"
+          },
+          "commitment_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commitment Note",
+            "description": "Required when tentative"
+          },
           "proposed_role": {
             "anyOf": [
               {
@@ -33729,6 +33929,24 @@
           },
           "joined_at": {
             "title": "Joined At"
+          },
+          "commitment": {
+            "type": "string",
+            "title": "Commitment",
+            "description": "confirmed | tentative",
+            "default": "confirmed"
+          },
+          "commitment_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commitment Note",
+            "description": "When tentative: by when they can confirm"
           }
         },
         "type": "object",

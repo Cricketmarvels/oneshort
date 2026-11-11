@@ -1,17 +1,18 @@
 import { formatDay, formatPaise, MATCH_STATUS_LABELS, timeRange, type S } from "@cm/shared";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { MapPin, Share2, Users, Wallet } from "lucide-react-native";
 import { Alert, Linking, ScrollView, Share, View } from "react-native";
 
-import { ManagedInvitationRow } from "@/components/invites";
+import { CommitChoice, ManagedInvitationRow } from "@/components/invites";
 import { KickerChip } from "@/components/refined";
 import { MatchCoverImage, MediaEditButton } from "@/components/media";
 import { InviteRegularsCard } from "@/components/regulars";
 import { Avatar, Badge, Button, Card, Chip, ErrorBox, InlineNotice, List, LoadingSkeleton, Section, Txt } from "@/components/ui";
 import { roleCount, roleLabel } from "@/lib/format";
 import { api, errorText } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { SP, T } from "@/theme";
 
 export default function MatchDetail() {
@@ -21,17 +22,30 @@ export default function MatchDetail() {
   const roster = useQuery({ queryKey: ["roster", id], enabled: !!inSquad, queryFn: () => api<S<"RosterOut">>(`/matches/${id}/roster`) });
   const invs = useQuery({ queryKey: ["invitations", "match", id], enabled: q.data?.viewer_relation === "manager", queryFn: () => api<S<"InvitationOut">[]>(`/matches/${id}/invitations`) });
   const [joinMsg, setJoinMsg] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  // Everything that lists this match or its squad (this page, Home, My Games, the captain's board) must update together.
+  const refreshAll = () => { for (const k of ["match", "roster", "invitations", "match-invitations", "my-matches", "matches", "home", "home-open-games"]) void qc.invalidateQueries({ queryKey: [k] }); };
   const join = useMutation({
-    mutationFn: () => api(`/matches/${id}/join-requests`, { method: "POST", body: {} }),
-    onSuccess: () => { setJoinMsg("Request sent. Your spot isn't reserved until the captain accepts."); void q.refetch(); },
+    mutationFn: (note: string | null) => api(`/matches/${id}/join-requests`, { method: "POST", body: note ? { commitment: "tentative", commitment_note: note } : {} }),
+    onSuccess: (_r, note) => { setJoinMsg(note ? "Tentative request sent. The captain decides on spots." : "Request sent. Your spot isn't reserved until the captain accepts."); refreshAll(); },
     onError: (e) => setJoinMsg(errorText(e)),
   });
+  const commit = useMutation({
+    mutationFn: (note: string | null) => api(`/matches/${id}/commitment`, { method: "POST", body: note ? { commitment: "tentative", commitment_note: note } : { commitment: "confirmed" } }),
+    onSuccess: () => { setChanging(false); refreshAll(); },
+    onError: (e) => Alert.alert("Couldn't update", errorText(e)),
+  });
+  const [changing, setChanging] = useState(false);
+  const remove = (playerId: string, name: string) => Alert.alert(`Remove ${name}?`, "They leave this match's squad and are notified. They can ask to join again.", [{ text: "Cancel", style: "cancel" }, {
+    text: "Remove", style: "destructive", onPress: async () => { try { await api(`/matches/${id}/roster/${playerId}`, { method: "PUT", body: { status: "removed" } }); refreshAll(); } catch (e) { Alert.alert("Couldn't remove", errorText(e)); } },
+  }]);
   if (q.isPending) return <View style={{ padding: SP.page }}><LoadingSkeleton rows={3} /></View>;
   if (q.isError) return <View style={{ padding: SP.page }}><ErrorBox error={q.error} onRetry={() => void q.refetch()} /></View>;
   const m = q.data;
   const share = () => Share.share({ message: `${m.title} · ${m.team_name}\n${formatDay(m.start_at, m.timezone)} ${timeRange(m.start_at, m.end_at, m.timezone)}\n${m.venue.area}, ${m.venue.city}\nMatch ID ${m.match_code}` });
   const withdraw = () => Alert.alert("Withdraw?", "The captain will be notified.", [{ text: "Cancel", style: "cancel" }, {
-    text: "Withdraw", style: "destructive", onPress: async () => { try { await api(`/matches/${id}/withdraw`, { method: "POST", body: {} }); void q.refetch(); } catch (e) { Alert.alert("Error", errorText(e)); } },
+    text: "Withdraw", style: "destructive", onPress: async () => { try { await api(`/matches/${id}/withdraw`, { method: "POST", body: {} }); qc.removeQueries({ queryKey: ["roster", id] }); refreshAll(); } catch (e) { Alert.alert("Error", errorText(e)); } },
   }]);
   const manager = m.viewer_relation === "manager";
   const lookingFor = Object.entries(m.composition.required).map(([r, n]) => [r, n - ((m.composition.confirmed as Record<string, number>)[r] ?? 0)] as const).filter(([, n]) => n > 0);
@@ -70,7 +84,7 @@ export default function MatchDetail() {
           <Button title="Open request board" size="lg" onPress={() => router.push({ pathname: "/match/players", params: { match: m.id } })} />
         ) : !manager && m.viewer_relation === "public" && ["published", "recruiting"].includes(m.match_status) && m.composition.vacancies > 0 ? (
           m.my_invitation_status === "pending" ? <InlineNotice>Request sent — the captain confirms spots. You'll be notified.</InlineNotice>
-            : <Button title="Request to join" size="lg" loading={join.isPending} onPress={() => join.mutate()} />
+            : <CommitChoice confirmedTitle="Request to join" busy={join.isPending} onConfirmed={() => join.mutate(null)} onTentative={(note) => join.mutate(note)} />
         ) : null}
         {joinMsg ? <InlineNotice>{joinMsg}</InlineNotice> : null}
         {!manager ? <Txt v="small" color={T.muted}>A request is not a confirmed spot until the captain accepts it.</Txt> : null}
@@ -106,13 +120,20 @@ export default function MatchDetail() {
             </View>
           ))}
         </Card>
-        {roster.data?.active.length ? (
+        {inSquad && roster.data?.active.length ? (
           <Card style={{ gap: 0 }}>
             {roster.data.active.map((e, i) => (
               <View key={e.player.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderTopColor: T.line }}>
                 <Avatar uri={e.player.profile_image} name={e.player.full_name} size={32} />
-                <Txt v="bodyMed" style={{ flex: 1 }}>{e.player.full_name}{e.is_captain ? " (C)" : ""}</Txt>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Txt v="bodyMed" numberOfLines={1}>{e.player.full_name}{e.is_captain ? " (C)" : ""}</Txt>
+                  {e.commitment === "tentative" ? <Txt v="small" color={T.warningText} numberOfLines={2}>Tentative{e.commitment_note ? `: ${e.commitment_note}` : ""}</Txt> : null}
+                </View>
+                {e.commitment === "tentative" ? <Badge status="warning" label="Tentative" /> : null}
                 <Badge status={e.contribution_type === "payee" ? "neutral" : "brand"} label={e.contribution_type === "payee" ? "Pays" : "Free"} />
+                {manager && !e.is_captain && !["completed", "cancelled"].includes(m.match_status) ? (
+                  <Button title="Remove" size="sm" variant="ghost" onPress={() => remove(e.player.id, e.player.full_name)} />
+                ) : null}
               </View>
             ))}
           </Card>
@@ -124,7 +145,19 @@ export default function MatchDetail() {
         </Section>
       ) : null}
       {manager && ["published", "recruiting"].includes(m.match_status) ? null : <Button title="Share match" variant="secondary" icon={<Share2 size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => void share()} />}
-      {m.viewer_relation === "roster" && !["completed", "cancelled"].includes(m.match_status) ? <Button title="Withdraw from squad" variant="ghost" onPress={withdraw} /> : null}
+      {m.viewer_relation === "roster" && !["completed", "cancelled"].includes(m.match_status) ? (() => {
+        const mine = roster.data?.active.find((e) => e.player.id === user?.id);
+        return (
+          <Card style={{ gap: SP.md }}>
+            <Txt v="h3">Your spot</Txt>
+            <Txt v="small" color={T.muted}>{mine?.commitment === "tentative" ? `You're tentative${mine.commitment_note ? `: ${mine.commitment_note}` : ""}` : "You're confirmed for this match."}</Txt>
+            {mine?.commitment === "tentative" ? <Button title="I'm confirmed now" loading={commit.isPending} onPress={() => commit.mutate(null)} />
+              : changing ? <CommitChoice confirmedTitle="Stay confirmed" busy={commit.isPending} onConfirmed={() => setChanging(false)} onTentative={(note) => commit.mutate(note)} />
+              : <Button title="Change to tentative" variant="secondary" onPress={() => setChanging(true)} />}
+            <Button title="Withdraw from squad" variant="ghost" onPress={withdraw} />
+          </Card>
+        );
+      })() : null}
     </ScrollView>
   );
 }

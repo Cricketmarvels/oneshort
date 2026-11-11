@@ -47,7 +47,7 @@ export function LocationSelector({ onPress }: { onPress: () => void; dark?: bool
 
 /** Sheet content: distance, current location, or a named area. */
 export function LocationOptions({ onDone }: { onDone: () => void }) {
-  const { pick, useDevice, label, radius, setRadius } = useLocation();
+  const { pick, useDevice, label, radius, setRadius, source } = useLocation();
   const [locating, setLocating] = useState(false);
   const [locErr, setLocErr] = useState<string | null>(null);
   return (
@@ -59,8 +59,8 @@ export function LocationOptions({ onDone }: { onDone: () => void }) {
       <View>
         <Txt v="label" color={T.muted}>Search near</Txt>
         <Row onPress={async () => { setLocating(true); const r = await useDevice(); setLocating(false); if (r === true) onDone(); else setLocErr(r); }} label="Use my current location">
-          <MapPin size={18} color={T.accent} strokeWidth={ICON.stroke} /><Txt v="body" color={T.accent} style={{ flex: 1 }}>{locating ? "Finding you…" : "Use my current location"}</Txt>
-          {label === "My location" ? <Check size={18} color={T.accent} strokeWidth={ICON.navActive} /> : null}
+          <MapPin size={18} color={T.accent} strokeWidth={ICON.stroke} /><Txt v="body" color={T.accent} style={{ flex: 1 }}>{locating ? "Finding you…" : source === "device" ? `Current location: ${label}` : "Use my current location"}</Txt>
+          {source === "device" ? <Check size={18} color={T.accent} strokeWidth={ICON.navActive} /> : null}
         </Row>
         {locErr ? <Txt v="small" color={T.dangerText} style={{ paddingVertical: 6 }} accessibilityLiveRegion="polite">{locErr}</Txt> : null}
         {PLACES.map((p, i) => (

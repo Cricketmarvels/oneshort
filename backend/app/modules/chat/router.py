@@ -9,6 +9,7 @@ import re
 from datetime import datetime
 from typing import Any
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 from bson import ObjectId
 from fastapi import APIRouter
@@ -17,7 +18,7 @@ from pydantic import BaseModel, Field
 from app.api.dependencies import ContainerDep, CurrentUser, UserDep
 from app.common.enums import NotificationType
 from app.common.response import ERROR_RESPONSES, Envelope, ok
-from app.common.types import StrictModel, parse_object_id, utcnow
+from app.common.types import StrictModel, ensure_utc, parse_object_id, utcnow
 from app.core.exceptions import BusinessRuleViolation, NotFound
 
 router = APIRouter(prefix="/invitations", tags=["Chat"], responses=ERROR_RESPONSES)
@@ -66,6 +67,26 @@ async def _load(
     return inv, match, other
 
 
+def _wa_text(to_name: str, from_name: str, match: dict[str, Any], base_url: str) -> str:
+    """Opening WhatsApp message with the full match details, so the chat makes sense on its own."""
+    tz = ZoneInfo(match.get("timezone") or "Asia/Kolkata")
+    lines = [f"Hi {to_name.split()[0]}, it's {from_name} from GoFindr about this match:", match.get("title", "Match")]
+    if match.get("start_at") and match.get("end_at"):
+        start, end = ensure_utc(match["start_at"]).astimezone(tz), ensure_utc(match["end_at"]).astimezone(tz)
+        lines.append(f"{start.strftime('%a %d %b, %I:%M %p')} to {end.strftime('%I:%M %p')}".replace(" 0", " "))
+    venue = match.get("venue") or {}
+    where = ", ".join(x for x in (venue.get("name"), venue.get("area"), venue.get("city")) if x)
+    lines.append(where or "Venue to be confirmed")
+    if match.get("format"):
+        lines.append("Practice" if match["format"] == "OTHER" else str(match["format"]))
+    fee = match.get("per_head_fee_paise", 0)
+    if fee:
+        lines.append(f"About Rs {fee // 100} per head")
+    if match.get("_id"):
+        lines.append(f"{base_url.rstrip('/')}/match/{match['_id']}")
+    return "\n".join(lines)
+
+
 def _wa_link(mobile: str, text: str) -> str:
     return f"https://wa.me/{re.sub(r'[^0-9]', '', mobile)}?text={quote(text)}"
 
@@ -81,8 +102,7 @@ async def thread(invitation_id: str, user: UserDep, c: ContainerDep) -> Envelope
     if is_open and (other.get("notification_prefs") or {}).get("whatsapp") and other.get("mobile_number"):
         wa = _wa_link(
             other["mobile_number"],
-            f"Hi {other['full_name'].split()[0]}, it's {user.full_name} from GoFindr "
-            f"about {match.get('title', 'our match')}.",
+            _wa_text(other["full_name"], user.full_name, match, c.settings.app_base_url or c.settings.web_base_url),
         )
     rows = [
         m async for m in c.mongo["chat_messages"].find({"invitation_id": inv["_id"]}).sort("created_at", 1).limit(500)
@@ -134,8 +154,8 @@ async def send(invitation_id: str, data: ChatMessageIn, user: UserDep, c: Contai
     await c.notifications.notify(
         [other_id],
         NotificationType.CHAT_MESSAGE,
-        f"{user.full_name} · {match.get('title', 'Match')}",
-        body[:140],
+        f"New message from {user.full_name}",
+        f"{match.get('title', 'Match')}: {body[:120]}",
         {"invitation_id": inv["_id"], "match_id": inv["match_id"]},
     )
     await c.notifications.emit([other_id, user.id], "chat.message", {"invitation_id": str(inv["_id"])})

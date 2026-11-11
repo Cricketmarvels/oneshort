@@ -34,6 +34,7 @@ from app.core.exceptions import AppError, BusinessRuleViolation, Conflict, Forbi
 from app.modules.availability.service import AvailabilityService
 from app.modules.invitations import state_machine as sm
 from app.modules.invitations.schemas import (
+    CommitmentIn,
     CreateInvitationsIn,
     InvitationOut,
     InvitationResultItem,
@@ -300,6 +301,8 @@ class InvitationService:
             "contribution_type": match.get("default_contribution_type", "payee"),
             "proposed_role": data.proposed_role.value if data.proposed_role else None,
             "message": data.message,
+            "commitment": data.commitment,
+            "commitment_note": data.commitment_note,
             "is_substitute": False,
             "replaces_player_id": None,
             "availability_state_at_invite": state["state"],
@@ -322,14 +325,18 @@ class InvitationService:
             managers,
             NotificationType.JOIN_REQUEST,
             f"Join request: {match.get('title', 'Match')}",
-            f"{user.full_name} wants to join your squad.",
+            f"{user.full_name} wants to join your squad."
+            + (f" Tentative: {data.commitment_note}" if data.commitment == "tentative" else ""),
             {"match_id": match_id, "invitation_id": res.inserted_id},
         )
         await self.c.notifications.emit(managers, "invitation.updated", {"invitation_id": str(res.inserted_id)})
         return await self.to_out(await self._get(res.inserted_id), user)
 
     # ------------------------------------------------------------ responses
-    async def accept(self, user: CurrentUser, invitation_id: ObjectId) -> InvitationOut:
+    async def accept(
+        self, user: CurrentUser, invitation_id: ObjectId, data: CommitmentIn | None = None
+    ) -> InvitationOut:
+        data = data or CommitmentIn()
         inv = await self._get(invitation_id)
         if inv["player_id"] != user.id or inv["direction"] != D.INVITE:
             raise NotFound("Invitation not found")
@@ -342,14 +349,19 @@ class InvitationService:
         if await self._double_booked(match, user.id):
             raise BusinessRuleViolation("You are already in another match at this time", code="PLAYER_DOUBLE_BOOKED")
         await self._transition(inv, S.ACCEPTED, user.id)
+        await self.col.update_one(
+            {"_id": invitation_id},
+            {"$set": {"commitment": data.commitment, "commitment_note": data.commitment_note}},
+        )
         await self.c.mongo["player_profiles"].update_one(
             {"user_id": user.id}, {"$inc": {"stats.invitations_responded": 1}}
         )
         await self.c.notifications.notify(
             [inv["captain_id"]],
             NotificationType.INVITATION_ACCEPTED,
-            f"{user.full_name} accepted",
-            f"Confirm them for {match.get('title', 'the match')}.",
+            f"{user.full_name} accepted" + (" (tentative)" if data.commitment == "tentative" else ""),
+            f"Confirm them for {match.get('title', 'the match')}."
+            + (f" Tentative: {data.commitment_note}" if data.commitment == "tentative" else ""),
             {"match_id": inv["match_id"], "invitation_id": invitation_id},
         )
         await self.c.notifications.emit(
@@ -458,6 +470,8 @@ class InvitationService:
                         "is_captain": False,
                         "source": inv["direction"],
                         "invitation_id": inv["_id"],
+                        "commitment": inv.get("commitment", "confirmed"),
+                        "commitment_note": inv.get("commitment_note"),
                         "is_substitute": inv.get("is_substitute", False),
                         "replaces_player_id": inv.get("replaces_player_id"),
                         "joined_at": now,
@@ -556,6 +570,8 @@ class InvitationService:
             can_cancel=status in (S.PENDING, S.ACCEPTED) and (is_manager or (not invite and is_player)),
             can_confirm=is_manager and ((invite and status == S.ACCEPTED) or (not invite and status == S.PENDING)),
             whatsapp_status=inv.get("whatsapp_status") if is_manager else None,
+            commitment=inv.get("commitment") or "confirmed",
+            commitment_note=inv.get("commitment_note") if (is_manager or is_player) else None,
             can_chat=status in (S.ACCEPTED, S.CONFIRMED) and (is_player or inv["captain_id"] == viewer.id),
         )
 
@@ -583,13 +599,17 @@ class InvitationService:
             return "not_configured"
         tz = ZoneInfo(match.get("timezone") or "Asia/Kolkata")
         start = ensure_utc(match["start_at"]).astimezone(tz)
+        end = ensure_utc(match["end_at"]).astimezone(tz)
         venue = match.get("venue") or {}
-        where = ", ".join(x for x in (venue.get("name"), venue.get("area")) if x) or "Venue to be confirmed"
+        where = (
+            ", ".join(x for x in (venue.get("name"), venue.get("area"), venue.get("city")) if x)
+            or "Venue to be confirmed"
+        )
         fee = match.get("per_head_fee_paise", 0)
         lines = [
             f"{captain_name} invited you to play for {(team or {}).get('team_name', 'their team')}",
             match.get("title", "Match"),
-            start.strftime("%a %d %b, %I:%M %p").replace(" 0", " "),
+            f"{start.strftime('%a %d %b, %I:%M %p')} to {end.strftime('%I:%M %p')}".replace(" 0", " "),
             where,
             f"{match.get('format', '')} · {str(role.value).replace('_', '-').title() if role else 'Any role'}",
             f"About Rs {fee // 100} per head" if fee and ctype == ContributionType.PAYEE else "No fee for you",

@@ -7,7 +7,7 @@
 import { DEFAULT_CITY, DEFAULT_LOCATION } from "@cm/shared";
 import { create } from "zustand";
 
-import { readLocation } from "./device";
+import { placeName, readLocation } from "./device";
 
 export const PLACES: { label: string; city: string; lat: number; lng: number }[] = [
   { label: "Noida (centre)", city: "Noida", ...DEFAULT_LOCATION },
@@ -19,6 +19,17 @@ export const PLACES: { label: string; city: string; lat: number; lng: number }[]
   { label: "Indirapuram, Ghaziabad", city: "Ghaziabad", lat: 28.646, lng: 77.3695 },
   { label: "Mayur Vihar, Delhi", city: "Delhi", lat: 28.608, lng: 77.293 },
 ];
+
+/** "Near Sector 62, Noida" when a known area is within 6 km, else null. */
+function nearestPlace(lat: number, lng: number): string | null {
+  let best: { label: string; km: number } | null = null;
+  for (const p of PLACES.slice(1)) {
+    const dx = (p.lng - lng) * 111.32 * Math.cos((lat * Math.PI) / 180), dy = (p.lat - lat) * 110.57;
+    const km = Math.sqrt(dx * dx + dy * dy);
+    if (!best || km < best.km) best = { label: p.label, km };
+  }
+  return best && best.km <= 6 ? `Near ${best.label}` : null;
+}
 
 export const RADII = ["5", "10", "20", "50"] as const;
 export type Radius = (typeof RADII)[number];
@@ -43,7 +54,10 @@ export const useLocation = create<LocState>((set) => ({
   useDevice: async () => {
     const r = await readLocation();
     if (!r.ok) return r.reason;
-    set({ lat: r.lat, lng: r.lng, label: "My location", source: "device" });
+    // Show where they are by name ("Sector 76, Noida"), not just "My location". The name comes from the phone's
+    // own geocoder; if that has nothing, the nearest area we know, and only then a generic label.
+    set({ lat: r.lat, lng: r.lng, label: nearestPlace(r.lat, r.lng) ?? "Current location", source: "device" });
+    void placeName(r.lat, r.lng).then((name) => { if (name && useLocation.getState().source === "device") set({ label: name }); });
     return true;
   },
 }));

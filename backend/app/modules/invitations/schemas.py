@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.common.enums import ContributionType, InvitationDirection, InvitationStatus, PlayingRole
 from app.common.types import ObjectIdStr, StrictModel
@@ -21,7 +22,25 @@ class CreateInvitationsIn(StrictModel):
     message: ShortText | None = None
 
 
-class JoinRequestIn(StrictModel):
+Commitment = Literal["confirmed", "tentative"]
+
+
+class CommitmentIn(StrictModel):
+    """How sure the player is. Tentative needs a note saying by when they can confirm."""
+
+    commitment: Commitment = "confirmed"
+    commitment_note: ShortText | None = Field(default=None, description="Required when tentative")
+
+    @model_validator(mode="after")
+    def _note_for_tentative(self) -> "CommitmentIn":
+        if self.commitment == "tentative" and not (self.commitment_note or "").strip():
+            raise ValueError("Say by when you can confirm")
+        if self.commitment == "confirmed":
+            self.commitment_note = None
+        return self
+
+
+class JoinRequestIn(CommitmentIn):
     proposed_role: PlayingRole | None = None
     message: ShortText | None = None
 
@@ -84,4 +103,6 @@ class InvitationOut(BaseModel):
     whatsapp_status: str | None = Field(
         default=None, description="WhatsApp delivery for this invitation (captain view only)"
     )
+    commitment: Commitment = Field(default="confirmed", description="confirmed, or tentative with a note")
+    commitment_note: str | None = None
     can_chat: bool = Field(default=False, description="Captain and player can chat once the invitation is accepted")

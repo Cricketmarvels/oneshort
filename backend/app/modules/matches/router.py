@@ -19,6 +19,7 @@ from app.common.response import (
 from app.common.types import parse_object_id
 from app.core.exceptions import NotFound
 from app.modules.invitations.schemas import (
+    CommitmentIn,
     CreateInvitationsIn,
     InvitationOut,
     InvitationResultItem,
@@ -194,6 +195,11 @@ async def replace_player(
     match_id: str, player_id: str, data: ReplaceIn, user: MatchmakerDep, svc: Squads
 ) -> Envelope[list[InvitationResultItem]]:
     return ok(await svc.replace(user, _mid(match_id), parse_object_id(player_id, field="player"), data))
+
+
+@router.post("/{match_id}/commitment", status_code=204, summary="Mark myself tentative or confirmed in the squad")
+async def set_commitment(match_id: str, data: CommitmentIn, user: UserDep, svc: Squads) -> None:
+    await svc.set_commitment(user, _mid(match_id), data.commitment, data.commitment_note)
 
 
 @router.post("/{match_id}/withdraw", status_code=204, summary="Withdraw myself from the squad")

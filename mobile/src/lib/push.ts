@@ -11,6 +11,8 @@ import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { create } from "zustand";
 
+import { api } from "@/lib/api";
+import { hasRemotePush } from "@/lib/device";
 import { type NotifyData, openNotification } from "@/lib/notify-nav";
 
 if (Platform.OS !== "web") {
@@ -18,7 +20,7 @@ if (Platform.OS !== "web") {
     handleNotification: async () => ({
       shouldShowBanner: true,
       shouldShowList: true,
-      shouldPlaySound: false,
+      shouldPlaySound: true, // a chat message or invitation should be heard, not just seen
       shouldSetBadge: false,
     }),
   });
@@ -66,4 +68,38 @@ export function usePushNavigation(ready: boolean): void {
     pending.clear();
     openNotification(type, data);
   }, [ready, pending.target]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+type InboxPage = { data: { id: string; type: string; title: string; body: string; read: boolean; created_at: string; data?: Record<string, unknown> }[] };
+
+/**
+ * Sound and banner for new notifications while the app is open, on installs without remote push (for example an
+ * Android build with no Firebase Cloud Messaging key yet). Checks the inbox every 20 s and presents anything new
+ * as a local notification; tapping it navigates like a push. Does nothing once real push works, so no duplicates.
+ */
+export function useInAppAlerts(enabled: boolean): void {
+  const lastSeen = useRef<string | null>(null);
+  useEffect(() => {
+    if (!enabled || Platform.OS === "web") return;
+    let stop = false;
+    const check = async () => {
+      if (hasRemotePush()) return;
+      const page = await api<InboxPage>("/notifications", { query: { page_size: 5 } }).catch(() => null);
+      const rows = page?.data ?? [];
+      if (stop || !rows.length) return;
+      const newest = rows[0]!.id;
+      if (lastSeen.current === null) { lastSeen.current = newest; return; } // first run: don't replay old ones
+      const fresh: InboxPage["data"] = [];
+      for (const n of rows) { if (n.id === lastSeen.current) break; if (!n.read) fresh.push(n); }
+      lastSeen.current = newest;
+      for (const n of fresh.reverse()) {
+        const data: Record<string, string> = { type: n.type };
+        for (const [k, v] of Object.entries(n.data ?? {})) if (typeof v === "string") data[k] = v;
+        await Notifications.scheduleNotificationAsync({ content: { title: n.title, body: n.body, sound: "default", data }, trigger: Platform.OS === "android" ? { channelId: "default" } : null }).catch(() => undefined);
+      }
+    };
+    void check();
+    const t = setInterval(() => void check(), 20_000);
+    return () => { stop = true; clearInterval(t); };
+  }, [enabled]);
 }

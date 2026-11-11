@@ -94,8 +94,17 @@ function CricketHome() {
   const mine = useQuery({ enabled: ctx === "captain", queryKey: ["my-matches"], queryFn: () => api<{ data: Match[] }>("/matches", { query: { role: "captain", when: "upcoming" } }) });
   const teamMatches = (mine.data?.data ?? []).filter((m) => m.viewer_relation === "manager" && (!team || m.team_id === team.id) && ["published", "recruiting", "squad_confirmed"].includes(m.match_status));
   const requests = useQuery({ enabled: ctx === "captain", queryKey: ["invitations", "managed", "requests"], queryFn: () => api<{ data: S<"InvitationOut">[] }>("/invitations/managed", { query: { direction: "request", status: "pending" } }) });
+  // My own fixtures: every upcoming match I'm in the squad for (as a player or as the captain).
+  const playing = useQuery({ queryKey: ["my-matches", "playing"], queryFn: () => api<{ data: Match[] }>("/matches", { query: { role: "all", when: "upcoming" } }), refetchInterval: 60_000 });
+  const weekEnd = (() => { const d = new Date(); d.setDate(d.getDate() + ((7 - d.getDay()) % 7)); d.setHours(23, 59, 59, 999); return d.getTime(); })(); // end of this Sunday
+  const myGames = (playing.data?.data ?? []).filter((m) => ["roster", "manager"].includes(m.viewer_relation) && !["cancelled", "completed"].includes(m.match_status)).sort((a, b) => a.start_at.localeCompare(b.start_at));
+  const myWeekend = myGames.filter((m) => new Date(m.start_at).getTime() <= weekEnd);
+  const myShown = (myWeekend.length ? myWeekend : myGames).slice(0, 3);
+  // People asking to join the captain's team (the team itself, not one match).
+  const teamDash = useQuery({ enabled: ctx === "captain" && !!team, queryKey: ["team", team?.id, "dashboard"], queryFn: () => api<S<"TeamDashboardOut">>(`/teams/${team!.id}/dashboard`), refetchInterval: 60_000 });
+  const teamRequests = teamDash.data?.can_manage ? teamDash.data.join_requests : [];
   const pulse = useQuery({ queryKey: ["community-feed", "pulse", lat, lng], queryFn: () => api<Pulse[]>("/communities/feed", { query: { scope: "for_you", lat, lng, radius_km: 25, limit: 2 } }) });
-  const refresh = () => { for (const q of [home, myTeams, invites, opps, mine, requests, pulse, unread]) void q.refetch(); };
+  const refresh = () => { for (const q of [home, myTeams, invites, opps, mine, requests, pulse, unread, playing, teamDash]) void q.refetch(); };
   const name = h?.greeting_name ?? user?.full_name.split(" ")[0] ?? "";
   // The place results are measured from: what the player just picked (device or an area) wins over the saved profile area.
   const area = locSource !== "default" ? label : [h?.locality, h?.city].filter(Boolean).join(", ") || label;
@@ -158,6 +167,37 @@ function CricketHome() {
           <CricHeroesEditor kind="player" current={me.data?.cricheroes_profile_url} currentStats={me.data?.cricheroes_stats}
             save={async (u, st) => { await savePlayerCricHeroes(u, st); await me.refetch(); }} onClose={() => setChEdit(false)} />
         ) : me.data ? <HomeCricHeroesCard url={me.data.cricheroes_profile_url} stats={me.data.cricheroes_stats} onEdit={() => setChEdit(true)} /> : null}
+
+        {ctx === "player" && myShown.length ? (
+          <View style={{ gap: 12 }}>
+            <SectionHeader title={myWeekend.some((m) => [0, 6].includes(new Date(m.start_at).getDay())) ? "Your matches this weekend" : myWeekend.length ? "Your matches this week" : "Your upcoming matches"} action="My Games" onAction={() => router.push("/games")} />
+            {myShown.map((m) => (
+              <Panel key={m.id} label={`${m.title}, ${when(m.start_at)}`} onPress={() => router.push({ pathname: "/match/[id]", params: { id: m.id } })}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Txt v="h3" numberOfLines={2} style={{ flex: 1, fontSize: 16.5, lineHeight: 21 }}>{m.title}</Txt>
+                  <Badge status="success" label={m.viewer_relation === "manager" ? "Captain" : "You're in"} />
+                </View>
+                <Txt v="small" color={T.ink}>{when(m.start_at, { weekday: "long", day: "numeric", month: "short" })} · {when(m.start_at, { hour: "numeric", minute: "2-digit" })}</Txt>
+                <Txt v="small" color={T.muted} numberOfLines={1}>{[m.venue.name, m.venue.area, m.venue.city].filter(Boolean).join(", ")} · {m.team_name}</Txt>
+              </Panel>
+            ))}
+          </View>
+        ) : null}
+
+        {ctx === "captain" && teamRequests.length && team ? (
+          <View style={{ gap: 12 }}>
+            <SectionHeader title="Team join requests" />
+            {teamRequests.slice(0, 3).map((r) => (
+              <Panel key={r.user.id} label={`${r.user.full_name} requested to join ${team.team_name}`} onPress={() => router.push({ pathname: "/team/[id]", params: { id: team.id } })}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <Avatar name={r.user.full_name} uri={r.user.profile_image} size={44} />
+                  <View style={{ flex: 1, minWidth: 0 }}><Txt v="h3" numberOfLines={2}>{r.user.full_name} requested to join the team</Txt><Txt v="small" color={T.muted} numberOfLines={1}>{roleLabel(r.primary_role ?? null)} · {team.team_name}</Txt></View>
+                  <Badge status="warning" label="Review" />
+                </View>
+              </Panel>
+            ))}
+          </View>
+        ) : null}
 
         {inviteCards.length ? (
           <View style={{ gap: 12 }}>

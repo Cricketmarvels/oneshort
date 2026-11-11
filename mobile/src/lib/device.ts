@@ -55,6 +55,8 @@ export async function currentLocation(): Promise<{ lat: number; lng: number } | 
  * push, so registration quietly skips there instead of storing undeliverable native tokens.
  */
 let registeredPushToken: string | null = null;
+/** True once this install has a working remote push token (then the server's pushes carry the sound). */
+export const hasRemotePush = (): boolean => registeredPushToken !== null;
 
 /** Called on logout: this device stops receiving pushes for the account that just signed out. */
 export async function unregisterPush(): Promise<void> {
@@ -131,5 +133,22 @@ async function shrinkForUpload(blob: Blob): Promise<Blob> {
     return out && out.size < blob.size ? out : blob;
   } catch {
     return blob;
+  }
+}
+
+/**
+ * A human name for a position, from the phone's own geocoder (nothing is sent to GoFindr): "Sector 76, Noida".
+ * Null on the web (browsers have no geocoder) or when the phone can't name the place.
+ */
+export async function placeName(lat: number, lng: number): Promise<string | null> {
+  if (Platform.OS === "web") return null;
+  try {
+    const [a] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+    if (!a) return null;
+    const area = a.district || a.subregion || a.street || a.name;
+    const parts = [area, a.city].filter((x, i, all) => !!x && all.indexOf(x) === i);
+    return parts.length ? parts.join(", ") : null;
+  } catch {
+    return null;
   }
 }

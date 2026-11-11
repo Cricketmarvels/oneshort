@@ -42,6 +42,8 @@ class RosterEntryOut(BaseModel):
     average_rating: float | None
     reliability_score: float | None
     joined_at: Any
+    commitment: str = Field(default="confirmed", description="confirmed | tentative")
+    commitment_note: str | None = Field(default=None, description="When tentative: by when they can confirm")
 
 
 class RosterOut(BaseModel):
@@ -115,6 +117,8 @@ class SquadService:
                 average_rating=p.get("average_rating"),
                 reliability_score=p.get("reliability_score"),
                 joined_at=r.get("joined_at"),
+                commitment=r.get("commitment") or "confirmed",
+                commitment_note=r.get("commitment_note"),
             )
 
         return RosterOut(
@@ -270,6 +274,31 @@ class SquadService:
         await self.c.notifications.emit(
             [player_id, match["captain_id"]], "roster.updated", {"match_id": str(match["_id"])}
         )
+
+    async def set_commitment(self, user: CurrentUser, match_id: ObjectId, commitment: str, note: str | None) -> None:
+        """A squad player marks themselves tentative (with a note) or confirmed; the captain is told."""
+        match, _ = await self.access.load(match_id)
+        if MatchStatus(match["match_status"]) not in lifecycle.ROSTER_MUTABLE:
+            raise BusinessRuleViolation("The squad can no longer change", code="ROSTER_LOCKED")
+        res = await self.rosters.update_one(
+            {"match_id": match_id, "player_id": user.id, "is_active": True},
+            {"$set": {"commitment": commitment, "commitment_note": note, "updated_at": utcnow()}},
+        )
+        if res.matched_count == 0:
+            raise NotFound("You are not in this squad")
+        await self.c.mongo["invitations"].update_one(
+            {"match_id": match_id, "player_id": user.id, "is_active": True},
+            {"$set": {"commitment": commitment, "commitment_note": note}},
+        )
+        if match["captain_id"] != user.id:
+            await self.c.notifications.notify(
+                [match["captain_id"]],
+                NotificationType.INVITATION_ACCEPTED,
+                f"{user.full_name} is {'tentative' if commitment == 'tentative' else 'confirmed'}",
+                f"{match.get('title', 'Match')}" + (f": {note}" if note else ""),
+                {"match_id": match_id},
+            )
+        await self.c.notifications.emit([match["captain_id"], user.id], "roster.updated", {"match_id": str(match_id)})
 
     async def withdraw(self, user: CurrentUser, match_id: ObjectId, reason: str | None) -> None:
         match, _ = await self.access.load(match_id)

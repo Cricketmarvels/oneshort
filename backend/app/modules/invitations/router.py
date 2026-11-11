@@ -15,7 +15,7 @@ from app.common.response import (
     paged,
 )
 from app.common.types import parse_object_id
-from app.modules.invitations.schemas import InvitationOut, RespondIn
+from app.modules.invitations.schemas import CommitmentIn, InvitationOut, RespondIn
 from app.modules.invitations.service import InvitationService
 
 router = APIRouter(prefix="/invitations", tags=["Invitations"], responses=ERROR_RESPONSES)
@@ -64,8 +64,10 @@ async def managed(
 
 
 @router.post("/{invitation_id}/accept", response_model=Envelope[InvitationOut], summary="Accept an invitation")
-async def accept(invitation_id: str, user: MatchmakerDep, svc: Svc) -> Envelope[InvitationOut]:
-    return ok(await svc.accept(user, _iid(invitation_id)))
+async def accept(
+    invitation_id: str, user: MatchmakerDep, svc: Svc, data: CommitmentIn | None = None
+) -> Envelope[InvitationOut]:
+    return ok(await svc.accept(user, _iid(invitation_id), data))
 
 
 @router.post(

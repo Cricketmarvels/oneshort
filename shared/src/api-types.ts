@@ -2218,6 +2218,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/matches/{match_id}/commitment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark myself tentative or confirmed in the squad */
+        post: operations["set_commitment_api_v1_matches__match_id__commitment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/matches/{match_id}/withdraw": {
         parameters: {
             query?: never;
@@ -3632,6 +3649,23 @@ export interface components {
             /** Messages */
             messages: components["schemas"]["ChatMessageOut"][];
         };
+        /**
+         * CommitmentIn
+         * @description How sure the player is. Tentative needs a note saying by when they can confirm.
+         */
+        CommitmentIn: {
+            /**
+             * Commitment
+             * @default confirmed
+             * @enum {string}
+             */
+            commitment: "confirmed" | "tentative";
+            /**
+             * Commitment Note
+             * @description Required when tentative
+             */
+            commitment_note?: string | null;
+        };
         /** CommunityActivity */
         CommunityActivity: {
             /** Community Id */
@@ -4757,6 +4791,15 @@ export interface components {
              */
             whatsapp_status?: string | null;
             /**
+             * Commitment
+             * @description confirmed, or tentative with a note
+             * @default confirmed
+             * @enum {string}
+             */
+            commitment: "confirmed" | "tentative";
+            /** Commitment Note */
+            commitment_note?: string | null;
+            /**
              * Can Chat
              * @description Captain and player can chat once the invitation is accepted
              * @default false
@@ -4888,6 +4931,17 @@ export interface components {
         };
         /** JoinRequestIn */
         JoinRequestIn: {
+            /**
+             * Commitment
+             * @default confirmed
+             * @enum {string}
+             */
+            commitment: "confirmed" | "tentative";
+            /**
+             * Commitment Note
+             * @description Required when tentative
+             */
+            commitment_note?: string | null;
             proposed_role?: components["schemas"]["PlayingRole"] | null;
             /** Message */
             message?: string | null;
@@ -6673,6 +6727,17 @@ export interface components {
             reliability_score: number | null;
             /** Joined At */
             joined_at: unknown;
+            /**
+             * Commitment
+             * @description confirmed | tentative
+             * @default confirmed
+             */
+            commitment: string;
+            /**
+             * Commitment Note
+             * @description When tentative: by when they can confirm
+             */
+            commitment_note?: string | null;
         };
         /** RosterOut */
         RosterOut: {
@@ -20697,6 +20762,93 @@ export interface operations {
             };
         };
     };
+    set_commitment_api_v1_matches__match_id__commitment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     withdraw_api_v1_matches__match_id__withdraw_post: {
         parameters: {
             query?: never;
@@ -21234,7 +21386,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CommitmentIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
