@@ -38,8 +38,21 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             path=request.url.path,
             status=response.status_code,
             duration_ms=duration_ms,
+            client=_client_kind(request.headers.get("user-agent", "")),
         )
         return response
+
+
+def _client_kind(ua: str) -> str:
+    """Coarse client label for support ("did the phone's request arrive?"). Never the full user agent."""
+    u = ua.lower()
+    if "okhttp" in u:
+        return "android-app"
+    if "cfnetwork" in u or "darwin" in u:
+        return "ios-app"
+    if "mozilla" in u:
+        return "browser"
+    return "other"
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
