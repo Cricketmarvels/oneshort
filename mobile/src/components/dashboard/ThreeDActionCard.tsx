@@ -8,8 +8,8 @@
  */
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { memo } from "react";
-import { PixelRatio, Pressable, View, type ViewStyle } from "react-native";
+import { memo, useState } from "react";
+import { PixelRatio, Pressable, View, type LayoutChangeEvent, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from "react-native-reanimated";
 
 import { CARD, cardShadow, illustrationShadow, toneSkin, type CardTone } from "@/components/dashboard/cardTokens";
@@ -39,6 +39,9 @@ export const ThreeDActionCard = memo(function ThreeDActionCard({ action, title, 
 
   // Enlarged text needs more room than a fixed aspect ratio can give: fall back to a tall minimum.
   const fontScale = PixelRatio.getFontScale();
+  // On a very narrow card (small phones, big text) the title gets more room than the decorative arrow.
+  const [width, setWidth] = useState(0);
+  const tight = (width > 0 && width < 150) || fontScale > 1.3;
   const box: ViewStyle = fontScale > 1.3 ? { minHeight: CARD.minHeight * Math.min(fontScale, 1.8) } : { aspectRatio: CARD.aspect, minHeight: CARD.minHeight };
 
   const lift = useAnimatedStyle(() => ({
@@ -52,7 +55,8 @@ export const ThreeDActionCard = memo(function ThreeDActionCard({ action, title, 
   return (
     <Animated.View style={[{ flex: 1, borderRadius: CARD.radius }, base, lift]}>
       <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress}
-        onPressIn={() => set(1)} onPressOut={() => set(0)} style={[{ borderRadius: CARD.radius }, box]}>
+        onPressIn={() => set(1)} onPressOut={() => set(0)} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}
+        style={[{ borderRadius: CARD.radius }, box]}>
         {/* Layer B — extruded bottom edge, revealed below the surface */}
         <View style={{ position: "absolute", left: 0, right: 0, top: CARD.extrusion, bottom: -CARD.extrusion, borderRadius: CARD.radius, backgroundColor: skin.edge }} />
 
@@ -61,22 +65,24 @@ export const ThreeDActionCard = memo(function ThreeDActionCard({ action, title, 
           style={{ flex: 1, borderRadius: CARD.radius, borderWidth: 1, borderColor: skin.rim, padding: CARD.padding, justifyContent: "space-between", overflow: "hidden" }}>
 
           {/* Layer C — floating illustration over its own contact shadow */}
-          <View style={{ flex: 1, minHeight: 84, alignItems: "center", justifyContent: "center" }}>
+          <View style={{ flex: 1, minHeight: 54, alignItems: "center", justifyContent: "center" }}>
             <LinearGradient colors={["transparent", illustrationShadow(), "transparent"]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-              style={{ position: "absolute", bottom: 6, width: "62%", height: 9, borderRadius: 999 }} />
+              style={{ position: "absolute", bottom: 2, width: "50%", height: 7, borderRadius: 999 }} />
             {art ? (
-              <Image source={art} style={{ width: "74%", height: "100%", maxHeight: 100 }} contentFit="contain" cachePolicy="memory-disk"
+              <Image source={art} style={{ width: "58%", height: "100%", maxHeight: 62 }} contentFit="contain" cachePolicy="memory-disk"
                 priority="high" transition={140} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
             ) : (
-              <SportsActionIcon action={action} size={62} />
+              <SportsActionIcon action={action} size={44} />
             )}
           </View>
 
-          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10 }}>
-            <Txt numberOfLines={2} style={{ flex: 1, ...FW.heading, fontSize: 17.5, lineHeight: 21, letterSpacing: -0.4, color: T.tileTitle }}>{title}</Txt>
-            <View style={{ width: CARD.arrow, height: CARD.arrow, borderRadius: CARD.arrow / 2, backgroundColor: T.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: skin.rim, ...shadow(2) }}>
-              <PlayRIcon name="arrow" size={21} color={T.primaryDark} weight="bold" />
-            </View>
+          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6 }}>
+            <Txt numberOfLines={2} style={{ flex: 1, minWidth: 0, ...FW.heading, fontSize: 15, lineHeight: 18.5, letterSpacing: -0.3, color: T.tileTitle }}>{title}</Txt>
+            {tight ? null : (
+              <View style={{ width: CARD.arrow, height: CARD.arrow, borderRadius: CARD.arrow / 2, backgroundColor: T.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: skin.rim, ...shadow(1) }}>
+                <PlayRIcon name="arrow" size={17} color={T.primaryDark} weight="bold" />
+              </View>
+            )}
           </View>
         </LinearGradient>
       </Pressable>

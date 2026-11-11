@@ -44,16 +44,16 @@ export function toneSkin(tone: CardTone): ToneSkin {
 }
 
 export const CARD = {
-  radius: 28,
+  radius: 22,
   /** How far the darker edge sits below the surface — the extrusion. */
-  extrusion: 6,
-  padding: 16,
-  gapX: 14,
-  gapY: 18,
-  /** Width ÷ height. The reference cards are a touch taller than they are wide (≈1.1:1). */
-  aspect: 1 / 1.18,
-  minHeight: 176,
-  arrow: 42,
+  extrusion: 5,
+  padding: 12,
+  gapX: 12,
+  gapY: 12,
+  /** Width ÷ height. Slightly wider than tall, so four cards don't swallow the screen. */
+  aspect: 1 / 0.86,
+  minHeight: 132,
+  arrow: 34,
   pressScale: 0.97,
   pressDrop: 3,
 } as const;
