@@ -42,6 +42,7 @@ const LIGHT = {
   tileAqua: "#E4F4F7", tileAqua2: "#D3EDF2", tileAquaInk: "#0B7F8C",
   tilePeach: "#FDF0E2", tilePeach2: "#FBE5D0", tilePeachInk: "#C7701A",
   tileLilac: "#EEEDFB", tileLilac2: "#E3E1F7", tileLilacInk: "#6A55C9",
+  tileTitle: "#103B36", // deep teal title on a pastel card (reference); darker than body ink on purpose
   statusBar: "dark",
 };
 
@@ -80,6 +81,7 @@ const DARK: typeof LIGHT = {
   tileAqua: "#142C33", tileAqua2: "#11353D", tileAquaInk: "#5CC8D8",
   tilePeach: "#33261A", tilePeach2: "#3B2A18", tilePeachInk: "#F2A55E",
   tileLilac: "#25223A", tileLilac2: "#2B2746", tileLilacInk: "#B3A4FF",
+  tileTitle: "#E8F1EF",
   statusBar: "light",
 };
 export type Scheme = "light" | "dark";

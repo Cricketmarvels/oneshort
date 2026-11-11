@@ -1,6 +1,7 @@
 /**
  * GoFindr premium design system (3-screen reference, Nov 2026): app header + role switcher, sports hero,
- * pastel quick actions, match / player / team discovery cards, discovery search header and filters.
+ * match / player / team discovery cards, discovery search header and filters. The home action cards
+ * live in `components/dashboard/`.
  * Only real API values are rendered; missing data shows a neutral fallback, never an invented number.
  */
 import type { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -12,9 +13,9 @@ import { memo, useRef } from "react";
 import { Pressable, ScrollView, TextInput, useWindowDimensions, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PlayRIcon, type PlayRIconName, type SportsAction } from "@/components/icons";
+import { PlayRIcon, type PlayRIconName } from "@/components/icons";
 import { PHOTO } from "@/components/identity";
-import { MatchCoverImage, SportsActionArtwork, TeamCoverImage, TeamLogo } from "@/components/media";
+import { MatchCoverImage, TeamCoverImage, TeamLogo } from "@/components/media";
 import { FilterBottomSheet } from "@/components/sheet";
 import { Avatar, Txt } from "@/components/ui";
 import { useProfilePhoto } from "@/lib/profile-photo";
@@ -128,36 +129,6 @@ export function SportsHeroBanner({ eyebrow, title, body, cta, onCta, photo = "ba
           </Pressable>
         ) : null}
       </View>
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------- quick actions
-const PASTEL = (): Record<string, [string, string, string]> => ({
-  mint: [T.tileMint, T.tileMint2, T.tileMintInk],
-  aqua: [T.tileAqua, T.tileAqua2, T.tileAquaInk],
-  peach: [T.tilePeach, T.tilePeach2, T.tilePeachInk],
-  lilac: [T.tileLilac, T.tileLilac2, T.tileLilacInk],
-});
-export function QuickActionTile({ action, title, sub, tone, onPress }: { action: SportsAction; title: string; sub: string; tone: "mint" | "aqua" | "peach" | "lilac"; onPress: () => void }) {
-  const [a, b, ink] = PASTEL()[tone]!;
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${sub}`} onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 20, overflow: "hidden", transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-      <LinearGradient colors={[a, b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, padding: 14, minHeight: 118, gap: 8, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23,43,43,0.05)" }}>
-        <SportsActionArtwork action={action} size={54} color={ink} />
-        <View style={{ gap: 2 }}>
-          <Txt v="h3" style={{ fontSize: 16 }}>{title}</Txt>
-          <Txt v="small" color={T.muted} numberOfLines={2} style={{ fontSize: 12.5, lineHeight: 17 }}>{sub}</Txt>
-        </View>
-      </LinearGradient>
-    </Pressable>
-  );
-}
-export function QuickActionsGrid({ tiles }: { tiles: Parameters<typeof QuickActionTile>[0][] }) {
-  return (
-    <View style={{ gap: 12 }}>
-      <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>{tiles.slice(0, 2).map((t) => <QuickActionTile key={t.title} {...t} />)}</View>
-      <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>{tiles.slice(2, 4).map((t) => <QuickActionTile key={t.title} {...t} />)}</View>
     </View>
   );
 }

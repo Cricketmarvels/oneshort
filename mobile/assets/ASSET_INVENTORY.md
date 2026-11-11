@@ -15,9 +15,15 @@ The `MAP` in `icons.tsx` is typed `Record<PlayRIconName, …>`, so adding a name
 
 | Asset | Source | Licence | Where |
 |---|---|---|---|
-| `SportsActionIcon`: findPlayers, findTeams, bookGround, splitFees, createMatch, manageTeam, challenge | Drawn in-house as SVG for GoFindr | Owned by GoFindr | Home quick-action tiles (through `SportsActionArtwork`), ground and match fallbacks |
-| `ARTWORK` registry in `src/components/media.tsx` | Microsoft Fluent Emoji 3D, 7 images in `assets/images/art/` (see CREDITS.md) | MIT | Home quick-action tiles for players and captains; the in-house pictogram remains the fallback |
+| `SportsActionIcon`: findPlayers, findTeams, bookGround, splitFees, createMatch, manageTeam, challenge | Drawn in-house as SVG for GoFindr | Owned by GoFindr | Fallback inside the home action cards, ground and match fallbacks |
+| `ARTWORK` registry in `src/components/media.tsx` | Microsoft Fluent Emoji 3D, 7 images in `assets/images/art/` (see CREDITS.md) | MIT | The floating illustration in the home 3D action cards (`src/components/dashboard/`), for players and captains; the in-house pictogram remains the fallback |
 | `CricketBanner` (team cover fallback), match fallback tile, `TeamLogo` monogram | Generated in code (gradients and shapes) | Owned by GoFindr | Team cards, team page, match cards and match page |
+
+**Still wanted (Nov 2026):** two cricket-specific 3D renders to replace the nearest-fit emoji on the captain
+cards — `manage-team-3d` (a group of three players, central figure in teal) and `challenge-3d` (two crossed
+cricket bats in front of a teal shield). Today those cards show the Fluent clipboard and crossed swords.
+Drop transparent 256 px PNG or WebP files into `assets/images/art/` and point `ARTWORK` at them; no code
+change is needed beyond the registry entry.
 
 ## 2a. Link-preview card
 

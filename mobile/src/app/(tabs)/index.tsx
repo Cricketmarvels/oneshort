@@ -12,10 +12,12 @@ import { FlatList, Pressable, RefreshControl, ScrollView, useWindowDimensions, V
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ago, LocationOptions } from "@/components/cricket";
+import { ActionCardGrid } from "@/components/dashboard/ActionCardGrid";
+import { captainActions, playerActions } from "@/components/dashboard/dashboardActions";
 import { CricHeroesCard, CricHeroesEditor, HomeCricHeroesCard } from "@/components/cricheroes-link";
 import { PlayRIcon } from "@/components/icons";
 import { InvitationCard } from "@/components/invites";
-import { AppHeader, AvailabilityPill, MatchDiscoveryCard, QuickActionsGrid, SectionHeader, SportsHeroBanner } from "@/components/premium";
+import { AppHeader, AvailabilityPill, MatchDiscoveryCard, SectionHeader, SportsHeroBanner } from "@/components/premium";
 import { RacketHome } from "@/components/racket";
 import { SmartSearchBar } from "@/components/search-bar";
 import { FilterBottomSheet } from "@/components/sheet";
@@ -110,18 +112,7 @@ function CricketHome() {
   const area = locSource !== "default" ? label : [h?.locality, h?.city].filter(Boolean).join(", ") || label;
   const openSpots = teamMatches.reduce((n, m) => n + m.composition.vacancies, 0);
 
-  const playerTiles = [
-    { action: "findPlayers" as const, title: "Find Players", sub: "Cricketers near you", tone: "mint" as const, onPress: () => router.push("/find/players") },
-    { action: "findTeams" as const, title: "Find Teams", sub: "Squads near you", tone: "aqua" as const, onPress: () => router.push("/find/teams") },
-    { action: "bookGround" as const, title: "Book Ground", sub: "Grounds near you", tone: "peach" as const, onPress: () => router.push("/grounds") },
-    { action: "splitFees" as const, title: "Split Fees", sub: "Track who has paid", tone: "lilac" as const, onPress: () => router.push("/payments") },
-  ];
-  const captainTiles = [
-    { action: "createMatch" as const, title: "Create Match", sub: "Date, venue, squad", tone: "mint" as const, onPress: () => router.push(team ? { pathname: "/match/new", params: { team: team.id } } : "/match/new") },
-    { action: "findPlayers" as const, title: "Find Players", sub: "Fill by role & time", tone: "aqua" as const, onPress: () => router.push(teamMatches[0] ? { pathname: "/match/players", params: { match: teamMatches[0].id } } : "/match/players") },
-    { action: "manageTeam" as const, title: "Manage Team", sub: "Roster & requests", tone: "peach" as const, onPress: () => team && router.push({ pathname: "/team/[id]", params: { id: team.id } }) },
-    { action: "challenge" as const, title: "Challenge", sub: "Play a nearby team", tone: "lilac" as const, onPress: () => team && router.push({ pathname: "/challenge/new", params: { from: team.id } }) },
-  ];
+  const actionCards = ctx === "player" ? playerActions() : captainActions({ teamId: team?.id, matchId: teamMatches[0]?.id });
 
   return (
     <>
@@ -162,7 +153,7 @@ function CricketHome() {
         ) : null}
 
         {ctx === "captain" && team?.cricheroes_team_url ? <CricHeroesCard kind="team" url={team.cricheroes_team_url} compact /> : null}
-        <QuickActionsGrid tiles={ctx === "player" ? playerTiles : captainTiles} />
+        <ActionCardGrid cards={actionCards} />
         {chEdit ? (
           <CricHeroesEditor kind="player" current={me.data?.cricheroes_profile_url} currentStats={me.data?.cricheroes_stats}
             save={async (u, st) => { await savePlayerCricHeroes(u, st); await me.refetch(); }} onClose={() => setChEdit(false)} />

@@ -11,9 +11,11 @@ import { PlayRIcon, type PlayRIconName } from "@/components/icons";
 import { isRacket, useSport } from "@/lib/sports";
 import { FW, shadow, T } from "@/theme";
 
-/** Phosphor 24px; active tab = fill weight + teal, inactive = regular + ink. */
+/** Phosphor 24px; active tab = fill weight + teal on a soft mint pill (reference), inactive = regular + ink. */
 const icon = (name: PlayRIconName) => ({ focused }: { color: ColorValue; focused: boolean }) => (
-  <PlayRIcon name={name} size={24} color={focused ? T.primary : T.ink} weight={focused ? "fill" : "regular"} />
+  <View style={{ minWidth: 52, height: 30, borderRadius: 15, paddingHorizontal: 14, alignItems: "center", justifyContent: "center", backgroundColor: focused ? T.primarySoft : "transparent" }}>
+    <PlayRIcon name={name} size={24} color={focused ? T.primary : T.ink} weight={focused ? "fill" : "regular"} />
+  </View>
 );
 /** Raised circular teal "+" (Create). */
 const createIcon = () => (
