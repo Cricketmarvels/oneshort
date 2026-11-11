@@ -44,15 +44,15 @@ export function toneSkin(tone: CardTone): ToneSkin {
 }
 
 export const CARD = {
-  radius: 22,
+  radius: 18,
   /** How far the darker edge sits below the surface — the extrusion. */
-  extrusion: 5,
-  padding: 12,
-  gapX: 12,
+  extrusion: 4,
+  padding: 8,
+  gapX: 10,
   gapY: 12,
-  /** Width ÷ height. Slightly wider than tall, so four cards don't swallow the screen. */
-  aspect: 1 / 0.86,
-  minHeight: 132,
+  /** Width ÷ height. Four across a phone: a little taller than wide, so the label sits under the art. */
+  aspect: 1 / 1.12,
+  minHeight: 84,
   arrow: 34,
   pressScale: 0.97,
   pressDrop: 3,

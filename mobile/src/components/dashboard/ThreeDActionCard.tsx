@@ -41,7 +41,12 @@ export const ThreeDActionCard = memo(function ThreeDActionCard({ action, title, 
   const fontScale = PixelRatio.getFontScale();
   // On a very narrow card (small phones, big text) the title gets more room than the decorative arrow.
   const [width, setWidth] = useState(0);
-  const tight = (width > 0 && width < 150) || fontScale > 1.3;
+  const tight = (width > 0 && width < 150) || fontScale > 1.3; // no room for the arrow beside the title
+  // A four-across tile on a 320 px phone is ~68 px wide. Size the label so the longest word still fits
+  // on one line (Inter Bold runs ≈0.62 em per character) — otherwise "Challenge" breaks mid-word.
+  const longest = Math.max(...title.split(" ").map((w) => w.length));
+  const inner = Math.max(0, width - 2 * (tight ? 6 : CARD.padding) - 2);
+  const titleSize = tight ? Math.max(9.5, Math.min(11.5, inner / (0.62 * longest))) : 15;
   const box: ViewStyle = fontScale > 1.3 ? { minHeight: CARD.minHeight * Math.min(fontScale, 1.8) } : { aspectRatio: CARD.aspect, minHeight: CARD.minHeight };
 
   const lift = useAnimatedStyle(() => ({
@@ -62,22 +67,22 @@ export const ThreeDActionCard = memo(function ThreeDActionCard({ action, title, 
 
         {/* Layer B — raised pastel surface */}
         <LinearGradient colors={skin.surface} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={{ flex: 1, borderRadius: CARD.radius, borderWidth: 1, borderColor: skin.rim, padding: CARD.padding, justifyContent: "space-between", overflow: "hidden" }}>
+          style={{ flex: 1, borderRadius: CARD.radius, borderWidth: 1, borderColor: skin.rim, padding: CARD.padding, paddingHorizontal: tight ? 6 : CARD.padding, justifyContent: "space-between", overflow: "hidden" }}>
 
           {/* Layer C — floating illustration over its own contact shadow */}
-          <View style={{ flex: 1, minHeight: 54, alignItems: "center", justifyContent: "center" }}>
+          <View style={{ flex: 1, minHeight: 34, alignItems: "center", justifyContent: "center" }}>
             <LinearGradient colors={["transparent", illustrationShadow(), "transparent"]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-              style={{ position: "absolute", bottom: 2, width: "50%", height: 7, borderRadius: 999 }} />
+              style={{ position: "absolute", bottom: 1, width: "56%", height: tight ? 5 : 7, borderRadius: 999 }} />
             {art ? (
-              <Image source={art} style={{ width: "58%", height: "100%", maxHeight: 62 }} contentFit="contain" cachePolicy="memory-disk"
+              <Image source={art} style={{ width: tight ? "74%" : "58%", height: "100%", maxHeight: tight ? 42 : 62 }} contentFit="contain" cachePolicy="memory-disk"
                 priority="high" transition={140} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
             ) : (
-              <SportsActionIcon action={action} size={44} />
+              <SportsActionIcon action={action} size={tight ? 30 : 44} />
             )}
           </View>
 
-          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6 }}>
-            <Txt numberOfLines={2} style={{ flex: 1, minWidth: 0, ...FW.heading, fontSize: 15, lineHeight: 18.5, letterSpacing: -0.3, color: T.tileTitle }}>{title}</Txt>
+          <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "center", gap: 6 }}>
+            <Txt numberOfLines={2} style={{ flex: 1, minWidth: 0, ...FW.heading, fontSize: titleSize, lineHeight: tight ? 13.5 : 18.5, letterSpacing: -0.2, textAlign: tight ? "center" : "left", color: T.tileTitle }}>{title}</Txt>
             {tight ? null : (
               <View style={{ width: CARD.arrow, height: CARD.arrow, borderRadius: CARD.arrow / 2, backgroundColor: T.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: skin.rim, ...shadow(1) }}>
                 <PlayRIcon name="arrow" size={17} color={T.primaryDark} weight="bold" />
