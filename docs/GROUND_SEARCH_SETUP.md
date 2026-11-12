@@ -1,13 +1,49 @@
-# Turning on Google ground search
+# Ground search: choosing a map provider
 
 GoFindr searches its own grounds first and asks a map provider for the rest
-(`app/infrastructure/integrations/places.py`). The free OpenStreetMap provider is on by default and
-needs nothing. This page is for switching to Google, which finds the small turf grounds OSM misses.
+(`app/infrastructure/integrations/places.py`). OpenStreetMap is on by default and needs nothing, but
+it doesn't know most small Indian turf grounds. Two providers that do, both already implemented:
+
+| `PLACES_PROVIDER` | Free allowance | Card needed | India coverage |
+|---|---|---|---|
+| `osm` (default) | unlimited, no key | no | stadiums and larger grounds only |
+| `ola` | 100,000 events/month | **no** | built for India; good on local turf and businesses |
+| `google` | 5,000 Text Search Pro calls/month | **yes**, even inside the free tier | best |
+| `none` | — | — | GoFindr's own grounds only |
+
+For a beta, `ola` is the one to use: a free key, no billing account, and nothing to go wrong with a
+card. Switch providers by changing one env var; no code or data changes.
+
+Whichever you pick, `./scripts/places-check.sh "howzzat"` prints what that provider finds, and never
+prints the key.
+
+## Ola Maps (free, no card)
+
+1. Sign up at <https://maps.olakrutrim.com/> and create a project.
+2. Create an API key for the **Places** APIs.
+3. Put it in `backend/.env` — which git ignores. Paste it there yourself, never into a chat, a commit
+   or a screenshot:
+   ```
+   PLACES_PROVIDER=ola
+   PLACES_API_KEY=…the key…
+   PLACES_COUNTRY=in
+   ```
+4. Restart the API, then `./scripts/places-check.sh "howzzat"`.
+
+Each search is one Autocomplete call. Predictions that arrive without coordinates cost one extra
+Place Details call each (at most five per search), because a ground with no location can't be used as
+a match venue; answers are cached for `PLACES_CACHE_HOURS`, so repeats are free. Ola moved to prepaid
+credits in September 2026, but no balance is needed while usage stays inside the free allowance.
+
+If `PLACES_API_KEY` is missing the server logs `places.ola_key_missing` and keeps using
+OpenStreetMap, so a bad deploy degrades instead of breaking search.
+
+## Google Places (better coverage, needs billing)
 
 The code is already written and tested. Only the key and one env var are missing, and the key has to
 be created by the account owner — it is tied to billing, so nobody else should make it.
 
-## 1. Create the key (about five minutes, in the Google Cloud console)
+### 1. Create the key (about five minutes, in the Google Cloud console)
 
 1. Open <https://console.cloud.google.com/> and create a project, e.g. **GoFindr Maps**.
 2. **Billing → Link a billing account.** Places API (New) refuses requests without one, even inside
@@ -22,7 +58,7 @@ be created by the account owner — it is tied to billing, so nobody else should
    - Set a quota: **APIs & Services → Places API (New) → Quotas** → a daily cap you're happy to pay.
      This is Google's own ceiling and is independent of GoFindr's `PLACES_DAILY_BUDGET`.
 
-## 2. Give GoFindr the key
+### 2. Give GoFindr the key
 
 The key is a secret: it belongs in `backend/.env`, which git ignores. Paste it there yourself — not
 into a chat, a commit, a screenshot or a log.
@@ -37,7 +73,7 @@ PLACES_DAILY_BUDGET=500
 Restart the API. If `PLACES_API_KEY` is missing, the server logs `places.google_key_missing` and
 keeps using OpenStreetMap rather than failing, so a bad deploy degrades instead of breaking search.
 
-## 3. Check it works
+### 3. Check it works
 
 ```
 ./scripts/places-check.sh "howzzat"      # prints the grounds found, never the key
@@ -46,7 +82,7 @@ keeps using OpenStreetMap rather than failing, so a bad deploy degrades instead 
 Then in the app: **Create a match → Venue**, search a ground that isn't seeded. It should appear
 under "From the map"; picking it stores it as a GoFindr ground.
 
-## What it costs
+### What Google costs
 
 | | |
 |---|---|

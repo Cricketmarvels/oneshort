@@ -14,7 +14,7 @@ import pytest
 from bson import ObjectId
 
 from app.core.container import Container
-from app.infrastructure.integrations.places import GooglePlaces, Place
+from app.infrastructure.integrations.places import GooglePlaces, OlaPlaces, Place, split_address
 from tests.api.test_competition import SECTOR_18, player
 
 API = "/api/v1"
@@ -203,3 +203,84 @@ async def test_a_paid_provider_stops_at_the_daily_budget(
     for n in names:
         assert (await client.get(f"{API}/venues", params={"q": n}, headers=me.h)).status_code == 200
     assert paid.calls == 2  # the third and fourth searches fall back to our own grounds, quietly
+
+
+# ------------------------------------------------------------------ Ola Maps adapter
+OLA_WITH_COORDS = {
+    "status": "OK",
+    "predictions": [
+        {
+            "place_id": "ola-platform:123",
+            "description": "Howzzat Box Cricket, Sector 62, Noida, Uttar Pradesh 201301, India",
+            "structured_formatting": {
+                "main_text": "Howzzat Box Cricket",
+                "secondary_text": "Sector 62, Noida, Uttar Pradesh 201301, India",
+            },
+            "geometry": {"location": {"lat": 28.627, "lng": 77.381}},
+        }
+    ],
+}
+OLA_WITHOUT_COORDS = {
+    "status": "OK",
+    "predictions": [{"place_id": "ola-platform:456", "description": "Dugout Turf, Sector 76, Noida, India"}],
+}
+OLA_DETAILS = {
+    "status": "OK",
+    "result": {"name": "Dugout Turf", "geometry": {"location": {"lat": 28.5655, "lng": 77.386}}},
+}
+
+
+def _ola(routes: dict[str, Mapping[str, Any]], seen: dict[str, Any]) -> OlaPlaces:
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.setdefault("paths", []).append(request.url.path)
+        seen["params"] = dict(request.url.params)
+        for path, reply in routes.items():
+            if request.url.path.endswith(path):
+                return httpx.Response(200, json=dict(reply))
+        return httpx.Response(404, json={})
+
+    return OlaPlaces("test-key", transport=httpx.MockTransport(handler))
+
+
+async def test_ola_reads_a_prediction_that_carries_its_own_coordinates() -> None:
+    seen: dict[str, Any] = {}
+    found = await _ola({"/autocomplete": OLA_WITH_COORDS}, seen).search("Howzzat", 28.5794, 77.3374, "in")
+
+    assert seen["paths"] == ["/places/v1/autocomplete"]  # no details call was needed
+    assert seen["params"]["input"] == "Howzzat" and seen["params"]["location"] == "28.5794,77.3374"
+    assert len(found) == 1
+    p = found[0]
+    assert (p.name, p.area, p.city) == ("Howzzat Box Cricket", "Sector 62", "Noida")
+    assert (p.source, p.place_id) == ("ola", "ola:ola-platform:123")
+    assert (round(p.lat, 3), round(p.lng, 3)) == (28.627, 77.381)
+
+
+async def test_ola_completes_a_prediction_that_has_no_coordinates() -> None:
+    seen: dict[str, Any] = {}
+    found = await _ola({"/autocomplete": OLA_WITHOUT_COORDS, "/details": OLA_DETAILS}, seen).search(
+        "Dugout", None, None, "in"
+    )
+
+    assert seen["paths"] == ["/places/v1/autocomplete", "/places/v1/details"]
+    assert "location" not in seen["params"]
+    assert len(found) == 1
+    p = found[0]
+    assert (p.name, p.area, p.city) == ("Dugout Turf", "Sector 76", "Noida")
+    assert (round(p.lat, 3), round(p.lng, 3)) == (28.566, 77.386)
+
+
+async def test_ola_drops_a_suggestion_it_cannot_place_on_a_map() -> None:
+    """A ground with no coordinates can't become a match venue, so it is left out rather than half-shown."""
+    seen: dict[str, Any] = {}
+    found = await _ola({"/autocomplete": OLA_WITHOUT_COORDS, "/details": {"status": "OK", "result": {}}}, seen).search(
+        "Dugout", None, None, "in"
+    )
+    assert found == []
+
+
+def test_indian_addresses_split_into_an_area_and_a_city() -> None:
+    assert split_address("Mahadevpura, Bengaluru, Karnataka 560048, India") == ("Mahadevpura", "Bengaluru")
+    assert split_address("Sector 62, Noida, Uttar Pradesh 201301, India") == ("Sector 62", "Noida")
+    assert split_address("Koramangala, Bengaluru, Karnataka, India") == ("Koramangala", "Bengaluru")
+    assert split_address("Noida") == ("Noida", "Noida")
+    assert split_address("") == ("—", "—")

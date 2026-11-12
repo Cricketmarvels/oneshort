@@ -15,7 +15,7 @@ async def main(q: str) -> None:
     p = build_places_provider(s)
     print(f"provider: {p.name}  country: {s.places_country or 'world'}  billed: {p.billed}")
     if p.name == "google" and not s.places_api_key:
-        print("PLACES_API_KEY is not set — falling back to OpenStreetMap. See docs/GOOGLE_PLACES_SETUP.md")
+        print("PLACES_API_KEY is not set — falling back to OpenStreetMap. See docs/GROUND_SEARCH_SETUP.md")
     try:
         found = await p.search(q, 28.5794, 77.3374, s.places_country)
     except Exception as exc:
