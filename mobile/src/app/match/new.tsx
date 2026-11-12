@@ -5,17 +5,17 @@
 import type { S } from "@cm/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { Minus, Plus } from "lucide-react-native";
-import { useState } from "react";
+import { Check, MapPin, Minus, Plus } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, View } from "react-native";
 
 import { Stepper } from "@/components/identity";
 import { CalendarPicker, istToday, SelectField, TIMES, timeLabel } from "@/components/pickers";
-import { Button, Card, Chip, EmptyState, Field, InlineNotice, LoadingSkeleton, Txt } from "@/components/ui";
+import { Button, Card, Chip, EmptyState, Field, InlineNotice, LoadingSkeleton, SearchBar, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
 import { useManagedTeam } from "@/lib/hooks";
 import { useLocation } from "@/lib/location";
-import { SP, T } from "@/theme";
+import { R, SP, T } from "@/theme";
 
 type Venue = S<"VenueSearchOut">;
 type Format = S<"MatchFormat">;
@@ -47,12 +47,19 @@ export default function CreateMatch() {
   const [format, setFormat] = useState<Format>("T20");
   const [category, setCategory] = useState<Category>("friendly");
   const [squad, setSquad] = useState(11);
-  const [venueId, setVenueId] = useState<string | null>(null);
+  const [venue, setVenue] = useState<Venue | null>(null);
+  const [q, setQ] = useState("");
+  const [dq, setDq] = useState("");
   const [date, setDate] = useState(istToday(3));
   const [time, setTime] = useState("07:00");
   const [title, setTitle] = useState("");
-  const venues = useQuery({ queryKey: ["grounds", lat, lng, ""], queryFn: () => api<Venue[]>("/venues", { query: { lat, lng } }) });
-  const venue = venues.data?.find((v) => v.id === venueId) ?? null;
+  // Typing searches every ground by name, area or city; an empty box lists the ones nearest to you.
+  useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 300); return () => clearTimeout(t); }, [q]);
+  const venues = useQuery({
+    queryKey: ["grounds", dq, lat, lng],
+    queryFn: () => api<Venue[]>("/venues", { query: dq ? { q: dq } : { lat, lng } }),
+    placeholderData: (prev) => prev,
+  });
   const hours = FORMATS.find((f) => f.v === format)!.hours;
   const startIso = `${date}T${time}:00+05:30`;
   const create = useMutation({
@@ -92,13 +99,31 @@ export default function CreateMatch() {
             </Card>
           </View>
         ) : step === 1 ? (
-          <View style={{ gap: SP.lg }}>
+          <View style={{ gap: SP.md }}>
             <Txt v="h1">Select a venue</Txt>
-            {venues.isPending ? <LoadingSkeleton rows={3} /> : !venues.data?.length ? <EmptyState title="No grounds found nearby" body="Change your location from Home and try again." /> : (
-              <SelectField icon="place" placeholder="Choose a ground" value={venueId} onChange={setVenueId}
-                options={venues.data.map((v) => ({ v: v.id, l: v.name, sub: `${v.area}, ${v.city}${v.distance_km != null ? ` · ~${v.distance_km} km` : ""}` }))} />
+            <SearchBar value={q} onChange={setQ} placeholder="Search grounds by name or area" />
+            {venues.isPending ? <LoadingSkeleton rows={4} /> : !venues.data?.length ? (
+              <EmptyState title={dq ? `No ground matches "${dq}"` : "No grounds found nearby"}
+                body={dq ? "Try the area name, or clear the search to see grounds near you." : "Change your location from Home and try again."} />
+            ) : (
+              <View style={{ borderRadius: R.card, borderWidth: 1, borderColor: T.line, backgroundColor: T.surface, overflow: "hidden" }}>
+                {venues.data.map((v, i) => {
+                  const on = v.id === venue?.id;
+                  return (
+                    <Pressable key={v.id} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => setVenue(v)}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56, borderTopWidth: i ? 1 : 0, borderTopColor: T.line, backgroundColor: on ? T.primarySoft : T.surface }}>
+                      <MapPin size={18} color={on ? T.primaryDark : T.muted} strokeWidth={1.8} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Txt v="h3" color={on ? T.primaryDark : T.ink} numberOfLines={1}>{v.name}</Txt>
+                        <Txt v="small" color={T.muted} numberOfLines={1}>{v.area}, {v.city}{v.distance_km != null ? ` · ~${v.distance_km} km` : ""}</Txt>
+                      </View>
+                      {on ? <Check size={20} color={T.primary} strokeWidth={2.4} /> : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
             )}
-            <InlineNotice>GoFindr doesn't book grounds. Confirm the slot with the ground before inviting players.</InlineNotice>
+            <InlineNotice>GoFindr doesn't book grounds — confirm the slot with the ground first.</InlineNotice>
           </View>
         ) : step === 2 ? (
           <View style={{ gap: SP.lg }}>

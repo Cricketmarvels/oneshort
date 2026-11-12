@@ -8,14 +8,14 @@
 import { formatDateTime, type S } from "@cm/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { CheckCircle2, Circle, MapPin, ShieldCheck, Star } from "lucide-react-native";
+import { CheckCircle2, Circle, MapPin, Share2, ShieldCheck, Star } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, View } from "react-native";
 
 import { ChatButtons } from "@/components/invites";
 import { shareText, useInviteLink } from "@/components/regulars";
 import { FillBar, KickerChip, RadarSearch, RoleStepper, SectionHeader } from "@/components/refined";
-import { Avatar, Badge, Button, Chip, EmptyState, ErrorBox, InlineNotice, LoadingSkeleton, Txt } from "@/components/ui";
+import { Avatar, Badge, Button, Chip, EmptyState, ErrorBox, InlineNotice, LoadingSkeleton, Segmented, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
 import { roleLabel } from "@/lib/format";
 import { useLocation } from "@/lib/location";
@@ -27,11 +27,11 @@ type SearchOut = { data: Result[]; meta: S<"PlayerSearchMeta"> };
 type Invitation = S<"InvitationOut">;
 type Role = Result["primary_role"];
 
-const ROLES: { v: Role; l: string; hint: string }[] = [
-  { v: "batsman", l: "Batters", hint: "Top or middle order" },
-  { v: "bowler", l: "Bowlers", hint: "Pace or spin" },
-  { v: "all_rounder", l: "All-rounders", hint: "Bat and bowl" },
-  { v: "wicketkeeper", l: "Wicketkeeper", hint: "Behind the stumps" },
+const ROLES: { v: Role; l: string }[] = [
+  { v: "batsman", l: "Batters" },
+  { v: "bowler", l: "Bowlers" },
+  { v: "all_rounder", l: "All-rounders" },
+  { v: "wicketkeeper", l: "Wicketkeeper" },
 ];
 const WINDOWS = [
   { v: "morning", l: "Morning", sub: "7–11 AM", s: [7, 0], e: [11, 0] },
@@ -125,32 +125,26 @@ export default function FindPlayersRequest() {
           onInvite={() => invite.mutate()} inviting={invite.isPending} notice={notice} radius={radius} />
       ) : (
         <>
-          {mode === "match" && match ? <RegularsFirst matchId={match.id} /> : null}
-          <View style={{ gap: 6 }}>
-            <KickerChip label="CAPTAIN · PLAYER REQUEST" />
-            <Txt v="hero">Who do you need?</Txt>
-            <Txt v="body" color={T.muted}>We only show players whose availability covers your time, nearest and most reliable first.</Txt>
-          </View>
+          <Txt v="hero">Who do you need?</Txt>
 
           <View style={{ gap: SP.md }}>
             <SectionHeader title="When" />
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <Chip label="One of my matches" active={mode === "match"} onPress={() => setMode("match")} />
-              <Chip label="Pick a day & time" active={mode === "window"} onPress={() => setMode("window")} />
-            </View>
+            <Segmented value={mode} onChange={setMode} options={[{ v: "match" as const, l: "My matches" }, { v: "window" as const, l: "Day & time" }]} />
             {mode === "match" ? (
               matches.isPending ? <LoadingSkeleton rows={2} /> : !open.length ? (
-                <EmptyState title="No open matches yet" body="Create a match to invite players into it, or search a day and time first." action="Create match" onAction={() => router.push("/match/new")} />
+                <EmptyState title="No open matches yet" body="Create a match first, or search by day and time." action="Create match" onAction={() => router.push("/match/new")} />
               ) : (
-                <View style={{ gap: 8 }}>
-                  {open.map((m) => {
+                <View style={{ borderRadius: R.card, borderWidth: 1, borderColor: T.line, backgroundColor: T.surface, overflow: "hidden" }}>
+                  {open.map((m, i) => {
                     const on = m.id === matchId;
                     return (
                       <Pressable key={m.id} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => setMatchId(m.id)}
-                        style={{ padding: 14, borderRadius: R.card, borderWidth: on ? 1.5 : 1, borderColor: on ? T.primary : T.line, backgroundColor: on ? T.primarySoft : T.surface, gap: 4 }}>
-                        <Txt v="h3" color={on ? T.primaryDark : T.ink} numberOfLines={1}>{m.title}</Txt>
-                        <Txt v="small" color={T.muted} numberOfLines={1}>{formatDateTime(m.start_at, m.timezone)} · {m.venue.name}</Txt>
-                        <Txt v="small" color={T.muted}>{m.composition.confirmed_total} / {m.composition.capacity} in squad · {m.composition.vacancies} open</Txt>
+                        style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56, borderTopWidth: i ? 1 : 0, borderTopColor: T.line, backgroundColor: on ? T.primarySoft : T.surface }}>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Txt v="h3" color={on ? T.primaryDark : T.ink} numberOfLines={1}>{m.venue.name}</Txt>
+                          <Txt v="small" color={T.muted} numberOfLines={1}>{formatDateTime(m.start_at, m.timezone)} · {m.composition.vacancies} open</Txt>
+                        </View>
+                        {on ? <CheckCircle2 size={20} color={T.primary} /> : <Circle size={20} color={T.line} />}
                       </Pressable>
                     );
                   })}
@@ -178,29 +172,28 @@ export default function FindPlayersRequest() {
             )}
           </View>
 
-          <View style={{ gap: 4 }}>
-            <SectionHeader title="Roles needed" />
+          <View style={{ gap: SP.md }}>
+            <SectionHeader title="How many" />
             <View style={{ backgroundColor: T.surface, borderRadius: R.card, borderWidth: 1, borderColor: T.line, paddingHorizontal: 16, paddingVertical: 4 }}>
               {ROLES.map((r, i) => (
                 <View key={r.v} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: T.line }}>
-                  <RoleStepper label={r.l} hint={r.hint} value={counts[r.v]} onChange={(n) => setCounts({ ...counts, [r.v]: n })} />
+                  <RoleStepper label={r.l} value={counts[r.v]} onChange={(n) => setCounts({ ...counts, [r.v]: n })} />
                 </View>
               ))}
             </View>
-            <Txt v="small" color={T.muted} style={{ marginTop: 4 }}>{total ? `${total} player${total === 1 ? "" : "s"} needed` : "Leave all at 0 to see every available player"}</Txt>
           </View>
 
           <View style={{ gap: SP.md }}>
-            <SectionHeader title="Distance & rating" />
-            <View style={{ flexDirection: "row", gap: 8 }}>{RADII.map((r) => <Chip key={r} label={`${r} km`} active={radius === r} onPress={() => setRadius(r)} />)}</View>
+            <SectionHeader title="Within" />
             <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-              {([null, 3, 4] as const).map((r) => <Chip key={String(r)} label={r ? `${r}+ stars` : "Any rating"} active={minRating === r} onPress={() => setMinRating(r)} />)}
+              {RADII.map((r) => <Chip key={r} label={`${r} km`} active={radius === r} onPress={() => setRadius(r)} />)}
+              {([null, 4] as const).map((r) => <Chip key={String(r)} label={r ? `${r}+ stars` : "Any rating"} active={minRating === r} onPress={() => setMinRating(r)} />)}
             </View>
-            <Txt v="small" color={T.muted}>Rating filters hide players who haven't been rated yet.</Txt>
           </View>
 
           {err ? <ErrorBox error={err} onRetry={() => void search()} /> : null}
-          <Button title="Search available players" size="lg" disabled={mode === "match" && !match} onPress={() => void search()} />
+          <Button title={total ? `Find ${total} player${total === 1 ? "" : "s"}` : "Find available players"} size="lg" disabled={mode === "match" && !match} onPress={() => void search()} />
+          {mode === "match" && match ? <RegularsFirst matchId={match.id} /> : null}
         </>
       )}
 
@@ -343,14 +336,16 @@ function RequestBoard({ match }: { match: Match }) {
   );
 }
 
-/** Nudge: share the squad link with regulars before searching strangers. */
+/** Nudge: share the squad link with regulars before searching strangers. One line, one tap. */
 function RegularsFirst({ matchId }: { matchId: string }) {
   const l = useInviteLink(matchId);
+  if (!l.data) return null;
   return (
-    <View style={{ gap: 8, padding: 14, borderRadius: R.card, backgroundColor: T.primarySoft }}>
-      <Txt v="h3">Asked your regulars yet?</Txt>
-      <Txt v="small" color={T.muted}>Share the squad link in your WhatsApp group first — regulars add themselves. Then search for the spots that are left.{l.data?.joined.length ? ` ${l.data.joined.length} joined via link so far.` : ""}</Txt>
-      {l.data ? <Button title="Share squad link on WhatsApp" size="sm" onPress={() => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(shareText(l.data!))}`)} /> : null}
-    </View>
+    <Pressable accessibilityRole="button" accessibilityLabel="Share the squad link with your regulars on WhatsApp"
+      onPress={() => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(shareText(l.data!))}`)}
+      style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderRadius: R.card, backgroundColor: T.primarySoft }}>
+      <Share2 size={18} color={T.primaryDark} strokeWidth={2} />
+      <Txt v="smallSemi" color={T.primaryDark} style={{ flex: 1 }}>Ask your regulars first — share the squad link</Txt>
+    </Pressable>
   );
 }
