@@ -39,7 +39,7 @@ describe("Field", () => {
 
 const baseInv: Invitation = {
   id: "i1", direction: "invite", invitation_status: "pending", contribution_type: "non_payee", proposed_role: "bowler",
-  message: "Need a seamer", is_substitute: false,
+  message: "Need a seamer", is_substitute: false, commitment: "confirmed", commitment_note: null,
   player: { id: "p1", full_name: "Arjun Rao", profile_image: null, city: "Bengaluru" },
   captain: { id: "c1", full_name: "Rahul Menon", profile_image: null, city: "Bengaluru" },
   match: { id: "m1", match_code: "CM-ABC123", title: "Sunday T20", team_name: "Koramangala Kings", team_logo: null,

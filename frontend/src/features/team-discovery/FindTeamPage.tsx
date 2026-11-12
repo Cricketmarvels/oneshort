@@ -117,7 +117,7 @@ function OpportunityCard({ o, onJoin }: { o: S<"OpportunityOut">; onJoin: () => 
 function JoinSheet({ o, defaultRole, onClose }: { o: S<"OpportunityOut">; defaultRole: PlayingRole | null; onClose: () => void }) {
   const [role, setRole] = useState<PlayingRole | null>(defaultRole);
   const [msg, setMsg] = useState("");
-  const join = useAction(() => matches.joinRequest(o.match_id, { proposed_role: role, message: msg || null }), {
+  const join = useAction(() => matches.joinRequest(o.match_id, { commitment: "confirmed", proposed_role: role, message: msg || null }), {
     invalidate: [["discovery"], ["invitations"]], success: "Request sent! The captain has been notified.", onSuccess: onClose,
   });
   return (

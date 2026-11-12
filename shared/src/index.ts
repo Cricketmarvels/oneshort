@@ -133,14 +133,27 @@ export function formatDay(iso: string, tz?: string): string {
 export function timeRange(startIso: string, endIso: string, tz?: string): string {
   return `${formatTime(startIso, tz)} – ${formatTime(endIso, tz)}`;
 }
+/**
+ * "in 3 hours" / "2 days ago". Hermes on Android ships without `Intl.RelativeTimeFormat`, so the
+ * plain-English fallback below is what phones actually use; browsers and Node keep the real thing.
+ */
+function relativeFallback(value: number, unit: "second" | "minute" | "hour" | "day"): string {
+  const n = Math.abs(value);
+  if (unit === "second" && n < 5) return "just now";
+  const noun = n === 1 ? unit : `${unit}s`;
+  return value < 0 ? `${n} ${noun} ago` : `in ${n} ${noun}`;
+}
+
 export function relativeTime(iso: string, now = Date.now()): string {
   const diff = (new Date(iso).getTime() - now) / 1000;
   const abs = Math.abs(diff);
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  if (abs < 60) return rtf.format(Math.round(diff), "second");
-  if (abs < 3600) return rtf.format(Math.round(diff / 60), "minute");
-  if (abs < 86400) return rtf.format(Math.round(diff / 3600), "hour");
-  return rtf.format(Math.round(diff / 86400), "day");
+  const RTF = (Intl as { RelativeTimeFormat?: typeof Intl.RelativeTimeFormat }).RelativeTimeFormat;
+  const native = RTF ? new RTF("en", { numeric: "auto" }) : null;
+  const fmt = native ? (v: number, u: "second" | "minute" | "hour" | "day") => native.format(v, u) : relativeFallback;
+  if (abs < 60) return fmt(Math.round(diff), "second");
+  if (abs < 3600) return fmt(Math.round(diff / 60), "minute");
+  if (abs < 86400) return fmt(Math.round(diff / 3600), "hour");
+  return fmt(Math.round(diff / 86400), "day");
 }
 
 // ------------------------------------------------------------------ validation (shared regexes)
