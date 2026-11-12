@@ -22865,6 +22865,113 @@
         }
       }
     },
+    "/api/v1/venues/resolve": {
+      "post": {
+        "tags": [
+          "Venues"
+        ],
+        "summary": "Save a picked map place as a venue",
+        "description": "Turn a suggestion into a real GoFindr ground, reusing it if this place is already known.\n\nCalled when a captain picks a map result, so a ground enters the database once it is actually used \u2014\nand the next captain searching the same area finds it without a provider call.",
+        "operationId": "resolve_venue_api_v1_venues_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_VenueSearchOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/dashboard": {
       "get": {
         "tags": [
@@ -26936,6 +27043,7 @@
       "Envelope_Union_RacketProfileOut__NoneType__": {},
       "Envelope_UploadOut_": {},
       "Envelope_UserOut_": {},
+      "Envelope_VenueSearchOut_": {},
       "Envelope_WhatsAppTestOut_": {},
       "Envelope_dict_str__Any__": {},
       "Envelope_list_AdminPrivacyRequestOut__": {},
@@ -30208,6 +30316,74 @@
           "disputed"
         ],
         "title": "PaymentStatus"
+      },
+      "PlaceIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Address",
+            "default": ""
+          },
+          "area": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Area"
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "City"
+          },
+          "lat": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Lng"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Source",
+            "default": "osm"
+          },
+          "place_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "area",
+          "city",
+          "lat",
+          "lng"
+        ],
+        "title": "PlaceIn",
+        "description": "A suggestion the captain picked, echoed back from a search result."
       },
       "PlayRequestIn": {
         "properties": {
@@ -36878,8 +37054,16 @@
       "VenueSearchOut": {
         "properties": {
           "id": {
-            "type": "string",
-            "title": "Id"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "GoFindr venue id; null for a map suggestion not yet saved"
           },
           "name": {
             "type": "string",
@@ -36915,11 +37099,28 @@
               }
             ],
             "title": "Distance Km"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "gofindr (a ground we know) | osm | google",
+            "default": "gofindr"
+          },
+          "place_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place Id",
+            "description": "Provider key; pass it back to /venues/resolve"
           }
         },
         "type": "object",
         "required": [
-          "id",
           "name",
           "address",
           "area",

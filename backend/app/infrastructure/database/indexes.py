@@ -264,7 +264,11 @@ INDEXES: dict[str, list[IndexModel]] = {
     "venues": [
         IndexModel([("location", GEOSPHERE)]),
         IndexModel([("name", TEXT), ("area", TEXT)], name="venue_text"),
+        # A map place becomes one GoFindr venue however many captains pick it.
+        IndexModel([("place_id", ASCENDING)], unique=True, sparse=True, name="venue_place"),
     ],
+    # Map-provider answers, reused for a day so typing doesn't hammer a free geocoder.
+    "places_cache": [IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0)],
     # Unified search (app/modules/search): prefix lookups are index seeks on (type, tokens) ordered by boost;
     # phonetic is the spelling-variant fallback; loc supports future geo-filtered search.
     "search_index": [

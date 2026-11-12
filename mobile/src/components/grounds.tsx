@@ -25,6 +25,9 @@ import { ICON, R, SP, T } from "@/theme";
 
 type Ground = S<"VenueSearchOut">;
 
+/** A ground GoFindr knows has an id; a map suggestion only has a provider key. Either identifies the row. */
+const gid = (g: Ground) => g.id ?? g.place_id ?? g.name;
+
 /** Venue card: name, type · ~km, area. Price is never shown — no venue supplies one — so the CTA is "Contact venue". */
 function GroundCard({ g, onPress, selected }: { g: Ground; onPress: () => void; selected?: boolean }) {
   return (
@@ -52,9 +55,9 @@ export function FindGrounds() {
   const params = useLocalSearchParams<{ focus?: string; name?: string; address?: string; area?: string; city?: string; lat?: string; lng?: string }>();
   useEffect(() => {
     if (!params.focus || !params.name) return;
-    const fromList = res.data?.find((g) => g.id === params.focus);
-    const g: Ground = fromList ?? { id: params.focus, name: params.name, address: params.address ?? "", area: params.area ?? "", city: params.city ?? "", lat: Number(params.lat) || 0, lng: Number(params.lng) || 0, distance_km: null };
-    setFocus(g); setPicked(g.id); setView("list");
+    const fromList = res.data?.find((g) => gid(g) === params.focus);
+    const g: Ground = fromList ?? { id: params.focus, name: params.name, address: params.address ?? "", area: params.area ?? "", city: params.city ?? "", lat: Number(params.lat) || 0, lng: Number(params.lng) || 0, distance_km: null, source: "gofindr" };
+    setFocus(g); setPicked(gid(g)); setView("list");
     const t = setTimeout(() => detail.current?.present(), 250);
     return () => clearTimeout(t);
   }, [params.focus, params.name, params.address, params.area, params.city, params.lat, params.lng, res.data]);
@@ -74,10 +77,10 @@ export function FindGrounds() {
         <View style={{ gap: 10 }}>
           {view === "map" ? (
             <MapPreview center={{ lat, lng }} radiusKm={50} selected={picked} onSelect={setPicked}
-              pins={res.data.slice(0, 25).map((g) => ({ id: g.id, lat: g.lat, lng: g.lng, label: `${g.name}, ~${g.distance_km ?? "?"} km` }))} />
+              pins={res.data.slice(0, 25).map((g) => ({ id: gid(g), lat: g.lat, lng: g.lng, label: `${g.name}, ~${g.distance_km ?? "?"} km` }))} />
           ) : null}
-          {(view === "map" && picked ? [...res.data.filter((g) => g.id === picked), ...res.data.filter((g) => g.id !== picked)] : res.data).slice(0, view === "map" ? 6 : undefined).map((g) => (
-            <GroundCard key={g.id} g={g} selected={g.id === picked} onPress={() => { setPicked(g.id); setFocus(g); detail.current?.present(); }} />
+          {(view === "map" && picked ? [...res.data.filter((g) => gid(g) === picked), ...res.data.filter((g) => gid(g) !== picked)] : res.data).slice(0, view === "map" ? 6 : undefined).map((g) => (
+            <GroundCard key={gid(g)} g={g} selected={gid(g) === picked} onPress={() => { setPicked(gid(g)); setFocus(g); detail.current?.present(); }} />
           ))}
           {view === "map" && n > 6 ? <Button title={`Show all ${n} grounds`} variant="secondary" onPress={() => setView("list")} /> : null}
         </View>

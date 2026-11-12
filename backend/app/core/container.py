@@ -12,6 +12,7 @@ from app.infrastructure.database.mongo import Mongo
 from app.infrastructure.integrations.ai import AIAssistant, build_ai_assistant
 from app.infrastructure.integrations.cricheroes import CricHeroesSource, build_cricheroes_source
 from app.infrastructure.integrations.email import DisabledEmailSender, EmailSender, build_email_sender
+from app.infrastructure.integrations.places import PlacesProvider, build_places_provider
 from app.infrastructure.integrations.push import PushProvider, build_push_provider
 from app.infrastructure.integrations.sms import OtpSender, build_otp_sender
 from app.infrastructure.integrations.storage import StorageProvider, build_storage
@@ -31,6 +32,7 @@ class Container:
     hub: RealtimeHub
     ai: AIAssistant
     cricheroes: CricHeroesSource
+    places: PlacesProvider
     whatsapp: WhatsAppSender = field(default_factory=lambda: DisabledWhatsApp())
     email: EmailSender = field(default_factory=lambda: DisabledEmailSender())
     limiter: InMemoryRateLimiter | MongoRateLimiter = field(default_factory=InMemoryRateLimiter)
@@ -57,6 +59,7 @@ def build_container(settings: Settings) -> Container:
         mongo=mongo,
         otp_sender=build_otp_sender(settings),
         push=build_push_provider(settings),
+        places=build_places_provider(settings),
         storage=build_storage(settings),
         hub=InProcessHub(),
         ai=build_ai_assistant(settings),

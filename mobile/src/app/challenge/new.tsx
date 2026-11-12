@@ -36,7 +36,10 @@ export default function NewChallenge() {
   const venues = useQuery({ queryKey: ["venues", lat, lng], queryFn: () => api<S<"VenueSearchOut">[]>("/venues", { query: { lat, lng } }) });
   const set = (patch: Partial<typeof proposal>) => setProposal({ ...proposal, ...patch });
   const step = !proposal.venue ? 2 : 3;
-  const venueId = venues.data?.find((v) => v.name === proposal.venue?.name)?.id ?? null;
+  // A ground GoFindr knows has an id; a map suggestion only has a provider key. Either identifies the row.
+  const venueKey = (v: S<"VenueSearchOut">) => v.id ?? v.place_id ?? v.name;
+  const chosen = venues.data?.find((v) => v.name === proposal.venue?.name);
+  const venueId = chosen ? venueKey(chosen) : null;
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
       <Stack.Screen options={{ title: "Challenge a team", headerTitleAlign: "center" }} />
@@ -71,8 +74,8 @@ export default function NewChallenge() {
         </View>
         <View style={{ gap: SP.md }}>
           <Txt v="h2">Venue</Txt>
-          <SelectField icon="place" placeholder="Choose a ground" value={venueId} onChange={(vid) => { const v = venues.data!.find((x) => x.id === vid)!; set({ venue: { name: v.name, area: v.area, city: v.city, location: { lat: v.lat, lng: v.lng } } }); }}
-            options={(venues.data ?? []).map((v) => ({ v: v.id, l: v.name, sub: `${v.area}${v.distance_km != null ? ` · ~${v.distance_km} km` : ""}` }))} />
+          <SelectField icon="place" placeholder="Choose a ground" value={venueId} onChange={(vid) => { const v = venues.data!.find((x) => venueKey(x) === vid)!; set({ venue: { name: v.name, area: v.area, city: v.city, location: { lat: v.lat, lng: v.lng } } }); }}
+            options={(venues.data ?? []).map((v) => ({ v: venueKey(v), l: v.name, sub: `${v.area}${v.distance_km != null ? ` · ~${v.distance_km} km` : ""}` }))} />
         </View>
         <Field label="Match conditions (optional)" value={proposal.conditions} onChangeText={(c) => set({ conditions: c })} placeholder="Ball type, ground fee split, umpires…" />
         <Field label="Message to their captain (optional)" value={message} onChangeText={setMessage} placeholder="Fancy a game?" maxLength={200} />

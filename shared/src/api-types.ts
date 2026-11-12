@@ -2955,6 +2955,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/venues/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save a picked map place as a venue
+         * @description Turn a suggestion into a real GoFindr ground, reusing it if this place is already known.
+         *
+         *     Called when a captain picks a map result, so a ground enters the database once it is actually used —
+         *     and the next captain searching the same area finds it without a provider call.
+         */
+        post: operations["resolve_venue_api_v1_venues_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dashboard": {
         parameters: {
             query?: never;
@@ -4400,6 +4423,7 @@ export interface components {
         Envelope_Union_RacketProfileOut__NoneType__: unknown;
         Envelope_UploadOut_: unknown;
         Envelope_UserOut_: unknown;
+        Envelope_VenueSearchOut_: unknown;
         Envelope_WhatsAppTestOut_: unknown;
         Envelope_dict_str__Any__: unknown;
         Envelope_list_AdminPrivacyRequestOut__: unknown;
@@ -5558,6 +5582,34 @@ export interface components {
          * @enum {string}
          */
         PaymentStatus: "pending" | "paid" | "exempted" | "disputed";
+        /**
+         * PlaceIn
+         * @description A suggestion the captain picked, echoed back from a search result.
+         */
+        PlaceIn: {
+            /** Name */
+            name: string;
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /** Area */
+            area: string;
+            /** City */
+            city: string;
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+            /**
+             * Source
+             * @default osm
+             */
+            source: string;
+            /** Place Id */
+            place_id?: string | null;
+        };
         /** PlayRequestIn */
         PlayRequestIn: {
             /** To User Id */
@@ -7672,8 +7724,11 @@ export interface components {
         };
         /** VenueSearchOut */
         VenueSearchOut: {
-            /** Id */
-            id: string;
+            /**
+             * Id
+             * @description GoFindr venue id; null for a map suggestion not yet saved
+             */
+            id?: string | null;
             /** Name */
             name: string;
             /** Address */
@@ -7688,6 +7743,17 @@ export interface components {
             lng: number;
             /** Distance Km */
             distance_km?: number | null;
+            /**
+             * Source
+             * @description gofindr (a ground we know) | osm | google
+             * @default gofindr
+             */
+            source: string;
+            /**
+             * Place Id
+             * @description Provider key; pass it back to /venues/resolve
+             */
+            place_id?: string | null;
         };
         /** VerifyOtpIn */
         VerifyOtpIn: {
@@ -24695,6 +24761,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Envelope_list_VenueSearchOut__"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    resolve_venue_api_v1_venues_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_VenueSearchOut_"];
                 };
             };
             /** @description Bad request */

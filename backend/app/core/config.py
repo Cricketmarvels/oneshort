@@ -107,6 +107,13 @@ class Settings(BaseSettings):
     whatsapp_meta_waba_id: str | None = None  # WhatsApp Business Account id — only for scripts.whatsapp_meta_setup
     app_base_url: str | None = Field(default=None, description="Where the GoFindr app is served, for links in messages")
 
+    # Ground search (GET /venues). "osm" is free and needs no account; "google" is the Maps data but is
+    # billed per request and needs a key — see app/infrastructure/integrations/places.py.
+    places_provider: Literal["osm", "google", "none"] = "osm"
+    places_api_key: str | None = None
+    places_country: str = Field(default="in", description="ISO-3166 alpha-2 filter for place suggestions; '' = world")
+    places_cache_hours: int = Field(default=24, ge=0, le=720, description="How long a provider answer is reused")
+
     # Rate limiting (requests per minute)
     rate_limit_auth_per_minute: int = 10
     rate_limit_default_per_minute: int = 240

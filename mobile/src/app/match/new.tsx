@@ -7,7 +7,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Check, MapPin, Minus, Plus } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
 
 import { Stepper } from "@/components/identity";
 import { CalendarPicker, istToday, SelectField, TIMES, timeLabel } from "@/components/pickers";
@@ -50,16 +50,32 @@ export default function CreateMatch() {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [q, setQ] = useState("");
   const [dq, setDq] = useState("");
+  const [saving, setSaving] = useState(false);
   const [date, setDate] = useState(istToday(3));
   const [time, setTime] = useState("07:00");
   const [title, setTitle] = useState("");
-  // Typing searches every ground by name, area or city; an empty box lists the ones nearest to you.
+  // Typing searches every ground by name, area or city, plus map suggestions; empty lists the nearest ones.
   useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 300); return () => clearTimeout(t); }, [q]);
   const venues = useQuery({
     queryKey: ["grounds", dq, lat, lng],
-    queryFn: () => api<Venue[]>("/venues", { query: dq ? { q: dq } : { lat, lng } }),
+    queryFn: () => api<Venue[]>("/venues", { query: { lat, lng, q: dq || undefined } }),
     placeholderData: (prev) => prev,
   });
+  // A map suggestion has no id until somebody uses it; picking one stores it as a GoFindr ground.
+  const pick = async (v: Venue) => {
+    setVenue(v);
+    if (v.id) return;
+    setSaving(true);
+    try {
+      setVenue(await api<Venue>("/venues/resolve", { method: "POST", body: { name: v.name, address: v.address, area: v.area, city: v.city, lat: v.lat, lng: v.lng, source: v.source, place_id: v.place_id } }));
+    } catch (e) {
+      setVenue(null);
+      Alert.alert("Couldn't use that ground", errorText(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+  const isPicked = (v: Venue) => !!venue && (v.place_id ? venue.place_id === v.place_id : !!v.id && venue.id === v.id);
   const hours = FORMATS.find((f) => f.v === format)!.hours;
   const startIso = `${date}T${time}:00+05:30`;
   const create = useMutation({
@@ -79,7 +95,7 @@ export default function CreateMatch() {
   });
 
   if (!teamId) return <View style={{ flex: 1, backgroundColor: T.bg, padding: SP.page }}><EmptyState title="Create a team first" body="Matches are organised by a team captain." action="Create a team" onAction={() => router.replace("/team/new")} /></View>;
-  const canNext = step === 0 ? true : step === 1 ? !!venue : step === 2 ? !!date && !!time : true;
+  const canNext = step === 0 ? true : step === 1 ? !!venue?.id : step === 2 ? !!date && !!time : true;
   const nextLabel = ["Next: Venue", "Next: Date & time", "Next: Review", "Create match"][step]!;
 
   return (
@@ -108,17 +124,26 @@ export default function CreateMatch() {
             ) : (
               <View style={{ borderRadius: R.card, borderWidth: 1, borderColor: T.line, backgroundColor: T.surface, overflow: "hidden" }}>
                 {venues.data.map((v, i) => {
-                  const on = v.id === venue?.id;
+                  const on = isPicked(v);
+                  const fromMap = v.source !== "gofindr";
+                  const first = fromMap && (i === 0 || venues.data![i - 1]?.source === "gofindr");
                   return (
-                    <Pressable key={v.id} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => setVenue(v)}
-                      style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56, borderTopWidth: i ? 1 : 0, borderTopColor: T.line, backgroundColor: on ? T.primarySoft : T.surface }}>
-                      <MapPin size={18} color={on ? T.primaryDark : T.muted} strokeWidth={1.8} />
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Txt v="h3" color={on ? T.primaryDark : T.ink} numberOfLines={1}>{v.name}</Txt>
-                        <Txt v="small" color={T.muted} numberOfLines={1}>{v.area}, {v.city}{v.distance_km != null ? ` · ~${v.distance_km} km` : ""}</Txt>
-                      </View>
-                      {on ? <Check size={20} color={T.primary} strokeWidth={2.4} /> : null}
-                    </Pressable>
+                    <View key={v.place_id ?? v.id ?? v.name}>
+                      {first ? (
+                        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 }}>
+                          <Txt v="small" color={T.muted}>From the map</Txt>
+                        </View>
+                      ) : null}
+                      <Pressable accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => void pick(v)}
+                        style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56, borderTopWidth: i && !first ? 1 : 0, borderTopColor: T.line, backgroundColor: on ? T.primarySoft : T.surface }}>
+                        <MapPin size={18} color={on ? T.primaryDark : fromMap ? T.faint : T.muted} strokeWidth={1.8} />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Txt v="h3" color={on ? T.primaryDark : T.ink} numberOfLines={1}>{v.name}</Txt>
+                          <Txt v="small" color={T.muted} numberOfLines={1}>{v.area}, {v.city}{v.distance_km != null ? ` · ~${v.distance_km} km` : ""}</Txt>
+                        </View>
+                        {on && saving ? <ActivityIndicator size="small" color={T.primary} /> : on ? <Check size={20} color={T.primary} strokeWidth={2.4} /> : null}
+                      </Pressable>
+                    </View>
                   );
                 })}
               </View>
