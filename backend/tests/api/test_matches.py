@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Any
 
 import httpx
 
@@ -139,3 +140,57 @@ async def test_match_history_lists(client: httpx.AsyncClient) -> None:
     assert any(m["id"] == match["id"] for m in mine["data"])
     cap = (await client.get(f"{API}/matches?role=captain", headers=captain.h)).json()
     assert cap["meta"]["total"] >= 1
+
+
+async def test_cancelling_one_of_this_weeks_matches_clears_it_from_the_dashboard(
+    client: httpx.AsyncClient,
+) -> None:
+    """The captain's use case: two matches this week, one called off.
+
+    What the dashboard reads is `role=captain&when=upcoming`, so the cancelled match has to leave that list
+    while staying visible under past matches — the squad, the fee ledger and the reason are history, not litter.
+    """
+    from tests.api.test_competition import SECTOR_18, player, team
+
+    cap = await player(client, "Weekly Captain", "all_rounder", SECTOR_18)
+    squad_member = await player(client, "Weekly Player", "bowler", SECTOR_18)
+    tid = await team(client, cap, "Weekly XI", SECTOR_18, [])
+    sat_start = future(2, 7)
+    saturday = (await make_match(client, cap, tid, start=sat_start, at=SECTOR_18, capacity=11))["id"]
+    sunday = (await make_match(client, cap, tid, start=future(3, 7), at=SECTOR_18, capacity=11))["id"]
+
+    await add_slot(client, squad_member, sat_start, at=SECTOR_18)
+    r = await client.post(
+        f"{API}/matches/{saturday}/invitations", headers=cap.h, json={"invites": [{"player_id": squad_member.id}]}
+    )
+    assert r.status_code == 201 and r.json()["data"][0]["ok"], r.text
+
+    async def upcoming() -> list[dict[str, Any]]:
+        r = await client.get(f"{API}/matches", headers=cap.h, params={"role": "captain", "when": "upcoming"})
+        return list(r.json()["data"])
+
+    rows = await upcoming()
+    assert sorted(m["id"] for m in rows) == sorted([saturday, sunday])
+    assert "cancelled" in rows[0]["allowed_transitions"]  # the app shows the button from this
+
+    r = await client.post(f"{API}/matches/{saturday}/cancel", headers=cap.h, json={"reason": "Ground unavailable"})
+    assert r.status_code == 200, r.text
+    assert r.json()["data"]["cancelled_reason"] == "Ground unavailable"
+
+    assert [m["id"] for m in await upcoming()] == [sunday]  # the dashboard now shows one match
+
+    past = (await client.get(f"{API}/matches", headers=cap.h, params={"role": "captain", "when": "past"})).json()
+    cancelled = next(m for m in past["data"] if m["id"] == saturday)
+    assert cancelled["match_status"] == "cancelled" and cancelled["allowed_transitions"] == []
+
+    # The invited player is told, loses the invitation, and no longer counts the match as theirs.
+    inv = (await client.get(f"{API}/invitations/me", headers=squad_member.h)).json()["data"]
+    assert all(i["invitation_status"] == "cancelled" for i in inv if i["match"]["id"] == saturday)
+    notes = (await client.get(f"{API}/notifications", headers=squad_member.h)).json()["data"]
+    assert any(n["type"] == "match_cancelled" for n in notes)
+    mine = (await client.get(f"{API}/matches", headers=squad_member.h, params={"when": "upcoming"})).json()["data"]
+    assert saturday not in [m["id"] for m in mine]
+
+    # Cancelling is final: no second cancel, no way back to recruiting.
+    again = await client.post(f"{API}/matches/{saturday}/cancel", headers=cap.h, json={"reason": "Changed my mind"})
+    assert again.status_code == 422 and again.json()["error"]["code"] == "INVALID_MATCH_TRANSITION"
