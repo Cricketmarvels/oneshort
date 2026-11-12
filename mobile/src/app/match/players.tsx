@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, View } from "react-native";
 
 import { ChatButtons } from "@/components/invites";
+import { CancelMatch } from "@/components/match-admin";
 import { shareText, useInviteLink } from "@/components/regulars";
 import { FillBar, KickerChip, RadarSearch, RoleStepper, SectionHeader } from "@/components/refined";
 import { Avatar, Badge, Button, Chip, EmptyState, ErrorBox, InlineNotice, LoadingSkeleton, Segmented, Txt } from "@/components/ui";
@@ -373,6 +374,11 @@ function RequestBoard({ match }: { match: Match }) {
           <Button title="Close request — squad is confirmed" variant="outline" loading={move.isPending} onPress={() => move.mutate("squad_confirmed")} />
         ) : closed && cur.allowed_transitions.includes("recruiting") ? (
           <Button title="Reopen request" variant="secondary" loading={move.isPending} onPress={() => move.mutate("recruiting")} />
+        ) : null}
+        {/* The ground can fall through while you're filling the squad, so the way out is here too. */}
+        {cur.allowed_transitions.includes("cancelled") ? (
+          <CancelMatch id={match.id} squad={cur.composition.confirmed_total}
+            onCancelled={() => { refresh(); router.canGoBack() ? router.back() : router.replace("/"); }} />
         ) : null}
       </View>
     </View>

@@ -6,55 +6,15 @@ import { MapPin, Share2, Users, Wallet } from "lucide-react-native";
 import { Alert, Linking, ScrollView, Share, View } from "react-native";
 
 import { CommitChoice, ManagedInvitationRow } from "@/components/invites";
+import { CancelMatch } from "@/components/match-admin";
 import { KickerChip } from "@/components/refined";
 import { MatchCoverImage, MediaEditButton } from "@/components/media";
 import { InviteRegularsCard } from "@/components/regulars";
-import { Avatar, Badge, Button, Card, Chip, ErrorBox, Field, InlineNotice, List, LoadingSkeleton, Section, Txt } from "@/components/ui";
+import { Avatar, Badge, Button, Card, Chip, ErrorBox, InlineNotice, List, LoadingSkeleton, Section, Txt } from "@/components/ui";
 import { roleCount, roleLabel } from "@/lib/format";
 import { api, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { SP, T } from "@/theme";
-
-const CANCEL_REASONS = ["Ground unavailable", "Not enough players", "Rain / bad weather", "Other"] as const;
-
-/**
- * Captain-only: call a match off. Everyone in the squad and everyone invited is told, pending invitations
- * are withdrawn, and the match drops out of every upcoming list. It stays under past matches as "Cancelled",
- * so the squad, the fee ledger and the history survive — which is why there is no undo.
- */
-function CancelMatch({ id, squad, onCancelled }: { id: string; squad: number; onCancelled: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [choice, setChoice] = useState<string | null>(null);
-  const [note, setNote] = useState("");
-  const reason = choice === "Other" ? note.trim() : choice;
-  const cancel = useMutation({
-    mutationFn: () => api(`/matches/${id}/cancel`, { method: "POST", body: { reason } }),
-    onSuccess: onCancelled,
-    onError: (e) => Alert.alert("Couldn't cancel the match", errorText(e)),
-  });
-  const confirm = () => Alert.alert(
-    "Call this match off?",
-    `${squad === 1 ? "You are" : `${squad} players are`} in the squad. Everyone is told, invitations are withdrawn, and this can't be undone.`,
-    [{ text: "Keep match", style: "cancel" }, { text: "Cancel match", style: "destructive", onPress: () => cancel.mutate() }],
-  );
-  if (!open) {
-    return <Button title="Cancel this match" variant="ghost" onPress={() => setOpen(true)} />;
-  }
-  return (
-    <Card style={{ gap: SP.md }}>
-      <View style={{ gap: 2 }}>
-        <Txt v="h3">Why is it off?</Txt>
-        <Txt v="small" color={T.muted}>Players see the reason.</Txt>
-      </View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        {CANCEL_REASONS.map((r) => <Chip key={r} label={r} active={choice === r} onPress={() => setChoice(r)} />)}
-      </View>
-      {choice === "Other" ? <Field label="Reason" value={note} onChangeText={setNote} placeholder="Tell the squad what happened" maxLength={120} /> : null}
-      <Button title="Cancel match" variant="danger" disabled={!reason} loading={cancel.isPending} onPress={confirm} />
-      <Button title="Keep match" variant="ghost" onPress={() => { setOpen(false); setChoice(null); }} />
-    </Card>
-  );
-}
 
 export default function MatchDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
