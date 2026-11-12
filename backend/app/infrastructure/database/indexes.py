@@ -269,6 +269,8 @@ INDEXES: dict[str, list[IndexModel]] = {
     ],
     # Map-provider answers, reused for a day so typing doesn't hammer a free geocoder.
     "places_cache": [IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0)],
+    # One counter per provider per day, so a paid provider can't outspend PLACES_DAILY_BUDGET.
+    "places_budget": [IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0)],
     # Unified search (app/modules/search): prefix lookups are index seeks on (type, tokens) ordered by boost;
     # phonetic is the spelling-variant fallback; loc supports future geo-filtered search.
     "search_index": [

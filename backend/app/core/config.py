@@ -113,6 +113,9 @@ class Settings(BaseSettings):
     places_api_key: str | None = None
     places_country: str = Field(default="in", description="ISO-3166 alpha-2 filter for place suggestions; '' = world")
     places_cache_hours: int = Field(default=24, ge=0, le=720, description="How long a provider answer is reused")
+    places_daily_budget: int = Field(
+        default=500, ge=0, description="Calls per day to a paid place provider; 0 = unlimited. Free providers ignore it"
+    )
 
     # Rate limiting (requests per minute)
     rate_limit_auth_per_minute: int = 10

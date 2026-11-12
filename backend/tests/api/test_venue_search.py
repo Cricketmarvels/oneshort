@@ -4,14 +4,17 @@ The provider is faked here. The real adapters (Photon, Google Places) are networ
 is that a search never writes, a pick writes once, and a provider failure can't break the ground list.
 """
 
+import json
 import uuid
+from collections.abc import Mapping
+from typing import Any
 
 import httpx
 import pytest
 from bson import ObjectId
 
 from app.core.container import Container
-from app.infrastructure.integrations.places import Place
+from app.infrastructure.integrations.places import GooglePlaces, Place
 from tests.api.test_competition import SECTOR_18, player
 
 API = "/api/v1"
@@ -29,6 +32,7 @@ HOWZZAT = Place(
 
 class FakePlaces:
     name = "osm"
+    billed = False
 
     def __init__(self, *places: Place) -> None:
         self.places = list(places)
@@ -41,6 +45,7 @@ class FakePlaces:
 
 class BrokenPlaces:
     name = "osm"
+    billed = False
 
     async def search(self, q: str, lat: float | None, lng: float | None, country: str) -> list[Place]:
         raise httpx.ConnectTimeout("provider down")
@@ -130,3 +135,71 @@ async def test_a_two_letter_query_does_not_call_the_provider(
     monkeypatch.setattr(container, "places", fake)
     assert (await client.get(f"{API}/venues?q=Ho", headers=me.h)).status_code == 200
     assert fake.calls == 0
+
+
+# ------------------------------------------------------------------ Google Places adapter
+GOOGLE_REPLY = {
+    "places": [
+        {
+            "id": "ChIJhowzzat",
+            "displayName": {"text": "Howzzat Cricket Arena"},
+            "formattedAddress": "C-56, Sector 62, Noida, Uttar Pradesh 201301, India",
+            "location": {"latitude": 28.627, "longitude": 77.381},
+            "addressComponents": [
+                {"longText": "Sector 62", "types": ["sublocality_level_1", "sublocality"]},
+                {"longText": "Noida", "types": ["locality"]},
+            ],
+        }
+    ]
+}
+
+
+def _google(reply: Mapping[str, Any], seen: dict[str, Any]) -> GooglePlaces:
+    """A Google adapter whose HTTP call is answered locally, so the request shape can be asserted."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["mask"] = request.headers.get("X-Goog-FieldMask")
+        seen["key"] = request.headers.get("X-Goog-Api-Key")
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json=dict(reply))
+
+    return GooglePlaces("test-key", transport=httpx.MockTransport(handler))
+
+
+async def test_google_sends_the_parameters_text_search_actually_accepts() -> None:
+    seen: dict[str, Any] = {}
+    found = await _google(GOOGLE_REPLY, seen).search("Howzzat", 28.5794, 77.3374, "in")
+
+    assert seen["url"] == "https://places.googleapis.com/v1/places:searchText"
+    body = seen["body"]
+    assert isinstance(body, dict)
+    assert body["textQuery"] == "Howzzat" and body["pageSize"] == 10
+    # searchText takes regionCode; includedRegionCodes is rejected and maxResultCount is deprecated.
+    assert body["regionCode"] == "in"
+    assert "includedRegionCodes" not in body and "maxResultCount" not in body
+    assert body["locationBias"]["circle"]["center"] == {"latitude": 28.5794, "longitude": 77.3374}
+    assert seen["mask"] and "places.location" in str(seen["mask"])  # the mask decides the billing tier
+
+    assert len(found) == 1
+    p = found[0]
+    assert (p.name, p.area, p.city) == ("Howzzat Cricket Arena", "Sector 62", "Noida")
+    assert (p.source, p.place_id) == ("google", "google:ChIJhowzzat")
+    assert (round(p.lat, 3), round(p.lng, 3)) == (28.627, 77.381)
+
+
+async def test_a_paid_provider_stops_at_the_daily_budget(
+    client: httpx.AsyncClient, container: Container, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    me = await player(client, "Venue Budget", "batsman", SECTOR_18)
+    paid = FakePlaces(HOWZZAT)
+    paid.billed = True
+    monkeypatch.setattr(container, "places", paid)
+    monkeypatch.setattr(
+        container, "settings", container.settings.model_copy(update={"places_daily_budget": 2, "places_cache_hours": 0})
+    )
+
+    names = [f"Howzzat {i}" for i in range(4)]  # distinct queries: the cache can't hide the budget
+    for n in names:
+        assert (await client.get(f"{API}/venues", params={"q": n}, headers=me.h)).status_code == 200
+    assert paid.calls == 2  # the third and fourth searches fall back to our own grounds, quietly

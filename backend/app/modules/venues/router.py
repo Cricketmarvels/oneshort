@@ -14,6 +14,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
+from pymongo import ReturnDocument
 
 from app.api.dependencies import ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
@@ -87,7 +88,11 @@ def _doc(p: PlaceIn | Place) -> dict[str, Any]:
 
 
 async def _suggest(c: ContainerDep, q: str, lat: float | None, lng: float | None) -> list[Place]:
-    """Provider suggestions, cached for a day. A provider that is slow, down or rate-limiting returns nothing."""
+    """Provider suggestions, cached for a day.
+
+    A provider that is slow, down or rate-limiting returns nothing — the ground list still works. A paid
+    provider is also capped by ``PLACES_DAILY_BUDGET``: past it, search quietly falls back to our own grounds.
+    """
     provider = c.places
     if provider.name == "none" or len(q) < MIN_QUERY:
         return []
@@ -97,6 +102,18 @@ async def _suggest(c: ContainerDep, q: str, lat: float | None, lng: float | None
         hit = await c.mongo["places_cache"].find_one({"_id": cache_key})
         if hit:
             return [Place(**p) for p in hit["places"]]
+    budget = c.settings.places_daily_budget
+    if provider.billed and budget:
+        day = utcnow().strftime("%Y-%m-%d")
+        spent = await c.mongo["places_budget"].find_one_and_update(
+            {"_id": f"{provider.name}:{day}"},
+            {"$inc": {"calls": 1}, "$set": {"expires_at": utcnow() + timedelta(days=2)}},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        if spent and spent.get("calls", 0) > budget:
+            log.warning("places.budget_exhausted", extra={"provider": provider.name, "budget": budget})
+            return []
     try:
         found = await provider.search(q, lat, lng, c.settings.places_country)
     except Exception as exc:  # a map provider must never break the ground list

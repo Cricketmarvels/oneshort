@@ -5,9 +5,14 @@ provider's data until somebody plays there. The adapter below is chosen with ``P
 
 * ``osm`` (default) — Photon, Komoot's geocoder over OpenStreetMap. Free, no key, no account.
   Coverage of Indian stadiums and larger turf arenas is good; small private grounds can be missing.
-* ``google`` — Places API (New) Text Search. The data behind Google Maps, so coverage in India is
-  far better, but it needs a Google Cloud project with billing and is charged per request. Set
-  ``PLACES_PROVIDER=google`` and ``PLACES_API_KEY=…`` to switch; nothing else changes.
+* ``google`` — Places API (New) Text Search (``places:searchText``). The data behind Google Maps, so
+  coverage of Indian turf grounds is far better, but it needs a Google Cloud project with billing and
+  is charged per request. Set ``PLACES_PROVIDER=google`` and ``PLACES_API_KEY=…`` to switch; nothing
+  else changes. The field mask is deliberately minimal — it is what decides the billing tier, and
+  ``displayName`` puts this call in Text Search Pro (5,000 free per month, then about $32 per 1,000 as
+  of Nov 2026). ``PLACES_DAILY_BUDGET`` caps calls so a loop or a busy day can't run up a bill.
+  Cheaper if the volume ever justifies the extra round trip: Autocomplete (about $2.83 per 1,000)
+  for the list, then Place Details with an Essentials-only mask once, when a captain picks a ground.
 * ``none`` — no external calls at all. Search then returns only grounds GoFindr already knows.
 
 Results are suggestions, not records: a place becomes a GoFindr venue only when a captain picks it
@@ -44,12 +49,14 @@ class Place(BaseModel):
 
 class PlacesProvider(Protocol):
     name: str
+    billed: bool  # True if each call costs money, so the daily budget applies
 
     async def search(self, q: str, lat: float | None, lng: float | None, country: str) -> list[Place]: ...
 
 
 class DisabledPlaces:
     name = "none"
+    billed = False
 
     async def search(self, q: str, lat: float | None, lng: float | None, country: str) -> list[Place]:
         return []
@@ -67,6 +74,7 @@ class OsmPlaces:
     """Photon (photon.komoot.io): OpenStreetMap search built for type-ahead. Free, no API key."""
 
     name = "osm"
+    billed = False
 
     async def search(self, q: str, lat: float | None, lng: float | None, country: str) -> list[Place]:
         params: dict[str, Any] = {"q": q, "limit": 10, "lang": "en"}
@@ -108,18 +116,23 @@ class GooglePlaces:
     """Places API (New) Text Search. Billed per request — see the module docstring before enabling."""
 
     name = "google"
+    billed = True
+    # Every extra field can raise the billing tier, so this mask is the minimum the ground list needs.
     FIELDS = "places.id,places.displayName,places.formattedAddress,places.location,places.addressComponents"
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, transport: httpx.AsyncBaseTransport | None = None) -> None:
         self._key = api_key
+        self._transport = transport  # tests inject a stub; production leaves it None
 
     async def search(self, q: str, lat: float | None, lng: float | None, country: str) -> list[Place]:
-        body: dict[str, Any] = {"textQuery": q, "maxResultCount": 10, "languageCode": "en"}
+        # searchText takes regionCode (a single ccTLD) and pageSize; includedRegionCodes and
+        # maxResultCount belong to other methods and are rejected or deprecated here.
+        body: dict[str, Any] = {"textQuery": q, "pageSize": 10, "languageCode": "en"}
         if country:
-            body["includedRegionCodes"] = [country.upper()]
+            body["regionCode"] = country.lower()
         if lat is not None and lng is not None:
             body["locationBias"] = {"circle": {"center": {"latitude": lat, "longitude": lng}, "radius": 50_000.0}}
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=TIMEOUT, transport=self._transport) as client:
             resp = await client.post(
                 "https://places.googleapis.com/v1/places:searchText",
                 headers={"X-Goog-Api-Key": self._key, "X-Goog-FieldMask": self.FIELDS, "User-Agent": UA},
