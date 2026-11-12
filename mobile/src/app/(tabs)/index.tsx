@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ago, LocationOptions } from "@/components/cricket";
 import { ActionCardGrid } from "@/components/dashboard/ActionCardGrid";
 import { captainActions, playerActions } from "@/components/dashboard/dashboardActions";
-import { CricHeroesCard, CricHeroesEditor, HomeCricHeroesCard } from "@/components/cricheroes-link";
+import { CricHeroesEditor, HomeCricHeroesCard } from "@/components/cricheroes-link";
 import { PlayRIcon } from "@/components/icons";
 import { InvitationCard } from "@/components/invites";
 import { AppHeader, AvailabilityPill, MatchDiscoveryCard, SectionHeader, SportsHeroBanner } from "@/components/premium";
@@ -152,7 +152,6 @@ function CricketHome() {
           </ScrollView>
         ) : null}
 
-        {ctx === "captain" && team?.cricheroes_team_url ? <CricHeroesCard kind="team" url={team.cricheroes_team_url} compact /> : null}
         <ActionCardGrid cards={actionCards} />
         {chEdit ? (
           <CricHeroesEditor kind="player" current={me.data?.cricheroes_profile_url} currentStats={me.data?.cricheroes_stats}
