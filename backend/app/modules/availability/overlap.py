@@ -5,6 +5,7 @@ window. Matching calendar dates is NOT sufficient (FR-FP-3).
 """
 
 from datetime import datetime
+from typing import Any
 
 
 def overlap_seconds(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> float:
@@ -30,3 +31,20 @@ def merged_coverage(slots: list[tuple[datetime, datetime]], match_start: datetim
     total = sum(overlap_seconds(s, e, match_start, match_end) for s, e in slots)
     duration = (match_end - match_start).total_seconds()
     return min(1.0, total / duration) if duration > 0 else 0.0
+
+
+def contribution_for(slots: list[dict[str, Any]], match_start: datetime, match_end: datetime) -> str:
+    """The fee choice a player declared for this window.
+
+    Slots are the discovery pipeline's ``{"s", "e", "st", "c"}`` rows. If any slot that overlaps the
+    match says ``non_payee`` the player asked to play free, so the captain sees that before inviting;
+    everything else (including slots saved before the field existed) means they pay their share.
+    """
+    from app.common.types import ensure_utc
+
+    for s in slots:
+        if s.get("c") != "non_payee":
+            continue
+        if intervals_overlap(ensure_utc(s["s"]), ensure_utc(s["e"]), match_start, match_end):
+            return "non_payee"
+    return "payee"

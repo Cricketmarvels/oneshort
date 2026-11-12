@@ -57,9 +57,9 @@ export default function Me() {
         <LinkCard icon="calendar" title="My Games & History" onPress={() => router.push("/games")} />
         <LinkCard icon="trophy" title="Leaderboard" onPress={() => router.push("/leaderboard")} />
         <LinkCard icon="profile" title="My player profile" onPress={() => user && router.push({ pathname: "/player/[id]", params: { id: user.id } })} />
-        <LinkCard icon="week" title="Availability" sub="When captains can find you" onPress={() => router.push("/availability")} />
+        <LinkCard icon="week" title="Share availability" sub="When you can play, and whether you pay" onPress={() => router.push("/availability")} />
         <LinkCard icon="shield" title="My teams" onPress={() => router.push("/teams")} />
-        <LinkCard icon="receipt" title="Payments & Split Fees" onPress={() => router.push("/payments")} />
+        <LinkCard icon="receipt" title="Manage fees" sub="What you owe each team, what you've spent" onPress={() => router.push("/payments")} />
         <LinkCard icon="bell" title="Notifications" onPress={() => router.push("/notifications")} />
         <LinkCard icon="settings" title="Settings" sub="Appearance (light/dark), WhatsApp, privacy, blocked people, log out" onPress={() => router.push("/profile")} />
       </View>

@@ -24,3 +24,5 @@ Licence: MIT, Copyright (c) Microsoft Corporation. Re-encoded at 256 × 256 px, 
 | `art/create-match.png` | Spiral calendar | Create Match (captain) |
 | `art/manage-team.png` | Clipboard | Manage Team (captain) |
 | `art/challenge.png` | Crossed swords | Challenge (captain) |
+| `art/share-availability.png` | Tear-off calendar | Share Availability (player) |
+| `art/manage-fees.png` | Receipt | Manage Fees (player) |

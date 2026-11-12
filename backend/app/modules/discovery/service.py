@@ -21,7 +21,7 @@ from app.common.response import PageMeta
 from app.common.types import approx_km, ensure_utc, utcnow
 from app.core.container import Container
 from app.core.exceptions import BusinessRuleViolation, ValidationFailed
-from app.modules.availability.overlap import merged_coverage
+from app.modules.availability.overlap import contribution_for, merged_coverage
 from app.modules.discovery.ranking import Candidate, Ranker, RoleMatch, WeightedRanker
 from app.modules.discovery.schemas import (
     OpportunityOut,
@@ -100,7 +100,7 @@ class DiscoveryService:
                 "$group": {
                     "_id": "$player_id",
                     "distance_m": {"$min": "$distance_m"},
-                    "slots": {"$push": {"s": "$start_at", "e": "$end_at", "st": "$status"}},
+                    "slots": {"$push": {"s": "$start_at", "e": "$end_at", "st": "$status", "c": "$contribution"}},
                 }
             },
             {"$limit": self.c.settings.discovery_candidate_cap},
@@ -227,6 +227,7 @@ class DiscoveryService:
                     experience_years=p.get("experience_years"),
                     approx_distance_km=approx_km(s.candidate.distance_m),
                     availability_status="tentative" if s.candidate.tentative else "available",
+                    contribution=contribution_for(r["slots"], start, end),
                     coverage=round(s.candidate.coverage, 2),
                     average_rating=p.get("average_rating"),
                     rating_count=p.get("rating_count", 0),

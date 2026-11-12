@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.common.enums import AvailabilityStatus
+from app.common.enums import AvailabilityStatus, ContributionType
 from app.common.types import AwareDatetime, GeoPointIn, StrictModel, utcnow
 from app.common.validators import ShortText, Timezone
 
@@ -31,6 +31,10 @@ class _SlotTimes(StrictModel):
 class AvailabilityIn(_SlotTimes):
     timezone: Timezone = "Asia/Kolkata"
     status: AvailabilityStatus = AvailabilityStatus.AVAILABLE
+    contribution: ContributionType = Field(
+        default=ContributionType.PAYEE,
+        description="Pays their share of the match fee (payee) or wants to play free (non_payee)",
+    )
     location: GeoPointIn | None = Field(
         default=None, description="Preferred location; defaults to the profile location"
     )
@@ -45,6 +49,7 @@ class AvailabilityUpdateIn(StrictModel):
     end_at: AwareDatetime | None = None
     timezone: Timezone | None = None
     status: AvailabilityStatus | None = None
+    contribution: ContributionType | None = None
     location: GeoPointIn | None = None
     location_label: ShortText | None = None
     max_travel_km: int | None = Field(default=None, ge=1, le=50)
@@ -59,6 +64,7 @@ class AvailabilityOut(BaseModel):
     end_at: datetime
     timezone: str
     status: AvailabilityStatus
+    contribution: ContributionType
     location_label: str | None
     lat: float
     lng: float

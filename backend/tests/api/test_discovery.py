@@ -170,3 +170,32 @@ async def test_role_counts_window_search_and_supply(client: httpx.AsyncClient) -
         f"{API}/discovery/players", headers=h, json={"match_id": match["id"], "role_counts": {"bowler": 0}}
     )
     assert bad.status_code == 422
+
+
+async def test_captain_sees_who_wants_to_play_free(client: httpx.AsyncClient) -> None:
+    """The slot's fee choice reaches the captain before they invite, so the split isn't a surprise later."""
+    from datetime import timedelta
+
+    captain = await make_player(client, "Captain Fees", "all_rounder", KORAMANGALA)
+    team = await make_team(client, captain, "Fee Aware XI")
+    start = future(33)
+    match = await make_match(client, captain, team, start=start)
+    free = await make_player(client, "Plays Free 33", "batsman", HSR_LAYOUT)
+    pays = await make_player(client, "Pays Share 33", "bowler", HSR_LAYOUT)
+    assert (
+        await add_slot(client, free, start - timedelta(hours=1), hours=5, contribution="non_payee")
+    ).status_code == 201
+    assert (await add_slot(client, pays, start - timedelta(hours=1), hours=5)).status_code == 201
+    # A free slot on another day doesn't colour this match.
+    assert (
+        await add_slot(client, pays, start + timedelta(days=1), hours=3, contribution="non_payee")
+    ).status_code == 201
+    r = await client.post(
+        f"{API}/discovery/players",
+        headers=captain.h,  # type: ignore[attr-defined]
+        json={"match_id": match["id"], "radius_km": 5},
+    )
+    assert r.status_code == 200, r.text
+    by_name = {x["player"]["full_name"]: x["contribution"] for x in r.json()["data"]}
+    assert by_name["Plays Free 33"] == "non_payee"
+    assert by_name["Pays Share 33"] == "payee"

@@ -71,3 +71,19 @@ async def test_concurrent_duplicate_submissions_create_one_slot(client: httpx.As
     results = await asyncio.gather(*[add_slot(client, p, start) for _ in range(5)])
     codes = sorted(r.status_code for r in results)
     assert codes.count(201) == 1 and all(c == 409 for c in codes if c != 201)
+
+
+async def test_slot_carries_whether_the_player_pays(client: httpx.AsyncClient) -> None:
+    """A player can say "I'll play free" on a slot; the default is that they pay their share."""
+    p = await make_player(client, "Free Agent", "bowler", KORAMANGALA)
+    r = await add_slot(client, p, future(12))
+    assert r.status_code == 201 and r.json()["data"][0]["contribution"] == "payee"
+    r = await add_slot(client, p, future(13), contribution="non_payee")
+    assert r.status_code == 201, r.text
+    slot = r.json()["data"][0]
+    assert slot["contribution"] == "non_payee"
+    r = await client.put(f"{API}/availability/{slot['id']}", headers=p.h, json={"contribution": "payee"})
+    assert r.status_code == 200 and r.json()["data"]["contribution"] == "payee"
+    assert (await add_slot(client, p, future(14), contribution="sponsor")).status_code == 422
+    mine = (await client.get(f"{API}/availability/me", headers=p.h)).json()["data"]
+    assert {s["contribution"] for s in mine} == {"payee"}

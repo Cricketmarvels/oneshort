@@ -2492,6 +2492,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settlements/me/spend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My match-fee spend by team and month (what I owe, what I've paid) */
+        get: operations["my_spend_api_v1_settlements_me_spend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/settlements/{settlement_id}/payments": {
         parameters: {
             query?: never;
@@ -3358,6 +3375,11 @@ export interface components {
             timezone: string;
             /** @default available */
             status: components["schemas"]["AvailabilityStatus"];
+            /**
+             * @description Pays their share of the match fee (payee) or wants to play free (non_payee)
+             * @default payee
+             */
+            contribution: components["schemas"]["ContributionType"];
             /** @description Preferred location; defaults to the profile location */
             location?: components["schemas"]["GeoPointIn"] | null;
             /** Location Label */
@@ -3396,6 +3418,7 @@ export interface components {
             /** Timezone */
             timezone: string;
             status: components["schemas"]["AvailabilityStatus"];
+            contribution: components["schemas"]["ContributionType"];
             /** Location Label */
             location_label: string | null;
             /** Lat */
@@ -3423,6 +3446,7 @@ export interface components {
             /** Timezone */
             timezone?: string | null;
             status?: components["schemas"]["AvailabilityStatus"] | null;
+            contribution?: components["schemas"]["ContributionType"] | null;
             location?: components["schemas"]["GeoPointIn"] | null;
             /** Location Label */
             location_label?: string | null;
@@ -4415,6 +4439,7 @@ export interface components {
         Envelope_SearchOut_: unknown;
         Envelope_SettlementOut_: unknown;
         Envelope_ShareOut_: unknown;
+        Envelope_SpendOut_: unknown;
         Envelope_TeamCompareOut_: unknown;
         Envelope_TeamDashboardOut_: unknown;
         Envelope_TeamOut_: unknown;
@@ -5269,6 +5294,25 @@ export interface components {
          * @enum {string}
          */
         ModerationAction: "warning" | "temp_suspend" | "permanent_suspend" | "restrict_matchmaking" | "lift_restrictions";
+        /** MonthSpendOut */
+        MonthSpendOut: {
+            /**
+             * Month
+             * @description YYYY-MM, by the match date in Asia/Kolkata
+             */
+            month: string;
+            /** Paid Paise */
+            paid_paise: number;
+            /** By Team */
+            by_team: components["schemas"]["MonthTeamSpendOut"][];
+        };
+        /** MonthTeamSpendOut */
+        MonthTeamSpendOut: {
+            /** Team Id */
+            team_id: string;
+            /** Paid Paise */
+            paid_paise: number;
+        };
         /** MyAgreementsOut */
         MyAgreementsOut: {
             /** Current Version */
@@ -5958,6 +6002,11 @@ export interface components {
              * @enum {string}
              */
             availability_status: "available" | "tentative";
+            /**
+             * @description What the player declared on the slot covering this match: pays their share, or plays free
+             * @default payee
+             */
+            contribution: components["schemas"]["ContributionType"];
             /** Coverage */
             coverage: number;
             /** Average Rating */
@@ -7076,6 +7125,41 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * SpendOut
+         * @description What one player has spent on match fees, grouped for the Manage Fees screen.
+         *
+         *     Spend is dated by the match, not by when the captain ticked it paid, so a month answers
+         *     "what did October's cricket cost me". Outstanding amounts are never filtered by period:
+         *     a debt from last year is still a debt.
+         */
+        SpendOut: {
+            /** Year */
+            year: number | null;
+            /** Month */
+            month: number | null;
+            /**
+             * Years
+             * @description Years that have any fee record, newest first
+             */
+            years: number[];
+            /** Paid Paise */
+            paid_paise: number;
+            /** Owed Paise */
+            owed_paise: number;
+            /** Matches */
+            matches: number;
+            /**
+             * Teams
+             * @description Most spent first
+             */
+            teams: components["schemas"]["TeamSpendOut"][];
+            /**
+             * Months
+             * @description Oldest first, only months with a paid fee
+             */
+            months: components["schemas"]["MonthSpendOut"][];
+        };
         /** SpotlightOut */
         SpotlightOut: {
             user: components["schemas"]["PublicUserOut"];
@@ -7482,6 +7566,28 @@ export interface components {
             /** Data */
             data: components["schemas"]["OpportunityOut"][];
             meta: components["schemas"]["PageMeta"];
+        };
+        /** TeamSpendOut */
+        TeamSpendOut: {
+            /** Team Id */
+            team_id: string;
+            /** Team Name */
+            team_name: string;
+            /**
+             * Paid Paise
+             * @description Fees marked paid for matches inside the period
+             */
+            paid_paise: number;
+            /**
+             * Owed Paise
+             * @description Still outstanding to this team's captain, regardless of period
+             */
+            owed_paise: number;
+            /**
+             * Matches
+             * @description Fee records inside the period, exempt ones excluded
+             */
+            matches: number;
         };
         /** TeamSummary */
         TeamSummary: {
@@ -22330,6 +22436,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Envelope_PlayerDashboardOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    my_spend_api_v1_settlements_me_spend_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+                month?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_SpendOut_"];
                 };
             };
             /** @description Bad request */

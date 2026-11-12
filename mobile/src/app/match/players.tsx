@@ -75,6 +75,8 @@ export default function FindPlayersRequest() {
   const [notice, setNotice] = useState<string | null>(null);
   const [result, setResult] = useState<SearchOut | null>(null);
   const [err, setErr] = useState<unknown>(null);
+  // Players who said "I'll play free" on the slot covering this window; the invite carries that choice.
+  const playsFree = useMemo(() => new Set((result?.data ?? []).filter((p) => p.contribution === "non_payee").map((p) => p.player.id)), [result]);
 
   useEffect(() => { if (!matchId && open.length) setMatchId(open[0]!.id); }, [open, matchId]);
   useEffect(() => { if (!matches.isPending && !open.length) setMode("window"); }, [matches.isPending, open.length]);
@@ -99,7 +101,7 @@ export default function FindPlayersRequest() {
   };
 
   const invite = useMutation({
-    mutationFn: () => api<S<"InvitationResultItem">[]>(`/matches/${match!.id}/invitations`, { method: "POST", body: { invites: Object.entries(picked).map(([player_id, role]) => ({ player_id, ...(role ? { proposed_role: role } : {}) })) } }),
+    mutationFn: () => api<S<"InvitationResultItem">[]>(`/matches/${match!.id}/invitations`, { method: "POST", body: { invites: Object.entries(picked).map(([player_id, role]) => ({ player_id, contribution_type: playsFree.has(player_id) ? "non_payee" : "payee", ...(role ? { proposed_role: role } : {}) })) } }),
     onSuccess: (r) => {
       const sent = r.filter((x) => x.ok).length;
       setNotice(`${sent} invitation${sent === 1 ? "" : "s"} sent${sent < r.length ? ` · ${r.length - sent} couldn't be sent` : ""}. Players see them on their dashboard (and on WhatsApp if they opted in).`);
@@ -297,6 +299,7 @@ function Results({ groups, meta, picked, setPicked, canInvite, onEdit, onInvite,
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <Txt v="h3" numberOfLines={1} style={{ flexShrink: 1 }}>{p.player.full_name}</Txt>
                     {p.is_team_member ? <KickerChip label="TEAM" /> : null}
+                    {p.contribution === "non_payee" ? <KickerChip label="PLAYS FREE" tone="orange" /> : null}
                   </View>
                   <Txt v="small" color={T.muted} numberOfLines={1}>{roleName(p.primary_role)}{p.role_match === "secondary" ? ` · also ${g.role ? roleName(g.role).toLowerCase() : ""}` : ""} · {p.availability_status === "available" ? "Available" : "Tentative"}</Txt>
                   <Record p={p} />

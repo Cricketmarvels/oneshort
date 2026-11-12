@@ -167,6 +167,43 @@ class PlayerDashboardOut(BaseModel):
     records: list[PaymentRecordOut]
 
 
+class TeamSpendOut(BaseModel):
+    team_id: str
+    team_name: str
+    paid_paise: int = Field(description="Fees marked paid for matches inside the period")
+    owed_paise: int = Field(description="Still outstanding to this team's captain, regardless of period")
+    matches: int = Field(description="Fee records inside the period, exempt ones excluded")
+
+
+class MonthTeamSpendOut(BaseModel):
+    team_id: str
+    paid_paise: int
+
+
+class MonthSpendOut(BaseModel):
+    month: str = Field(description="YYYY-MM, by the match date in Asia/Kolkata")
+    paid_paise: int
+    by_team: list[MonthTeamSpendOut]
+
+
+class SpendOut(BaseModel):
+    """What one player has spent on match fees, grouped for the Manage Fees screen.
+
+    Spend is dated by the match, not by when the captain ticked it paid, so a month answers
+    "what did October's cricket cost me". Outstanding amounts are never filtered by period:
+    a debt from last year is still a debt.
+    """
+
+    year: int | None
+    month: int | None
+    years: list[int] = Field(description="Years that have any fee record, newest first")
+    paid_paise: int
+    owed_paise: int
+    matches: int
+    teams: list[TeamSpendOut] = Field(description="Most spent first")
+    months: list[MonthSpendOut] = Field(description="Oldest first, only months with a paid fee")
+
+
 class DiscussionOut(BaseModel):
     id: str
     author: PublicUserOut

@@ -3,7 +3,7 @@
 from typing import Annotated
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import ContainerDep, MatchmakerDep, UserDep
 from app.common.enums import PaymentStatus
@@ -26,6 +26,7 @@ from app.modules.settlements.schemas import (
     SettlementDraftIn,
     SettlementOut,
     ShareOut,
+    SpendOut,
 )
 from app.modules.settlements.service import SettlementService
 
@@ -102,6 +103,21 @@ async def publish(settlement_id: str, user: MatchmakerDep, svc: St) -> Envelope[
 )
 async def my_payments(user: UserDep, svc: Pay, status: PaymentStatus | None = None) -> Envelope[PlayerDashboardOut]:
     return ok(await svc.player_dashboard(user, status))
+
+
+@router.get(
+    "/settlements/me/spend",
+    response_model=Envelope[SpendOut],
+    responses=ERROR_RESPONSES,
+    summary="My match-fee spend by team and month (what I owe, what I've paid)",
+)
+async def my_spend(
+    user: UserDep,
+    svc: Pay,
+    year: Annotated[int | None, Query(ge=2020, le=2100)] = None,
+    month: Annotated[int | None, Query(ge=1, le=12)] = None,
+) -> Envelope[SpendOut]:
+    return ok(await svc.spend(user, year, month))
 
 
 @router.get(

@@ -9,12 +9,15 @@ import { router } from "expo-router";
 import type { ActionCard } from "@/components/dashboard/ThreeDActionCard";
 
 /** Player context: discovery and money, in the reference's mint → ice → peach → lavender order. */
+/**
+ * Player context. A player doesn't recruit or book: they say when they're free (and whether they'll
+ * pay their share), look for a team, and keep track of what they owe each captain.
+ */
 export function playerActions(): ActionCard[] {
   return [
-    { action: "findPlayers", title: "Find Players", tone: "mint", onPress: () => router.push("/find/players") },
+    { action: "shareAvailability", title: "Share Availability", tone: "mint", onPress: () => router.push("/availability") },
     { action: "findTeams", title: "Find Teams", tone: "aqua", onPress: () => router.push("/find/teams") },
-    { action: "bookGround", title: "Book Ground", tone: "peach", onPress: () => router.push("/grounds") },
-    { action: "splitFees", title: "Split Fees", tone: "lilac", onPress: () => router.push("/payments") },
+    { action: "manageFees", title: "Manage Fees", tone: "lilac", onPress: () => router.push("/payments") },
   ];
 }
 

@@ -238,6 +238,7 @@ async def add_slot(
     status: str = "available",
     at: tuple[float, float] | None = None,
     max_travel_km: int = 20,
+    contribution: str | None = None,
 ) -> httpx.Response:
     body: dict[str, Any] = {
         "start_at": iso(start),
@@ -245,6 +246,8 @@ async def add_slot(
         "status": status,
         "max_travel_km": max_travel_km,
     }
+    if contribution:
+        body["contribution"] = contribution
     if at:
         body["location"] = {"lat": at[0], "lng": at[1]}
     return await client.post("/api/v1/availability", headers=user.h, json=body)

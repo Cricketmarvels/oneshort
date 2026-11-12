@@ -19586,6 +19586,140 @@
         }
       }
     },
+    "/api/v1/settlements/me/spend": {
+      "get": {
+        "tags": [
+          "Split a Fee"
+        ],
+        "summary": "My match-fee spend by team and month (what I owe, what I've paid)",
+        "operationId": "my_spend_api_v1_settlements_me_spend_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2020
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_SpendOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/settlements/{settlement_id}/payments": {
       "get": {
         "tags": [
@@ -23888,6 +24022,11 @@
             "$ref": "#/components/schemas/AvailabilityStatus",
             "default": "available"
           },
+          "contribution": {
+            "$ref": "#/components/schemas/ContributionType",
+            "description": "Pays their share of the match fee (payee) or wants to play free (non_payee)",
+            "default": "payee"
+          },
           "location": {
             "anyOf": [
               {
@@ -23970,6 +24109,9 @@
           "status": {
             "$ref": "#/components/schemas/AvailabilityStatus"
           },
+          "contribution": {
+            "$ref": "#/components/schemas/ContributionType"
+          },
           "location_label": {
             "anyOf": [
               {
@@ -24016,6 +24158,7 @@
           "end_at",
           "timezone",
           "status",
+          "contribution",
           "location_label",
           "lat",
           "lng",
@@ -24076,6 +24219,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/AvailabilityStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContributionType"
               },
               {
                 "type": "null"
@@ -27035,6 +27188,7 @@
       "Envelope_SearchOut_": {},
       "Envelope_SettlementOut_": {},
       "Envelope_ShareOut_": {},
+      "Envelope_SpendOut_": {},
       "Envelope_TeamCompareOut_": {},
       "Envelope_TeamDashboardOut_": {},
       "Envelope_TeamOut_": {},
@@ -29461,6 +29615,51 @@
         ],
         "title": "ModerationAction"
       },
+      "MonthSpendOut": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month",
+            "description": "YYYY-MM, by the match date in Asia/Kolkata"
+          },
+          "paid_paise": {
+            "type": "integer",
+            "title": "Paid Paise"
+          },
+          "by_team": {
+            "items": {
+              "$ref": "#/components/schemas/MonthTeamSpendOut"
+            },
+            "type": "array",
+            "title": "By Team"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "paid_paise",
+          "by_team"
+        ],
+        "title": "MonthSpendOut"
+      },
+      "MonthTeamSpendOut": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "paid_paise": {
+            "type": "integer",
+            "title": "Paid Paise"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id",
+          "paid_paise"
+        ],
+        "title": "MonthTeamSpendOut"
+      },
       "MyAgreementsOut": {
         "properties": {
           "current_version": {
@@ -31625,6 +31824,11 @@
               "tentative"
             ],
             "title": "Availability Status"
+          },
+          "contribution": {
+            "$ref": "#/components/schemas/ContributionType",
+            "description": "What the player declared on the slot covering this match: pays their share, or plays free",
+            "default": "payee"
           },
           "coverage": {
             "type": "number",
@@ -34891,6 +35095,81 @@
         ],
         "title": "SimMessage"
       },
+      "SpendOut": {
+        "properties": {
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          },
+          "years": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Years",
+            "description": "Years that have any fee record, newest first"
+          },
+          "paid_paise": {
+            "type": "integer",
+            "title": "Paid Paise"
+          },
+          "owed_paise": {
+            "type": "integer",
+            "title": "Owed Paise"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/TeamSpendOut"
+            },
+            "type": "array",
+            "title": "Teams",
+            "description": "Most spent first"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/MonthSpendOut"
+            },
+            "type": "array",
+            "title": "Months",
+            "description": "Oldest first, only months with a paid fee"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month",
+          "years",
+          "paid_paise",
+          "owed_paise",
+          "matches",
+          "teams",
+          "months"
+        ],
+        "title": "SpendOut",
+        "description": "What one player has spent on match fees, grouped for the Manage Fees screen.\n\nSpend is dated by the match, not by when the captain ticked it paid, so a month answers\n\"what did October's cricket cost me\". Outstanding amounts are never filtered by period:\na debt from last year is still a debt."
+      },
       "SpotlightOut": {
         "properties": {
           "user": {
@@ -36319,6 +36598,42 @@
           "meta"
         ],
         "title": "TeamSearchOut"
+      },
+      "TeamSpendOut": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "team_name": {
+            "type": "string",
+            "title": "Team Name"
+          },
+          "paid_paise": {
+            "type": "integer",
+            "title": "Paid Paise",
+            "description": "Fees marked paid for matches inside the period"
+          },
+          "owed_paise": {
+            "type": "integer",
+            "title": "Owed Paise",
+            "description": "Still outstanding to this team's captain, regardless of period"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches",
+            "description": "Fee records inside the period, exempt ones excluded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id",
+          "team_name",
+          "paid_paise",
+          "owed_paise",
+          "matches"
+        ],
+        "title": "TeamSpendOut"
       },
       "TeamSummary": {
         "properties": {

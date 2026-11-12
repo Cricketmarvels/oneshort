@@ -109,6 +109,8 @@ export const ARTWORK: Partial<Record<SportsAction, ImageSource | number>> = {
   createMatch: require("../../assets/images/art/create-match.png"),
   manageTeam: require("../../assets/images/art/manage-team.png"),
   challenge: require("../../assets/images/art/challenge.png"),
+  shareAvailability: require("../../assets/images/art/share-availability.png"),
+  manageFees: require("../../assets/images/art/manage-fees.png"),
 };
 
 export function SportsActionArtwork({ action, size = 56, color }: { action: SportsAction; size?: number; color?: string }) {

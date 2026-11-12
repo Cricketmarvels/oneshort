@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, model_validator
 from app.common.enums import (
     BattingStyle,
     BowlingStyle,
+    ContributionType,
     MatchCategory,
     MatchFormat,
     PlayingRole,
@@ -65,6 +66,10 @@ class PlayerResultOut(BaseModel):
     experience_years: int | None
     approx_distance_km: float = Field(description="Rounded to 0.5 km; exact location is never disclosed")
     availability_status: Literal["available", "tentative"]
+    contribution: ContributionType = Field(
+        default=ContributionType.PAYEE,
+        description="What the player declared on the slot covering this match: pays their share, or plays free",
+    )
     coverage: float
     average_rating: float | None
     rating_count: int

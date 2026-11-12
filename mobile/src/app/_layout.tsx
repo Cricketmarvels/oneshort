@@ -93,8 +93,8 @@ function Gate() {
       <Stack.Screen name="community/new" options={{ title: "Create a community", presentation: "modal" }} />
       <Stack.Screen name="match/[id]" options={{ title: "Match Details" }} />
       <Stack.Screen name="match/new" options={{ title: "Create a Match" }} />
-      <Stack.Screen name="availability" options={{ title: "Availability" }} />
-      <Stack.Screen name="payments" options={{ title: "Split Fees" }} />
+      <Stack.Screen name="availability" options={{ title: "Share availability" }} />
+      <Stack.Screen name="payments" options={{ title: "Manage fees" }} />
       <Stack.Screen name="fee/index" options={{ title: "Match fee" }} />
       <Stack.Screen name="find/players" options={{ title: "Find Players", headerShown: false }} />
       <Stack.Screen name="find/teams" options={{ title: "Find Teams", headerShown: false }} />

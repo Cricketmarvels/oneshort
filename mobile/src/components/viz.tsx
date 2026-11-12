@@ -165,3 +165,51 @@ export function CompareBar({ label, a, b, fmt = (v: number) => String(Math.round
     </View>
   );
 }
+
+/** Series colours for "by team" charts: primary first, then clearly distinct accents. */
+export const SERIES = [T.primary, T.accentOrange, "#7C6FCD", T.aqua, "#D96C6C", T.ink] as const;
+export const seriesColor = (i: number) => SERIES[i % SERIES.length]!;
+
+/**
+ * Monthly spend, stacked by team. Values are paise; the axis label shows rupees.
+ * `teams` fixes the colour order so the legend outside the chart matches.
+ */
+export function SpendBars({ months, teams, w = 320, h = 150 }: {
+  months: { month: string; by_team: { team_id: string; paid_paise: number }[] }[];
+  teams: string[]; w?: number; h?: number;
+}) {
+  if (!months.length) return null;
+  const axis = 18;
+  const top = 14;
+  const plotH = h - axis - top;
+  const max = Math.max(1, ...months.map((m) => m.by_team.reduce((n, t) => n + t.paid_paise, 0)));
+  const gap = months.length > 8 ? 4 : 8;
+  const bw = Math.max(6, Math.min(36, (w - (months.length - 1) * gap) / months.length));
+  const left = (w - (months.length * bw + (months.length - 1) * gap)) / 2;
+  const label = (m: string) => new Date(`${m}-01T00:00:00`).toLocaleDateString("en-IN", { month: "short" });
+  const rupees = (p: number) => `₹${Math.round(p / 100).toLocaleString("en-IN")}`;
+  return (
+    <Svg width={w} height={h} accessibilityLabel={`Spend by month, highest ${rupees(max)}`}>
+      <Line x1={0} y1={top + plotH} x2={w} y2={top + plotH} stroke={T.line} strokeWidth={1} />
+      <Line x1={0} y1={top} x2={w} y2={top} stroke={T.line} strokeDasharray="3 3" strokeWidth={1} />
+      <SvgText x={w - 2} y={top - 3} fontSize={10} fill={T.muted} fontFamily={F.medium} textAnchor="end">{rupees(max)}</SvgText>
+      {months.map((m, i) => {
+        const x = left + i * (bw + gap);
+        let y = top + plotH;
+        return (
+          <G key={m.month}>
+            {m.by_team.map((t) => {
+              const bh = (t.paid_paise / max) * plotH;
+              y -= bh;
+              const ti = teams.indexOf(t.team_id);
+              return <Path key={t.team_id} d={`M${x},${y + bh} h${bw} v${-bh} h${-bw} Z`} fill={seriesColor(ti < 0 ? 0 : ti)} />;
+            })}
+            {months.length <= 12 || i % 3 === 0 ? (
+              <SvgText x={x + bw / 2} y={h - 4} fontSize={10} fill={T.muted} fontFamily={F.medium} textAnchor="middle">{label(m.month)}</SvgText>
+            ) : null}
+          </G>
+        );
+      })}
+    </Svg>
+  );
+}

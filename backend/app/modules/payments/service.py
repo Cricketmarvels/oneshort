@@ -10,29 +10,35 @@ pushed in real time and notified to the player.
 
 from typing import Any, Protocol
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 from bson import ObjectId
 from pymongo.asynchronous.client_session import AsyncClientSession
 
 from app.api.dependencies import CurrentUser
 from app.common.enums import NotificationType, PaymentStatus, SettlementStatus
-from app.common.types import utcnow
+from app.common.types import ensure_utc, utcnow
 from app.core.container import Container
 from app.core.exceptions import BusinessRuleViolation, Conflict, Forbidden, NotFound
 from app.modules.settlements.context import FeeAccess
 from app.modules.settlements.schemas import (
     CaptainDashboardOut,
     DiscussionOut,
+    MonthSpendOut,
+    MonthTeamSpendOut,
     PaymentRecordOut,
     PlayerDashboardOut,
     ShareOut,
+    SpendOut,
     StatusChange,
+    TeamSpendOut,
 )
 from app.modules.settlements.service import SettlementService
 from app.modules.teams.policy import can_manage_match
 from app.modules.users.schemas import public_user
 
 P = PaymentStatus
+IST = ZoneInfo("Asia/Kolkata")
 
 
 class PaymentProvider(Protocol):
@@ -269,7 +275,8 @@ class PaymentService:
             records=outs,
         )
 
-    async def player_dashboard(self, user: CurrentUser, status: P | None) -> PlayerDashboardOut:
+    async def _my_records(self, user: CurrentUser) -> list[dict[str, Any]]:
+        """Fee records from published settlements only; a draft a captain is still editing isn't a bill yet."""
         current = [
             s["_id"]
             async for s in self.c.mongo["settlements"].find(
@@ -277,7 +284,62 @@ class PaymentService:
             )
         ]
         q: dict[str, Any] = {"player_id": user.id, "settlement_id": {"$in": current}}
-        all_recs = [r async for r in self.records.find(q).sort("updated_at", -1)]
+        return [r async for r in self.records.find(q).sort("updated_at", -1)]
+
+    async def spend(self, user: CurrentUser, year: int | None, month: int | None) -> SpendOut:
+        if month is not None and year is None:
+            raise BusinessRuleViolation("Pick a year to filter by month", code="SPEND_MONTH_NEEDS_YEAR")
+        cache: dict[Any, Any] = {}
+        teams: dict[ObjectId, TeamSpendOut] = {}
+        months: dict[str, dict[ObjectId, int]] = {}
+        years: set[int] = set()
+        matches = 0
+        for r in await self._my_records(user):
+            fixture = await self._fixture(cache, r)
+            when = ensure_utc(fixture.get("start_at", r["updated_at"])).astimezone(IST)
+            years.add(when.year)
+            t = teams.get(r["team_id"])
+            if t is None:
+                team = await self._ref(cache, "teams", r["team_id"])
+                t = teams[r["team_id"]] = TeamSpendOut(
+                    team_id=str(r["team_id"]),
+                    team_name=team.get("team_name", "Team"),
+                    paid_paise=0,
+                    owed_paise=0,
+                    matches=0,
+                )
+            if r["status"] in (P.PENDING, P.DISPUTED):
+                t.owed_paise += max(0, r["amount_paise"] - r.get("credited_paise", 0))
+            if (year is not None and when.year != year) or (month is not None and when.month != month):
+                continue
+            if r["status"] != P.EXEMPTED:
+                t.matches += 1
+                matches += 1
+            if r["status"] == P.PAID:
+                t.paid_paise += r["amount_paise"]
+                bucket = months.setdefault(when.strftime("%Y-%m"), {})
+                bucket[r["team_id"]] = bucket.get(r["team_id"], 0) + r["amount_paise"]
+        ranked = sorted(teams.values(), key=lambda t: (-t.paid_paise, -t.owed_paise, t.team_name))
+        return SpendOut(
+            year=year,
+            month=month,
+            years=sorted(years, reverse=True),
+            paid_paise=sum(t.paid_paise for t in ranked),
+            owed_paise=sum(t.owed_paise for t in ranked),
+            matches=matches,
+            teams=ranked,
+            months=[
+                MonthSpendOut(
+                    month=m,
+                    paid_paise=sum(by.values()),
+                    by_team=[MonthTeamSpendOut(team_id=str(k), paid_paise=v) for k, v in by.items()],
+                )
+                for m, by in sorted(months.items())
+            ],
+        )
+
+    async def player_dashboard(self, user: CurrentUser, status: P | None) -> PlayerDashboardOut:
+        all_recs = await self._my_records(user)
         shown = [r for r in all_recs if status is None or r["status"] == status.value]
         cache: dict[Any, Any] = {}
         return PlayerDashboardOut(
@@ -293,18 +355,25 @@ class PaymentService:
             records=[await self._out(r, cache) for r in shown],
         )
 
+    async def _ref(self, cache: dict[Any, Any], col: str, _id: ObjectId) -> dict[str, Any]:
+        key = (col, _id)
+        if key not in cache:
+            cache[key] = await self.c.mongo[col].find_one({"_id": _id}) or {"_id": _id}
+        return dict(cache[key])
+
+    async def _fixture(self, cache: dict[Any, Any], r: dict[str, Any]) -> dict[str, Any]:
+        match = await self._ref(cache, "matches", r["match_id"])
+        if "title" not in match:  # team-vs-team fee side
+            match = await self._ref(cache, "fee_sides", r["match_id"])
+        return match
+
     async def _out(self, r: dict[str, Any], cache: dict[Any, Any] | None = None) -> PaymentRecordOut:
         cache = cache if cache is not None else {}
 
         async def get(col: str, _id: ObjectId) -> dict[str, Any]:
-            key = (col, _id)
-            if key not in cache:
-                cache[key] = await self.c.mongo[col].find_one({"_id": _id}) or {"_id": _id}
-            return dict(cache[key])
+            return await self._ref(cache, col, _id)
 
-        match = await get("matches", r["match_id"])
-        if "title" not in match:  # team-vs-team fee side
-            match = await get("fee_sides", r["match_id"])
+        match = await self._fixture(cache, r)
         team = await get("teams", r["team_id"])
         player = await get("users", r["player_id"])
         captain = await get("users", r["captain_id"])

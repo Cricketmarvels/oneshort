@@ -44,7 +44,7 @@ export function PlayRIcon({ name, size = 20, color, weight = "regular" }: { name
 }
 
 // ---------------------------------------------------------------- sports pictograms (48×48 grid)
-export type SportsAction = "findPlayers" | "findTeams" | "bookGround" | "splitFees" | "createMatch" | "manageTeam" | "challenge";
+export type SportsAction = "findPlayers" | "findTeams" | "bookGround" | "splitFees" | "createMatch" | "manageTeam" | "challenge" | "shareAvailability" | "manageFees";
 
 /** Two-tone pictogram: solid strokes in `color`, soft tone fill at ~22% (or a supplied `tone`). */
 export function SportsActionIcon({ action, size = 40, color, tone, inverse }: { action: SportsAction; size?: number; color?: string; tone?: string; inverse?: boolean }) {
@@ -107,6 +107,20 @@ export function SportsActionIcon({ action, size = 40, color, tone, inverse }: { 
           <Path d="M16.3 24.5 C18.5 26.5 18.5 29.5 16.3 31.5 M23.7 24.5 C21.5 26.5 21.5 29.5 23.7 31.5" {...common} strokeWidth={1.4} />
           <Circle cx={38} cy={36} r={7.5} fill={c} />
           <Path d="M38 32.2 V39.8 M34.2 36 H41.8" stroke={inverse ? T.heroInk : "#FFFFFF"} strokeWidth={2.4} strokeLinecap="round" />
+        </G>
+      ) : action === "shareAvailability" ? (
+        <G>
+          {/* calendar page with a tick on the free day */}
+          <Rect x={6} y={9} width={36} height={32} rx={6} fill={t} fillOpacity={to} {...common} />
+          <Path d="M6 18 H42 M15 5.5 V12 M33 5.5 V12" {...common} />
+          <Path d="M17 30 L22.5 35.5 L32 25" {...common} strokeWidth={3.2} />
+        </G>
+      ) : action === "manageFees" ? (
+        <G>
+          {/* receipt with a rupee line */}
+          <Path d="M10 5 H38 V43 L33.5 39.5 L29 43 L24.5 39.5 L20 43 L15.5 39.5 L10 43 Z" fill={t} fillOpacity={to} {...common} />
+          <Path d="M17 14 H29 M17 19 H29 M19.5 14 C25 14 25 21 19.5 21 H18 L26 28" {...common} strokeWidth={2.2} />
+          <Path d="M17 33 H31" {...common} strokeWidth={2.2} />
         </G>
       ) : action === "manageTeam" ? (
         <G>
