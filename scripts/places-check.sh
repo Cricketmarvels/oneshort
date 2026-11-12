@@ -19,7 +19,16 @@ async def main(q: str) -> None:
     try:
         found = await p.search(q, 28.5794, 77.3374, s.places_country)
     except Exception as exc:
-        print(f"search failed: {type(exc).__name__}: {str(exc)[:200]}")
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status in (401, 403):
+            print(f"{status}: the provider rejected the key.")
+            print("  - Is PLACES_API_KEY the real key, not the placeholder?")
+            print("  - Ola keys come from maps.olakrutrim.com (Places enabled), not cloud.olakrutrim.com.")
+            print("  - Google keys need Places API (New) enabled and must allow this machine's IP.")
+        elif status == 429:
+            print("429: rate limited or out of quota for today.")
+        else:
+            print(f"search failed: {type(exc).__name__}: {str(exc)[:200]}")
         raise SystemExit(1)
     print(f"{len(found)} result(s) for {q!r}:")
     for x in found:
