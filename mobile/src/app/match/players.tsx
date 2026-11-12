@@ -172,6 +172,16 @@ export default function FindPlayersRequest() {
             )}
           </View>
 
+          {mode === "match" && match ? (
+            <>
+              <SquadSoFar match={match} />
+              <View style={{ gap: SP.sm }}>
+                <SectionHeader title="Ask your regulars" />
+                <RegularsFirst matchId={match.id} />
+              </View>
+            </>
+          ) : null}
+
           <View style={{ gap: SP.md }}>
             <SectionHeader title="How many" />
             <View style={{ backgroundColor: T.surface, borderRadius: R.card, borderWidth: 1, borderColor: T.line, paddingHorizontal: 16, paddingVertical: 4 }}>
@@ -193,12 +203,45 @@ export default function FindPlayersRequest() {
 
           {err ? <ErrorBox error={err} onRetry={() => void search()} /> : null}
           <Button title={total ? `Find ${total} player${total === 1 ? "" : "s"}` : "Find available players"} size="lg" disabled={mode === "match" && !match} onPress={() => void search()} />
-          {mode === "match" && match ? <RegularsFirst matchId={match.id} /> : null}
         </>
       )}
 
       {match && stage !== "searching" ? <RequestBoard match={match} /> : null}
     </ScrollView>
+  );
+}
+
+/**
+ * Who is already in for the match the captain picked. It comes first because every section under it —
+ * the regulars link, the role counts, the request board — is about filling the gap this list leaves.
+ */
+function SquadSoFar({ match }: { match: Match }) {
+  const r = useQuery({ queryKey: ["roster", match.id], queryFn: () => api<S<"RosterOut">>(`/matches/${match.id}/roster`) });
+  const rows = r.data?.active ?? [];
+  return (
+    <View style={{ gap: SP.sm }}>
+      <SectionHeader title={`In the squad · ${match.composition.confirmed_total}/${match.composition.capacity}`}
+        action="Match page" onAction={() => router.push({ pathname: "/match/[id]", params: { id: match.id } })} />
+      {r.isPending ? <LoadingSkeleton rows={2} /> : r.isError ? <ErrorBox error={r.error} onRetry={() => void r.refetch()} /> : !rows.length ? (
+        <Txt v="small" color={T.muted}>Nobody has joined yet.</Txt>
+      ) : (
+        <View style={{ borderRadius: R.card, borderWidth: 1, borderColor: T.line, backgroundColor: T.surface, overflow: "hidden" }}>
+          {rows.slice(0, 8).map((e, i) => (
+            <View key={e.player.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: T.line }}>
+              <Avatar uri={e.player.profile_image} name={e.player.full_name} size={32} />
+              <Txt v="bodyMed" numberOfLines={1} style={{ flex: 1, minWidth: 0 }}>{e.player.full_name}{e.is_captain ? " (C)" : ""}</Txt>
+              {e.commitment === "tentative" ? <Badge status="warning" label="Tentative" /> : e.assigned_role ? <Txt v="small" color={T.muted}>{roleName(e.assigned_role)}</Txt> : null}
+            </View>
+          ))}
+          {rows.length > 8 ? (
+            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/match/[id]", params: { id: match.id } })}
+              style={{ paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line }}>
+              <Txt v="smallSemi" color={T.primaryDark}>+{rows.length - 8} more</Txt>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -345,7 +388,7 @@ function RegularsFirst({ matchId }: { matchId: string }) {
       onPress={() => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(shareText(l.data!))}`)}
       style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderRadius: R.card, backgroundColor: T.primarySoft }}>
       <Share2 size={18} color={T.primaryDark} strokeWidth={2} />
-      <Txt v="smallSemi" color={T.primaryDark} style={{ flex: 1 }}>Ask your regulars first — share the squad link</Txt>
+      <Txt v="smallSemi" color={T.primaryDark} style={{ flex: 1 }}>Share the squad link on WhatsApp</Txt>
     </Pressable>
   );
 }
