@@ -278,9 +278,56 @@ async def test_ola_drops_a_suggestion_it_cannot_place_on_a_map() -> None:
     assert found == []
 
 
+OLA_REAL_SHAPE = {
+    "status": "ok",
+    "predictions": [
+        {
+            "place_id": "ola-platform:5000047081232",
+            "description": "Howzzatt Sports Cricket Ground, Service Rd, Friends Enclave Residency, "
+            "Ambedkar City, Noida, Uttar Pradesh, 201307, India",
+            "structured_formatting": {
+                "main_text": "Howzzatt Sports Cricket Ground",
+                "secondary_text": "Service Rd, Friends Enclave Residency, Ambedkar City, Noida, "
+                "Uttar Pradesh, 201307, India",
+            },
+            "terms": [
+                {"value": "Howzzatt Sports Cricket Ground"},
+                {"value": "Service Rd"},
+                {"value": "Friends Enclave Residency"},
+                {"value": "Ambedkar City"},
+                {"value": "Noida"},
+                {"value": "Uttar Pradesh"},
+                {"value": "201307"},
+                {"value": "India"},
+            ],
+            "geometry": {"location": {"lat": 28.6049, "lng": 77.4209}},
+            "distance_meters": 8641,
+        }
+    ],
+}
+
+
+async def test_ola_reads_the_shape_the_live_api_returns() -> None:
+    """Captured from a real api.olamaps.io reply (Nov 2026): terms, structured_formatting and a distance."""
+    seen: dict[str, Any] = {}
+    found = await _ola({"/autocomplete": OLA_REAL_SHAPE}, seen).search("howzzat", 28.5794, 77.3374, "in")
+
+    assert seen["paths"] == ["/places/v1/autocomplete"]
+    assert len(found) == 1
+    p = found[0]
+    assert p.name == "Howzzatt Sports Cricket Ground"
+    # The street is not the area and the state is not the city: "Ambedkar City, Noida", not "Service Rd, …".
+    assert (p.area, p.city) == ("Ambedkar City", "Noida")
+    assert p.distance_km == 8.6
+
+
 def test_indian_addresses_split_into_an_area_and_a_city() -> None:
     assert split_address("Mahadevpura, Bengaluru, Karnataka 560048, India") == ("Mahadevpura", "Bengaluru")
     assert split_address("Sector 62, Noida, Uttar Pradesh 201301, India") == ("Sector 62", "Noida")
     assert split_address("Koramangala, Bengaluru, Karnataka, India") == ("Koramangala", "Bengaluru")
+    assert split_address("Service Rd, Ambedkar City, Noida, Uttar Pradesh, 201307, India") == (
+        "Ambedkar City",
+        "Noida",
+    )
     assert split_address("Noida") == ("Noida", "Noida")
     assert split_address("") == ("—", "—")

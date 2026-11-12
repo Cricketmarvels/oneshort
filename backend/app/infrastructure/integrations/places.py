@@ -49,6 +49,7 @@ class Place(BaseModel):
     city: str
     lat: float
     lng: float
+    distance_km: float | None = None  # only where the provider measures it
 
 
 class PlacesProvider(Protocol):
@@ -66,22 +67,44 @@ class DisabledPlaces:
         return []
 
 
-def split_address(text: str) -> tuple[str, str]:
-    """Pull an (area, city) pair out of a one-line Indian address.
+# Indian addresses end "…, city, state, pincode, India". Naming the states is what lets the city be found
+# whichever of those tails a provider includes.
+STATES = {
+    "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh", "goa", "gujarat", "haryana",
+    "himachal pradesh", "jharkhand", "karnataka", "kerala", "madhya pradesh", "maharashtra", "manipur",
+    "meghalaya", "mizoram", "nagaland", "odisha", "punjab", "rajasthan", "sikkim", "tamil nadu", "telangana",
+    "tripura", "uttar pradesh", "uttarakhand", "west bengal", "andaman and nicobar islands", "chandigarh",
+    "dadra and nagar haveli and daman and diu", "delhi", "nct of delhi", "jammu and kashmir", "ladakh",
+    "lakshadweep", "puducherry",
+}
 
-    "Mahadevpura, Bengaluru, Karnataka 560048, India" -> ("Mahadevpura", "Bengaluru"). The country and the
-    state-plus-pincode tail are dropped; what's left is specific enough for a captain to recognise.
+
+def address_parts(parts: list[str]) -> tuple[str, str]:
+    """Reduce address components to the (area, city) a captain would recognise.
+
+    ["Service Rd", "Friends Enclave Residency", "Ambedkar City", "Noida", "Uttar Pradesh", "201307", "India"]
+    -> ("Ambedkar City", "Noida"). The country, pincode and state are stripped from the tail; the city is then
+    what's left at the end and the area is the component before it.
     """
-    parts = [p.strip() for p in text.split(",") if p.strip()]
+    parts = [p.strip() for p in parts if p and p.strip()]
     if parts and parts[-1].lower() in {"india", "bharat"}:
         parts = parts[:-1]
-    if len(parts) > 1 and any(ch.isdigit() for ch in parts[-1]):  # "Karnataka 560048"
+    if len(parts) > 1 and parts[-1].replace(" ", "").isdigit():  # pincode
         parts = parts[:-1]
+    if len(parts) > 2 and parts[-1].lower() in STATES:  # "Noida, Uttar Pradesh" — keep the city, drop the state
+        parts = parts[:-1]
+    elif len(parts) > 1 and any(ch.isdigit() for ch in parts[-1]) and len(parts[-1].split()) > 1:
+        parts = parts[:-1]  # "Karnataka 560048" — state and pincode in one component
     if not parts:
         return ("—", "—")
-    area = parts[0]
-    city = parts[1] if len(parts) > 1 else parts[0]
+    city = parts[-1]
+    area = parts[-2] if len(parts) > 1 else city
     return (area, city)
+
+
+def split_address(text: str) -> tuple[str, str]:
+    """``address_parts`` for a provider that gives the address as one comma-separated line."""
+    return address_parts(text.split(","))
 
 
 def _first(d: dict[str, Any], *keys: str) -> str:
@@ -222,12 +245,17 @@ class OlaPlaces:
         name = _first(fmt, "main_text") or _first(pred, "name") or description.split(",")[0].strip()
         if not name:
             return None
-        # "Dugout Turf, Sector 76, Noida" — the address is whatever follows the name.
-        rest = _first(fmt, "secondary_text")
-        if not rest:
-            head, _, tail = description.partition(",")
-            rest = tail.strip() if head.strip() == name and tail.strip() else description
-        area, city = split_address(rest)
+        # Ola gives the address pre-split in "terms"; otherwise fall back to the one-line forms.
+        terms = [str(t.get("value", "")) for t in pred.get("terms", []) if isinstance(t, dict)]
+        if len(terms) > 1:
+            area, city = address_parts(terms[1:] if terms[0].strip() == name else terms)
+        else:
+            rest = _first(fmt, "secondary_text")
+            if not rest:
+                head, _, tail = description.partition(",")
+                rest = tail.strip() if head.strip() == name and tail.strip() else description
+            area, city = split_address(rest)
+        metres = pred.get("distance_meters")
         place_id = _first(pred, "place_id", "id") or name
         return Place(
             source="ola",
@@ -238,6 +266,7 @@ class OlaPlaces:
             city=city,
             lat=coords[0],
             lng=coords[1],
+            distance_km=round(float(metres) / 1000, 1) if isinstance(metres, int | float) else None,
         )
 
     async def _detail_coords(self, client: httpx.AsyncClient, place_id: str) -> tuple[float, float] | None:

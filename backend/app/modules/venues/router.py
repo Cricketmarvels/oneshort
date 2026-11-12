@@ -192,7 +192,7 @@ async def search_venues(
                 lng=p.lng,
                 source=p.source,
                 place_id=p.place_id,
-                distance_km=None,
+                distance_km=p.distance_km,  # only providers that measure it (Ola does)
             )
         )
     return ok(out[:30])
