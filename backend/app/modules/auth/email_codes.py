@@ -100,12 +100,12 @@ class EmailCodes:
                 "created_at": now,
             }
         )
-        what = "create your GoFindr account" if purpose == "signup" else "reset your GoFindr password"
+        what = "create your OneShort account" if purpose == "signup" else "reset your OneShort password"
         await self.c.email.send(
             email,
-            f"{code} is your GoFindr code",
+            f"{code} is your OneShort code",
             f"Your code to {what} is {code}.\n\nIt expires in 5 minutes. Don't share it with anyone.\n"
-            "If you didn't ask for this, you can ignore this email.\n\n— GoFindr",
+            "If you didn't ask for this, you can ignore this email.\n\n— OneShort",
         )
         expose = self.c.email.exposes_code and ((self.s.is_dev_like and self.s.dev_otp_in_response) or show)
         out.dev_otp = code if expose else None
@@ -156,10 +156,10 @@ async def finish_email_signup(
     email = email.lower()
     users = c.mongo["users"]
     if await users.find_one({"email": email}, {"_id": 1}):
-        raise Conflict("This email already has a GoFindr account. Log in instead.", code="ACCOUNT_EXISTS")
+        raise Conflict("This email already has a OneShort account. Log in instead.", code="ACCOUNT_EXISTS")
     if await users.find_one({"mobile_number": mobile}, {"_id": 1}):
         raise Conflict(
-            "This mobile number already has a GoFindr account. Log in with it, or use a different number.",
+            "This mobile number already has a OneShort account. Log in with it, or use a different number.",
             code="MOBILE_IN_USE",
         )
     now = utcnow()

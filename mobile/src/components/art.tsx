@@ -1,6 +1,6 @@
 /**
  * Identity pieces (aqua/teal system): player avatars, team crests in the team's colour,
- * restrained team-colour banners, a versus card and the GoFindr mark + wordmark.
+ * restrained team-colour banners, a versus card and the OneShort mark + wordmark.
  */
 import type { ReactNode } from "react";
 import { Pressable, Text, View, type ViewStyle } from "react-native";
@@ -89,16 +89,4 @@ function Side({ t }: { t: { name: string; sub?: string } }) {
   );
 }
 
-/** GoFindr mark (turquoise rounded tile with a cricket-ball seam "P") + Manrope wordmark. */
-export function Wordmark({ size = 20 }: { size?: number; dark?: boolean; tone?: "lime" | "brand" }) {
-  const m = Math.round(size * 1.45);
-  return (
-    <View accessibilityRole="header" accessibilityLabel="GoFindr" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-      <View style={{ width: m, height: m, borderRadius: m * 0.32, backgroundColor: T.primary, alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ ...FW.display, fontSize: m * 0.58, lineHeight: m * 0.72, color: T.surface }}>G</Text>
-        <View style={{ position: "absolute", right: m * 0.16, bottom: m * 0.16, width: m * 0.2, height: m * 0.2, borderRadius: m, backgroundColor: T.limeAccent }} />
-      </View>
-      <Text style={{ ...FW.display, fontSize: size, color: T.ink, letterSpacing: -0.4 }}>Go<Text style={{ color: T.primaryDark }}>Findr</Text></Text>
-    </View>
-  );
-}
+export { Wordmark } from "@/components/brand";

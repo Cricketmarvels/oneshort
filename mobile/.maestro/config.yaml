@@ -1,4 +1,4 @@
-# Maestro suite for GoFindr Android. Run: ./scripts/android-e2e.sh (starts nothing paid; see docs/beta/ANDROID_BETA_FIREBASE.md)
+# Maestro suite for OneShort Android. Run: ./scripts/android-e2e.sh (starts nothing paid; see docs/beta/ANDROID_BETA_FIREBASE.md)
 flows:
   - "*.yaml"
 executionOrder:

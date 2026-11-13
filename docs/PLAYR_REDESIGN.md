@@ -1,11 +1,11 @@
-# GoFindr redesign: implementation report
+# OneShort redesign: implementation report
 
 Scope: cricket-only MVP. The FastAPI + MongoDB backend is extended rather than rewritten; every pre-existing endpoint still works and passes its tests. The Expo mobile app is fully redesigned. The React web app compiles against the new API but keeps its previous design.
 
 ## Screens (mobile, `mobile/src/app`)
 | Screen | What it does |
 |---|---|
-| Login | GoFindr identity and tagline; email/password or OTP |
+| Login | OneShort identity and tagline; email/password or OTP |
 | **Home** | Greeting and locality; rating card (rating, ±RD, provisional/verified badge, rank in city and within 10 km); quick actions (Challenge a Team, Find Players, Matches, Teams, Leaderboard, Create a Community); Needs your attention (results to verify, challenges awaiting you); Player of the Week (biggest verified 7-day gain within 50 km, omitted when nobody qualifies); upcoming fixtures; top players nearby; active challenges; teams looking for a game; community activity |
 | **Leaderboard** | Players/Teams; location selector (device or manual area); 5/10/20/50 km, city, state, national; 7 categories; format filter sheet; top-3 podium; "your position" card; rank movement, confidence bar, sparkline; actions: View, Compare, Invite; demo-data banner; integrity footer |
 | Player profile | Rating ring filled by confidence; batting/bowling/fielding/impact bars with RD and match counts; all-round and consistency; "why your rating moved"; rating trend chart; recent-form bars; per-format ratings; verified career stats; teams; match history with per-match deltas and reasons |
@@ -68,7 +68,7 @@ Existing auth, rate limiting, pagination and validation apply. Coordinates are n
 ## Not done / outstanding
 - Not tested on a physical iPhone or Android device, or in simulators. Xcode and the Android SDK aren't installed on this Mac. The public Expo Go link is ready for a device test.
 - The directive's gluestack UI v5 and NativeWind v5 were not adopted. I kept a token-based StyleSheet design system to avoid a styling-framework migration on RN 0.88 / Expo SDK 58; every token lives in `theme.ts`, so a later migration is mechanical. React Hook Form and Zod were not added (forms are small); Zustand is used for location state.
-- The app icon and splash are still the default Expo assets; final GoFindr artwork is needed.
+- The app icon and splash are still the default Expo assets; final OneShort artwork is needed.
 - The web app keeps the earlier design; only the mobile app is redesigned.
 - Payment tracking is the existing per-match offline contribution tracker (pickup games). It isn't yet attached to team fixtures.
 - Tournaments (P2) are only posts in communities; there is no bracket management.

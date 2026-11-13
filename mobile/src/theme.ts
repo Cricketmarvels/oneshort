@@ -1,6 +1,8 @@
 /**
- * GoFindr · aqua/teal design tokens — the single source of every colour, font, radius and size.
- * Source: GoFindr premium redesign (3-screen reference, Nov 2026) — canvas #F5F6F0, primary #008C86, deep teal #063F3D, mint #DDF5EF, ink #172B2B; Inter.
+ * OneShort · design tokens — the single source of every colour, font, radius and size.
+ * Brand: deep pitch green ink (#0A2A20), turf green primary (#0E9F6E), the "eleventh dot" orange accent (#FF6A3D),
+ * warm off-white canvas (#F6F7F3); Inter. The accent is reserved for the thing that's missing (a short squad, an unpaid
+ * fee, the lit dot in the mark) so it keeps its meaning.
  *
  * Light + dark palettes; applyTheme() swaps them at runtime (lib/appearance.ts: System | Light | Dark).
  * Never hard-code colours in screens — use T.* so both themes work. Legacy aliases (ink, muted, tint…) map onto tokens.
@@ -8,62 +10,62 @@
 import { Platform, type TextStyle, type ViewStyle } from "react-native";
 
 const LIGHT = {
-  background: "#F5F6F0", // warm off-white canvas
+  background: "#F6F7F3", // warm off-white canvas
   surface: "#FFFFFF",
-  surfaceSecondary: "#FAFBF7",
-  primary: "#008C86", // buttons, active states
-  primaryDark: "#007A75", // teal text/links (AA on white)
-  primaryPressed: "#006B65",
-  aqua: "#16A6A1",
-  primarySoft: "#DDF5EF", // mint — selected chips, highlights
-  pressedSoft: "#CBEEE5",
-  textPrimary: "#172B2B",
-  textSecondary: "#71817E",
-  textMuted: "#8A9A97",
-  border: "#E0E9E5",
-  heroInk: "#063F3D", // deep teal hero (stays dark in both themes)
-  accentOrange: "#F5A623",
-  accentOrangeSoft: "#FDF1DC",
+  surfaceSecondary: "#EFF3EE",
+  primary: "#0E9F6E", // turf green — buttons, active states
+  primaryDark: "#0B7F58", // green text/links (AA on white)
+  primaryPressed: "#09694A",
+  aqua: "#17A89C",
+  primarySoft: "#DCF4E8", // mint — selected chips, highlights
+  pressedSoft: "#C8ECDA",
+  textPrimary: "#111F19",
+  textSecondary: "#667570",
+  textMuted: "#89968F",
+  border: "#E0E7E1",
+  heroInk: "#0A2A20", // deep pitch green hero (stays dark in both themes)
+  accentOrange: "#FF6A3D", // the eleventh dot
+  accentOrangeSoft: "#FFECE4",
   successBackground: "#E1F4EA",
   successText: "#12804D",
   success: "#16A765",
   successPill: "#DDF5E6",
-  warningBackground: "#FDF1DC",
+  warningBackground: "#FFF1DC",
   warningText: "#9A6200",
   dangerBackground: "#FCE7EA",
   dangerText: "#C2364A",
-  chipNeutral: "#EEF2EF",
-  limeAccent: "#DDF5EF",
-  canvasOuter: "#ECEEE6",
-  skeleton: "#ECEFE8",
-  overlayRgb: "23,43,43",
+  chipNeutral: "#EDF1EC",
+  limeAccent: "#DCF4E8",
+  canvasOuter: "#ECEFE8",
+  skeleton: "#EAEEE7",
+  overlayRgb: "17,31,25",
   // pastel quick-action tiles: [from, to, icon]
-  tileMint: "#E3F6EF", tileMint2: "#D2F0E6", tileMintInk: "#0E8F7A",
-  tileAqua: "#E4F4F7", tileAqua2: "#D3EDF2", tileAquaInk: "#0B7F8C",
-  tilePeach: "#FDF0E2", tilePeach2: "#FBE5D0", tilePeachInk: "#C7701A",
+  tileMint: "#E1F6EB", tileMint2: "#CFF0DE", tileMintInk: "#0E8F5F",
+  tileAqua: "#E2F3F5", tileAqua2: "#D0ECF0", tileAquaInk: "#0B7F8C",
+  tilePeach: "#FFEEE6", tilePeach2: "#FFE1D3", tilePeachInk: "#D4512A",
   tileLilac: "#EEEDFB", tileLilac2: "#E3E1F7", tileLilacInk: "#6A55C9",
-  tileTitle: "#103B36", // deep teal title on a pastel card (reference); darker than body ink on purpose
+  tileTitle: "#0F3A2C", // deep green title on a pastel card; darker than body ink on purpose
   statusBar: "dark",
 };
 
-/** Dark theme: deep teal-black canvas, raised teal-grey surfaces, brighter teal for contrast on dark. */
+/** Dark theme: pitch-black green canvas, raised surfaces, brighter green for contrast on dark. */
 const DARK: typeof LIGHT = {
-  background: "#0D1716",
-  surface: "#15211F",
-  surfaceSecondary: "#1B2927",
-  primary: "#19ADA5",
-  primaryDark: "#4FD1C7",
-  primaryPressed: "#12918A",
-  aqua: "#2BC3BB",
-  primarySoft: "#163A37",
-  pressedSoft: "#1D4844",
-  textPrimary: "#E8F1EF",
-  textSecondary: "#9BB0AC",
-  textMuted: "#7A8F8B",
-  border: "#263633",
-  heroInk: "#06302E",
-  accentOrange: "#F5B041",
-  accentOrangeSoft: "#3A2C14",
+  background: "#0B1511",
+  surface: "#13201A",
+  surfaceSecondary: "#192921",
+  primary: "#22C283",
+  primaryDark: "#5EE0A8",
+  primaryPressed: "#1AA56E",
+  aqua: "#3BC9B5",
+  primarySoft: "#163A2B",
+  pressedSoft: "#1C4A37",
+  textPrimary: "#E9F2EC",
+  textSecondary: "#9DB1A6",
+  textMuted: "#7C8F85",
+  border: "#24352C",
+  heroInk: "#07251B",
+  accentOrange: "#FF7A50",
+  accentOrangeSoft: "#3D2317",
   successBackground: "#14322A",
   successText: "#5FD49B",
   success: "#2FCB80",
@@ -72,16 +74,16 @@ const DARK: typeof LIGHT = {
   warningText: "#F2C14E",
   dangerBackground: "#3D1D22",
   dangerText: "#FF8A97",
-  chipNeutral: "#22322F",
-  limeAccent: "#163A37",
-  canvasOuter: "#080F0E",
-  skeleton: "#1F2D2B",
+  chipNeutral: "#22322A",
+  limeAccent: "#163A2B",
+  canvasOuter: "#070F0B",
+  skeleton: "#1E2D25",
   overlayRgb: "0,0,0",
-  tileMint: "#16302B", tileMint2: "#123A33", tileMintInk: "#5FD8C0",
+  tileMint: "#143127", tileMint2: "#113A2B", tileMintInk: "#5FD8A8",
   tileAqua: "#142C33", tileAqua2: "#11353D", tileAquaInk: "#5CC8D8",
-  tilePeach: "#33261A", tilePeach2: "#3B2A18", tilePeachInk: "#F2A55E",
+  tilePeach: "#33261A", tilePeach2: "#3B2A18", tilePeachInk: "#FF9A70",
   tileLilac: "#25223A", tileLilac2: "#2B2746", tileLilacInk: "#B3A4FF",
-  tileTitle: "#E8F1EF",
+  tileTitle: "#E9F2EC",
   statusBar: "light",
 };
 export type Scheme = "light" | "dark";
@@ -161,9 +163,9 @@ export const type: Record<string, TextStyle> = {
   number: { ...FW.semibold, fontSize: 15, lineHeight: 20, ...num },
 };
 
-/** Subtle teal-tinted elevation; level 1 = cards (very soft), 2 = floating controls, 3 = sheets. */
+/** Subtle green-tinted elevation; level 1 = cards (very soft), 2 = floating controls, 3 = sheets. */
 export const shadow = (level: 1 | 2 | 3 = 1): ViewStyle => ({
-  shadowColor: scheme === "dark" ? "#000000" : "#0B3B38",
+  shadowColor: scheme === "dark" ? "#000000" : "#0A2A20",
   shadowOpacity: scheme === "dark" ? (level === 1 ? 0.25 : level === 2 ? 0.35 : 0.5) : level === 1 ? 0.05 : level === 2 ? 0.08 : 0.14, // subtle, only where it helps hierarchy
   shadowRadius: level === 1 ? 10 : level === 2 ? 16 : 24,
   shadowOffset: { width: 0, height: level === 1 ? 3 : 6 },

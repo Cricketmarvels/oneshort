@@ -98,7 +98,7 @@ export function GroundCoverImage({ name, uri, style }: { name: string; uri?: str
 
 /**
  * Large action-card artwork. ARTWORK holds the raster illustrations (assets/images/art/); an action
- * without an entry falls back to the in-house GoFindr pictogram.
+ * without an entry falls back to the in-house OneShort pictogram.
  */
 export const ARTWORK: Partial<Record<SportsAction, ImageSource | number>> = {
   // Microsoft Fluent Emoji 3D (MIT licence); see assets/images/CREDITS.md
@@ -121,8 +121,8 @@ export function SportsActionArtwork({ action, size = 56, color }: { action: Spor
 
 /**
  * Manager-only "change photo" control. Picks from the library, uploads with the purpose (server validates, resizes,
- * strips metadata and records the owner), then hands the GoFindr URL to `save` (PUT on the entity — the API rejects
- * any URL that isn't a GoFindr upload). Errors are shown inline; nothing changes until the save succeeds.
+ * strips metadata and records the owner), then hands the OneShort URL to `save` (PUT on the entity — the API rejects
+ * any URL that isn't a OneShort upload). Errors are shown inline; nothing changes until the save succeeds.
  */
 export function MediaEditButton({ label, purpose, save, onDark }: { label: string; purpose: UploadPurpose; save: (url: string) => Promise<unknown>; onDark?: boolean }) {
   const [busy, setBusy] = useState(false);

@@ -1,4 +1,4 @@
-"""Media: uploads are re-encoded (resized, metadata stripped); image fields only accept GoFindr uploads."""
+"""Media: uploads are re-encoded (resized, metadata stripped); image fields only accept OneShort uploads."""
 
 import io
 from pathlib import Path
@@ -59,7 +59,9 @@ async def test_upload_strips_metadata_resizes_and_is_relative(client: httpx.Asyn
     assert bad.status_code == 422
 
 
-async def test_media_fields_accept_only_playr_uploads_and_owners(client: httpx.AsyncClient, container: Container) -> None:
+async def test_media_fields_accept_only_playr_uploads_and_owners(
+    client: httpx.AsyncClient, container: Container
+) -> None:
     def same(a: str | None, b: str | None) -> bool:  # signed links differ by expiry; compare the private keys
         return normalize_media_key(a, container.settings) == normalize_media_key(b, container.settings)
 

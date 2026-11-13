@@ -58,7 +58,7 @@ export default function JoinScreen() {
           <View style={{ gap: 10 }}>
             <Txt v="hero">Link not found</Txt>
             <Txt v="body" color={T.muted}>This invite link isn't valid. Ask your captain to share it again.</Txt>
-            <Button title="Open GoFindr" onPress={() => { pending.clear(); router.replace("/"); }} />
+            <Button title="Open OneShort" onPress={() => { pending.clear(); router.replace("/"); }} />
           </View>
         ) : (
           <>

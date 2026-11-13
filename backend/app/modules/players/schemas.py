@@ -26,8 +26,8 @@ CricHeroesUrl = Annotated[str, StringConstraints(max_length=300), AfterValidator
 
 
 class CricHeroesStats(StrictModel):
-    """Career numbers the player copies from their CricHeroes profile. Self-reported: GoFindr shows them labelled
-    as such, never mixes them into GoFindr ratings, and never fetches them from CricHeroes."""
+    """Career numbers the player copies from their CricHeroes profile. Self-reported: OneShort shows them labelled
+    as such, never mixes them into OneShort ratings, and never fetches them from CricHeroes."""
 
     matches: int | None = Field(default=None, ge=0, le=5000)
     runs: int | None = Field(default=None, ge=0, le=250_000)

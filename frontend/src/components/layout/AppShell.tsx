@@ -105,7 +105,7 @@ export function Brand({ compact }: { compact?: boolean }) {
     <span className="flex items-center gap-2">
       <img src="/icon.svg" alt="" className="size-8" />
       <span className="font-display text-lg font-extrabold tracking-tight text-brand-800">
-        GoFindr{!compact && <span className="text-ball-500"> Play</span>}
+        OneShort{!compact && <span className="text-ball-500"> Play</span>}
       </span>
     </span>
   );

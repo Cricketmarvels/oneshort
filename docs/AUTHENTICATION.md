@@ -1,4 +1,4 @@
-# GoFindr authentication and onboarding
+# OneShort authentication and onboarding
 
 Status: current as of 2026-11-10 (audit and hardening release). This replaces the proposal in
 `docs/design/AUTH_ARCHITECTURE_REVIEW.md`, which is kept as history.
@@ -60,7 +60,7 @@ before the number was proven is removed and its sessions end.
 
 Checked in order. The first match wins.
 
-1. Startup can't reach the server → "Can't reach GoFindr / Try again". The saved session is kept.
+1. Startup can't reach the server → "Can't reach OneShort / Try again". The saved session is kept.
 2. No session and no sport → Welcome. An invited newcomer skips this and goes to sign-up.
 3. No session → Log in.
 4. Current terms not accepted → Agreement. A material terms change re-prompts.
@@ -93,7 +93,7 @@ adapter and the WhatsApp simulator skip them.
 
 ## 6. Sessions
 
-- Access token: 15 minutes, HS256, `iss=gofindr`, `aud=gofindr:<APP_ENV>`. A token minted for another
+- Access token: 15 minutes, HS256, `iss=oneshort`, `aud=oneshort:<APP_ENV>`. A token minted for another
   environment is refused even if secrets were shared. Tokens from before the audience claim are accepted
   for their remaining life, so the release signed nobody out.
 - Refresh token: opaque, SHA-256 stored, rotated on every use, 30 days from last use, 90 days absolute.

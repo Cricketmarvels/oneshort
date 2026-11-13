@@ -40,7 +40,7 @@ export default function CommunityDetail() {
   const canRead = com.visibility === "public" || member;
   return (
     <>
-      <Stack.Screen options={{ title: "Community", headerTitleAlign: "center", headerRight: () => <ShareButton message={`${com.name} on GoFindr — ${com.member_count} members`} /> }} />
+      <Stack.Screen options={{ title: "Community", headerTitleAlign: "center", headerRight: () => <ShareButton message={`${com.name} on OneShort — ${com.member_count} members`} /> }} />
       <ScrollView style={{ backgroundColor: T.bg }} contentContainerStyle={{ paddingBottom: 60 }} refreshControl={<RefreshControl refreshing={c.isRefetching} onRefresh={refresh} tintColor={T.primary} />}>
         <View style={{ paddingHorizontal: SP.page, paddingTop: SP.sm }}>
           <PhotoHero photo="ground" height={170} scrim={0.08} />

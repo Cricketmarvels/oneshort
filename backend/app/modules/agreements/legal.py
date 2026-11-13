@@ -1,4 +1,4 @@
-"""GoFindr Terms of Use (v2) and Privacy Notice (v1), written for the Digital Personal Data Protection Act, 2023,
+"""OneShort Terms of Use (v2) and Privacy Notice (v1), written for the Digital Personal Data Protection Act, 2023,
 the DPDP Rules, 2025 and the IT (Intermediary Guidelines) Rules, 2021.
 
 Company and grievance-officer details come from settings (LEGAL_ENTITY_NAME and friends). Production refuses to start
@@ -31,30 +31,30 @@ def terms(s: Settings) -> dict[str, Any]:
     return {
         "kind": "terms",
         "version": TERMS_VERSION,
-        "title": "GoFindr Terms of Use",
+        "title": "OneShort Terms of Use",
         "effective_date": w["effective"],
         "is_material": True,
         "sections": [
             {
-                "heading": "1. About GoFindr and these terms",
+                "heading": "1. About OneShort and these terms",
                 "body": (
-                    f'GoFindr is operated by {w["entity"]}, {w["address"]} ("GoFindr", "we"). These terms are an '
-                    "agreement between you and us for the GoFindr app and website. By creating an account or using "
-                    "GoFindr you agree to them. Our Privacy Notice explains how we handle your personal data."
+                    f'OneShort is operated by {w["entity"]}, {w["address"]} ("OneShort", "we"). These terms are an '
+                    "agreement between you and us for the OneShort app and website. By creating an account or using "
+                    "OneShort you agree to them. Our Privacy Notice explains how we handle your personal data."
                 ),
             },
             {
-                "heading": "2. Who can use GoFindr",
+                "heading": "2. Who can use OneShort",
                 "body": (
-                    "You must be 18 or older. GoFindr is not designed for children and we do not currently offer "
+                    "You must be 18 or older. OneShort is not designed for children and we do not currently offer "
                     "accounts for players under 18. You may hold one personal account, and the details you give "
                     "(name, mobile number, email) must be your own and accurate."
                 ),
             },
             {
-                "heading": "3. What GoFindr does, and what it does not do",
+                "heading": "3. What OneShort does, and what it does not do",
                 "body": (
-                    "GoFindr helps cricket, badminton and pickleball players, captains and teams find each other, "
+                    "OneShort helps cricket, badminton and pickleball players, captains and teams find each other, "
                     "organise matches, keep squads and track shared match costs. We are a facilitator. We do not "
                     "organise, supervise, referee, insure or guarantee any match, venue, team or person. We do not "
                     "book grounds or courts: venue listings are for information, and you arrange bookings directly "
@@ -65,7 +65,7 @@ def terms(s: Settings) -> dict[str, Any]:
                 "heading": "4. Your account",
                 "body": (
                     "Keep your login codes and password private. Never share a one-time code with anyone, including "
-                    "people claiming to be from GoFindr. You are responsible for activity on your account. Tell us at "
+                    "people claiming to be from OneShort. You are responsible for activity on your account. Tell us at "
                     f"{w['email']} if you think someone else has access to it."
                 ),
             },
@@ -84,7 +84,7 @@ def terms(s: Settings) -> dict[str, Any]:
                 "heading": "6. Safety and match risks",
                 "body": (
                     "Sport carries a risk of injury. You take part voluntarily and are responsible for judging your "
-                    "own fitness, using proper safety equipment and following venue rules. GoFindr does not verify "
+                    "own fitness, using proper safety equipment and following venue rules. OneShort does not verify "
                     "the identity, skill or background of other users beyond the checks described in the app, and "
                     "does not provide insurance. Meet in public venues and use your judgement. In an emergency, "
                     "contact local emergency services (112)."
@@ -93,18 +93,18 @@ def terms(s: Settings) -> dict[str, Any]:
             {
                 "heading": "7. Match fees and payments between players",
                 "body": (
-                    "Fee splits in GoFindr are records to help a captain share costs fairly. GoFindr does not process, "
-                    "hold or guarantee any payment. Players pay captains directly by cash or UPI, and captains mark "
-                    "payments as received. Any arrangement about money is between the players and captain "
-                    "involved. Never share a UPI PIN, card number or password in GoFindr."
+                    "Fee splits in OneShort are records to help a captain share costs fairly. OneShort does not "
+                    "process, hold or guarantee any payment. Players pay captains directly by cash or UPI, and "
+                    "captains mark payments as received. Any arrangement about money is between the players and "
+                    "captain involved. Never share a UPI PIN, card number or password in OneShort."
                 ),
             },
             {
                 "heading": "8. Content you share",
                 "body": (
                     "You keep ownership of what you post: profile details, photos, team logos and covers, match "
-                    "photos, posts and messages. You give GoFindr a non-exclusive, royalty-free licence to store, "
-                    "display and process that content only to run GoFindr for you and the people you share it with. "
+                    "photos, posts and messages. You give OneShort a non-exclusive, royalty-free licence to store, "
+                    "display and process that content only to run OneShort for you and the people you share it with. "
                     "Upload only content you have the right to share. We may remove content that breaks these "
                     "terms or the law."
                 ),
@@ -121,8 +121,8 @@ def terms(s: Settings) -> dict[str, Any]:
             {
                 "heading": "10. Other services",
                 "body": (
-                    "GoFindr can link to services we do not control, such as CricHeroes profiles, WhatsApp and maps. "
-                    "Their own terms and privacy policies apply when you use them. GoFindr only stores the CricHeroes "
+                    "OneShort can link to services we do not control, such as CricHeroes profiles, WhatsApp and maps. "
+                    "Their own terms and privacy policies apply when you use them. OneShort only stores the CricHeroes "
                     "link you give us; we do not access your CricHeroes account or data."
                 ),
             },
@@ -137,7 +137,7 @@ def terms(s: Settings) -> dict[str, Any]:
             {
                 "heading": "12. Our responsibility to you",
                 "body": (
-                    'We work to keep GoFindr available and accurate but provide it "as is". To the extent the law '
+                    'We work to keep OneShort available and accurate but provide it "as is". To the extent the law '
                     "allows, we are not liable for injuries, losses, disputes or costs arising from matches, venues, "
                     "payments or conduct between users, or for indirect losses. Nothing in these terms limits "
                     "rights you have as a consumer under Indian law that cannot be excluded."
@@ -175,14 +175,14 @@ def privacy(s: Settings) -> dict[str, Any]:
     return {
         "kind": "privacy",
         "version": PRIVACY_VERSION,
-        "title": "GoFindr Privacy Notice",
+        "title": "OneShort Privacy Notice",
         "effective_date": w["effective"],
         "is_material": True,
         "sections": [
             {
                 "heading": "1. Who is responsible for your data",
                 "body": (
-                    f"{w['entity']}, {w['address']}, operates GoFindr and is the Data Fiduciary for your personal "
+                    f"{w['entity']}, {w['address']}, operates OneShort and is the Data Fiduciary for your personal "
                     "data under the Digital Personal Data Protection Act, 2023. Questions, requests and complaints: "
                     f"{w['officer']}, Grievance Officer, {w['email']}, or in the app at Profile → Privacy & data."
                 ),
@@ -220,7 +220,7 @@ def privacy(s: Settings) -> dict[str, Any]:
             {
                 "heading": "4. Who sees or receives your data",
                 "body": (
-                    "Other GoFindr users see what the features need: your name, photo, sports profile, rating, area "
+                    "Other OneShort users see what the features need: your name, photo, sports profile, rating, area "
                     "and approximate distance. Teammates and captains see your squad status and fee status. Your "
                     "mobile number is not shown to other players.\n"
                     "Service providers who process data for us under contract, and only on our instructions: "
@@ -271,7 +271,7 @@ def privacy(s: Settings) -> dict[str, Any]:
             {
                 "heading": "8. Children",
                 "body": (
-                    "GoFindr is only for people aged 18 or over, and you confirm your age when you join. We do not "
+                    "OneShort is only for people aged 18 or over, and you confirm your age when you join. We do not "
                     "knowingly process children's data. If we learn that an account belongs to someone under 18, we "
                     "close it and erase the data."
                 ),

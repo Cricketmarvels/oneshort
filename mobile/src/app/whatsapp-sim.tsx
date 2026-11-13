@@ -1,5 +1,5 @@
 /**
- * WhatsApp simulator (TEST MODE). Shows every WhatsApp message GoFindr would have sent to a number — login codes,
+ * WhatsApp simulator (TEST MODE). Shows every WhatsApp message OneShort would have sent to a number — login codes,
  * invitations, notifications — exactly as worded, so the feature can be tested end to end without a provider.
  * Logged in: your own number. Before login: needs the simulator key (keeps other people's codes private).
  */
@@ -40,7 +40,7 @@ export default function WhatsAppSimulator() {
     <View style={{ flex: 1, backgroundColor: "#E7EFEC" }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 12, backgroundColor: T.warningBackground }}>
         <FlaskConical size={16} color={T.warningText} strokeWidth={2} />
-        <Txt v="small" color={T.warningText} style={{ flex: 1 }}>Test mode — these messages were NOT sent to real WhatsApp. They show what GoFindr would send.</Txt>
+        <Txt v="small" color={T.warningText} style={{ flex: 1 }}>Test mode — these messages were NOT sent to real WhatsApp. They show what OneShort would send.</Txt>
       </View>
       {!mine ? (
         <View style={{ padding: SP.page, gap: 10, backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: T.line }}>
@@ -55,7 +55,7 @@ export default function WhatsAppSimulator() {
           ) : msgs.map((m) => (
             <View key={m.id} style={{ alignSelf: "flex-start", maxWidth: "88%", gap: 2 }}>
               <View style={{ padding: 12, borderRadius: 14, borderTopLeftRadius: 4, backgroundColor: "#FFFFFF", gap: 8, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } }}>
-                <Txt v="micro" color={T.primaryDark}>GoFindr · {KIND[m.kind] ?? m.kind}</Txt>
+                <Txt v="micro" color={T.primaryDark}>OneShort · {KIND[m.kind] ?? m.kind}</Txt>
                 <Txt v="body" selectable style={{ fontSize: 15, lineHeight: 21 }}>{m.body}</Txt>
                 {m.code ? (
                   <View style={{ gap: 8 }}>

@@ -17,7 +17,7 @@ Status: client-side failover handling is **implemented and tested**. The product
 ```mermaid
 flowchart LR
   subgraph Users
-    A[GoFindr app / website]
+    A[OneShort app / website]
   end
   A --> LB[Load balancer · TLS]
   subgraph Mumbai["Primary region: Mumbai (ap-south-1)"]

@@ -122,11 +122,14 @@ class NotificationService:
 
     async def _whatsapp(self, numbers: list[str], title: str, body: str) -> None:
         """Opt-in WhatsApp copy. Logs only counts — never numbers or message text."""
-        text = f"GoFindr · {title}\n{body}" + (f"\nOpen GoFindr: {self.link}" if self.link else "")
+        text = f"OneShort · {title}\n{body}" + (f"\nOpen OneShort: {self.link}" if self.link else "")
         try:
             results = await asyncio.wait_for(
                 asyncio.gather(
-                    *(self.whatsapp.send(n, text, [title, body, self.link or "GoFindr app"], "notify") for n in numbers)
+                    *(
+                        self.whatsapp.send(n, text, [title, body, self.link or "OneShort app"], "notify")
+                        for n in numbers
+                    )
                 ),
                 timeout=15,
             )

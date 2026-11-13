@@ -1,6 +1,6 @@
-"""Cricket ground search: GoFindr's own venues first, then suggestions from a map provider.
+"""Cricket ground search: OneShort's own venues first, then suggestions from a map provider.
 
-GoFindr knows a ground once somebody has played there. Everything else a captain might search for
+OneShort knows a ground once somebody has played there. Everything else a captain might search for
 ("Howzzat Arena") lives in a map provider until then, so a search with ``q`` also asks the provider
 configured by ``PLACES_PROVIDER`` (app/infrastructure/integrations/places.py) and merges what comes
 back, marked ``source``. Suggestions carry no id and are never written by a search; picking one
@@ -29,7 +29,7 @@ NEAR_DEGREES = 0.003  # ~300 m: the same ground pinned slightly differently
 
 
 class VenueSearchOut(BaseModel):
-    id: str | None = Field(default=None, description="GoFindr venue id; null for a map suggestion not yet saved")
+    id: str | None = Field(default=None, description="OneShort venue id; null for a map suggestion not yet saved")
     name: str
     address: str
     area: str
@@ -37,7 +37,7 @@ class VenueSearchOut(BaseModel):
     lat: float
     lng: float
     distance_km: float | None = None
-    source: str = Field(default="gofindr", description="gofindr (a ground we know) | osm | google")
+    source: str = Field(default="oneshort", description="oneshort (a ground we know) | osm | google")
     place_id: str | None = Field(default=None, description="Provider key; pass it back to /venues/resolve")
 
 
@@ -70,7 +70,7 @@ def _row(r: dict[str, Any]) -> VenueSearchOut:
         lat=r["location"]["coordinates"][1],
         lng=r["location"]["coordinates"][0],
         distance_km=approx_km(r["d"]) if "d" in r else None,
-        source="gofindr",
+        source="oneshort",
         place_id=r.get("place_id"),
     )
 
@@ -200,7 +200,7 @@ async def search_venues(
 
 @router.post("/resolve", response_model=Envelope[VenueSearchOut], summary="Save a picked map place as a venue")
 async def resolve_venue(_: UserDep, c: ContainerDep, body: PlaceIn) -> Envelope[VenueSearchOut]:
-    """Turn a suggestion into a real GoFindr ground, reusing it if this place is already known.
+    """Turn a suggestion into a real OneShort ground, reusing it if this place is already known.
 
     Called when a captain picks a map result, so a ground enters the database once it is actually used —
     and the next captain searching the same area finds it without a provider call.

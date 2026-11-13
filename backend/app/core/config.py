@@ -29,11 +29,11 @@ class RankingWeights(BaseSettings):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_name: str = "GoFindr API"
+    app_name: str = "OneShort API"
     app_env: Literal["development", "test", "staging", "beta", "production"] = "development"
     # Cricket-only TestFlight beta: when set, only this sport is offered, other sports' APIs answer 404 and
     # profiles are read as this sport. Nothing is deleted; clear the flag to re-enable every sport.
-    gofindr_beta_sport: Literal["cricket", "badminton", "pickleball"] | None = None
+    oneshort_beta_sport: Literal["cricket", "badminton", "pickleball"] | None = None
     debug: bool = False
     log_level: str = "INFO"
     sentry_dsn: str | None = None  # error tracking is off unless set
@@ -105,7 +105,9 @@ class Settings(BaseSettings):
     whatsapp_webhook_verify_token: str | None = None  # random string you also enter in Meta's webhook settings
     whatsapp_meta_app_secret: str | None = None  # App settings → Basic → App secret (verifies webhook signatures)
     whatsapp_meta_waba_id: str | None = None  # WhatsApp Business Account id — only for scripts.whatsapp_meta_setup
-    app_base_url: str | None = Field(default=None, description="Where the GoFindr app is served, for links in messages")
+    app_base_url: str | None = Field(
+        default=None, description="Where the OneShort app is served, for links in messages"
+    )
 
     # Ground search (GET /venues). "osm" is free and needs no account; "google" is the Maps data but is
     # billed per request and needs a key — see app/infrastructure/integrations/places.py.
@@ -166,7 +168,7 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: str | None = None
     smtp_password: SecretStr | None = None
-    email_from: str | None = Field(default=None, description='Sender, e.g. "GoFindr <yourname@gmail.com>"')
+    email_from: str | None = Field(default=None, description='Sender, e.g. "OneShort <yourname@gmail.com>"')
     email_otp_max_sends_per_hour: int = 5
     email_otp_max_sends_per_day: int = 10
     email_otp_daily_budget: int = Field(default=300, description="Global email codes per 24h (Brevo free plan size)")
@@ -188,7 +190,7 @@ class Settings(BaseSettings):
 
     # Legal identity shown in the Terms and Privacy Notice (DPDP Act 2023 / IT Rules 2021).
     # Required in production; placeholders are shown elsewhere so drafts are obvious.
-    legal_entity_name: str | None = None  # registered company name that operates GoFindr (the Data Fiduciary)
+    legal_entity_name: str | None = None  # registered company name that operates OneShort (the Data Fiduciary)
     legal_entity_address: str | None = None  # registered office address
     grievance_officer_name: str | None = None
     grievance_email: str | None = None  # privacy and grievance requests

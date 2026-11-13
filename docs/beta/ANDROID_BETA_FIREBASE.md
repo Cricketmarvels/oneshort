@@ -1,8 +1,8 @@
-# GoFindr Android beta: Firebase App Distribution, local builds and Maestro tests
+# OneShort Android beta: Firebase App Distribution, local builds and Maestro tests
 
-Goal: test GoFindr on real Android phones, repeatedly, without a Google Play Console account. Firebase is used
+Goal: test OneShort on real Android phones, repeatedly, without a Google Play Console account. Firebase is used
 **only** to hand APKs to testers. No Firebase SDK is added to the app, and no Firebase Authentication,
-Firestore, Analytics, Functions or Storage is enabled. Sign-in stays GoFindr's own SMS-code system
+Firestore, Analytics, Functions or Storage is enabled. Sign-in stays OneShort's own SMS-code system
 (`docs/AUTHENTICATION.md`) and data stays in MongoDB.
 
 ## Pipeline
@@ -53,7 +53,7 @@ The MCP tools cover project and app inspection and creation (`firebase_list_proj
 
 ## 2. Firebase project and Android app (one time, after approval)
 
-1. Create a project, for example "GoFindr Android Beta", on the free Spark plan. Don't add billing, and don't
+1. Create a project, for example "OneShort Android Beta", on the free Spark plan. Don't add billing, and don't
    enable Google Analytics. Use the project ID Firebase assigns. The display name may already be taken.
 2. Register an Android app with package name **`in.gofindr.app`**, from `mobile/app.json`. Don't change it:
    phones treat a different package as a different app.
@@ -69,8 +69,8 @@ The MCP tools cover project and app inspection and creation (`firebase_list_proj
    ```
 6. Create the tester group and add testers. Use only addresses you have chosen:
    ```
-   npx firebase-tools@latest appdistribution:groups:create "GoFindr QA" gofindr-qa --project <project-id>
-   npx firebase-tools@latest appdistribution:testers:add person@example.com --group-alias gofindr-qa --project <project-id>
+   npx firebase-tools@latest appdistribution:groups:create "OneShort QA" oneshort-qa --project <project-id>
+   npx firebase-tools@latest appdistribution:testers:add person@example.com --group-alias oneshort-qa --project <project-id>
    npx firebase-tools@latest appdistribution:testers:remove person@example.com --project <project-id>
    ```
 
@@ -90,8 +90,8 @@ with a different key. Choose one and keep it:
 - **EAS-managed key (recommended):** EAS creates and stores it on the first `android-beta` cloud build.
   Builds then work from any machine. This uses the free EAS build quota, and later local builds can download
   the same key with `eas credentials`.
-- **Local key:** create it once with `keytool -genkeypair -v -keystore ~/.gofindr/android-beta.jks -alias
-  gofindr-beta -keyalg RSA -keysize 4096 -validity 10000`. Back it up, keep it out of git, and set
+- **Local key:** create it once with `keytool -genkeypair -v -keystore ~/.oneshort/android-beta.jks -alias
+  oneshort-beta -keyalg RSA -keysize 4096 -validity 10000`. Back it up, keep it out of git, and set
   `ANDROID_BETA_KEYSTORE`, `ANDROID_BETA_KEYSTORE_PASSWORD`, `ANDROID_BETA_KEY_ALIAS` and
   `ANDROID_BETA_KEY_PASSWORD` when building.
 
@@ -117,7 +117,7 @@ The script checks that:
 - the APK isn't debug-signed;
 - the App ID belongs to the project and to this package.
 
-It then uploads with `firebase appdistribution:distribute`, notifies the `gofindr-qa` group, and appends the
+It then uploads with `firebase appdistribution:distribute`, notifies the `oneshort-qa` group, and appends the
 release to `docs/beta/ANDROID_RELEASES.md`.
 
 **Testers** get an email invitation:
@@ -125,18 +125,18 @@ release to `docs/beta/ANDROID_RELEASES.md`.
 2. Tap Download.
 3. When Android asks, allow "Install unknown apps" for the browser or App Tester. That's under Settings,
    Apps, Special app access.
-4. Open GoFindr.
+4. Open OneShort.
 
 New releases arrive the same way. Feedback goes through App Tester or email, with screenshots.
 
 ## 5. Staging server
 
 `./scripts/staging.sh` runs a separate API on `127.0.0.1:8001`:
-- **Isolated.** It has its own database (`gofindr_staging`), its own uploads folder and its own JWT secret,
+- **Isolated.** It has its own database (`oneshort_staging`), its own uploads folder and its own JWT secret,
   generated into `.data/staging.env`, which git ignores. It runs from its own folder, so the demo's
   `backend/.env` is never read.
 - **Startup guard.** With `APP_ENV=staging`, startup refuses a weak secret or debug mode. Tokens carry
-  `aud=gofindr:staging`, so they never work against production.
+  `aud=oneshort:staging`, so they never work against production.
 - **Codes.** Codes are never returned to the app. The exception is brand-new numbers in the fictional
   `+44 7700 900xxx` range, which show their code on screen for high-volume testing. Real numbers need a real
   SMS provider: set `OTP_PROVIDER`, its keys and a low `OTP_DAILY_BUDGET` in `.data/staging.env`. That's paid,
@@ -153,7 +153,7 @@ New releases arrive the same way. Feedback goes through App Tester or email, wit
 The flows are in `mobile/.maestro/` and use the stable `testID`s on the onboarding screens (`welcome-start`,
 `sport-cricket`, `login-mobile`, `login-send-code`, `otp-code`, `consent-*`, `reg-*` and others).
 `./scripts/android-e2e.sh`:
-1. creates the `gofindr_e2e` emulator (Pixel 7, Android 15, arm64) and boots it;
+1. creates the `oneshort_e2e` emulator (Pixel 7, Android 15, arm64) and boots it;
 2. installs the newest APK;
 3. refuses to run unless the target server reports test mode;
 4. runs every flow and writes a JUnit report.

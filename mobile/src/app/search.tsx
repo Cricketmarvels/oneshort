@@ -1,7 +1,7 @@
 /**
  * Search. Two engines behind one box:
  *  - while typing: GET /search — instant prefix results for players (with CricHeroes badge), teams and grounds
- *  - on submit (or "Ask GoFindr"): POST /search/smart — plain-language requests like "play on Saturday morning"
+ *  - on submit (or "Ask OneShort"): POST /search/smart — plain-language requests like "play on Saturday morning"
  * A query that reads like a sentence (3+ words, or day/time words) goes straight to the smart engine on submit.
  */
 import type { S } from "@cm/shared";
@@ -65,7 +65,7 @@ function km(d: number | null | undefined) { return d != null ? ` · ~${d} km` : 
 
 function InstantResults({ d, q }: { d: Unified; q: string }) {
   const total = d.players.length + d.teams.length + d.grounds.length;
-  if (!total) return <EmptyState icon={<Search size={22} color={T.muted} strokeWidth={1.5} />} title={`No players, teams or grounds called “${q}”`} body="Check the spelling, or describe what you want and ask GoFindr instead." />;
+  if (!total) return <EmptyState icon={<Search size={22} color={T.muted} strokeWidth={1.5} />} title={`No players, teams or grounds called “${q}”`} body="Check the spelling, or describe what you want and ask OneShort instead." />;
   return (
     <View style={{ gap: SP.lg }}>
       {d.players.length ? (
@@ -133,10 +133,10 @@ export default function SearchScreen() {
       ) : ask ? null : (
         <>
           {typed.length >= 2 && !looksLikeRequest(typed) ? null : (
-            <Pressable accessibilityRole="button" accessibilityLabel={`Ask GoFindr: ${text}`} onPress={() => setAsk(text.trim())}
+            <Pressable accessibilityRole="button" accessibilityLabel={`Ask OneShort: ${text}`} onPress={() => setAsk(text.trim())}
               style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderRadius: R.card, backgroundColor: pressed ? T.pressedSoft : T.primarySoft })}>
               <Sparkles size={18} color={T.primaryDark} />
-              <Txt v="bodyMed" color={T.primaryDark} style={{ flex: 1 }} numberOfLines={1}>Ask GoFindr: “{text.trim()}”</Txt>
+              <Txt v="bodyMed" color={T.primaryDark} style={{ flex: 1 }} numberOfLines={1}>Ask OneShort: “{text.trim()}”</Txt>
               <ChevronRight size={18} color={T.primaryDark} strokeWidth={1.5} />
             </Pressable>
           )}
@@ -144,9 +144,9 @@ export default function SearchScreen() {
             : instant.isError ? <ErrorBox error={instant.error} onRetry={() => void instant.refetch()} />
             : instant.data ? <InstantResults d={instant.data} q={typed} /> : null}
           {typed.length >= 2 && !looksLikeRequest(typed) ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={`Ask GoFindr: ${text}`} onPress={() => setAsk(text.trim())} style={{ flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start" }}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Ask OneShort: ${text}`} onPress={() => setAsk(text.trim())} style={{ flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start" }}>
               <Sparkles size={15} color={T.primaryDark} />
-              <Txt v="smallSemi" color={T.primaryDark}>Not a name? Ask GoFindr for “{text.trim()}”</Txt>
+              <Txt v="smallSemi" color={T.primaryDark}>Not a name? Ask OneShort for “{text.trim()}”</Txt>
             </Pressable>
           ) : null}
         </>

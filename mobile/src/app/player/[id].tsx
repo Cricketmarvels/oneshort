@@ -75,7 +75,7 @@ export default function PlayerProfile() {
   };
   return (
     <ScrollView style={{ backgroundColor: T.bg }} contentContainerStyle={{ paddingBottom: 60 }}>
-      <Stack.Screen options={{ title: "Player Profile", headerTitleAlign: "left", headerRight: () => <ShareButton message={`${p.user.full_name} on GoFindr — ${roleLabel(p.primary_role)}, rating ${p.verified_matches ? rating(p.overall.rating) : "new"}`} /> }} />
+      <Stack.Screen options={{ title: "Player Profile", headerTitleAlign: "left", headerRight: () => <ShareButton message={`${p.user.full_name} on OneShort — ${roleLabel(p.primary_role)}, rating ${p.verified_matches ? rating(p.overall.rating) : "new"}`} /> }} />
       {/* identity (refined spec §5.13) */}
       <View style={{ paddingHorizontal: SP.page, paddingTop: SP.lg, gap: SP.lg }}>
         <View style={{ alignItems: "center", gap: 6 }}>

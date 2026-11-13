@@ -4,10 +4,10 @@ Status: **Proposal, not implemented.** Awaiting approval (V5.1). Date: 2026-11-0
 
 ## 1. Goal and constraints
 
-Let the real operators of a ground publish photos of it. Every photo shown on a ground card must have been supplied by someone GoFindr has verified as entitled to represent that ground.
+Let the real operators of a ground publish photos of it. Every photo shown on a ground card must have been supplied by someone OneShort has verified as entitled to represent that ground.
 
 Hard rules:
-- **Knowing a ground's name or address never grants anything.** A claim is only approved on evidence checked by a GoFindr reviewer, or on an automated proof tied to the venue's own public contact channel.
+- **Knowing a ground's name or address never grants anything.** A claim is only approved on evidence checked by a OneShort reviewer, or on an automated proof tied to the venue's own public contact channel.
 - Players, captains and anonymous users cannot upload ground photos. A captain's match photo stays attached to the match (V5) and never becomes the venue's photo.
 - Nothing is public until it has passed moderation.
 - Every ownership and photo decision is audited.
@@ -17,7 +17,7 @@ Hard rules:
 - `venues` is a seeded, read-only collection: name, address, area, city and GeoJSON location. It has no owner and no media. The API is `GET /venues` only.
 - Users have `roles: list[str]`. Admin moderation exists under `/admin`.
 - Reports (`/reports`) target users only.
-- Uploads (V5): validated, re-encoded and EXIF-stripped. Stored locally, with a Cloudinary adapter stub. Media fields accept only GoFindr uploads (`is_own_media`).
+- Uploads (V5): validated, re-encoded and EXIF-stripped. Stored locally, with a Cloudinary adapter stub. Media fields accept only OneShort uploads (`is_own_media`).
 
 ## 3. Data model
 
@@ -66,7 +66,7 @@ venue_transfers                (new)
 1. The user opens a ground and taps **"I run this ground"**. They must be signed in with a verified mobile number, and the account must be at least 7 days old.
 2. The user chooses a verification method:
    - **Phone callback (preferred):**
-     - A GoFindr reviewer calls the venue's publicly listed number. That number comes from an independent source such as Google Business, the venue's own website or a signboard photo, and never from the claimant.
+     - A OneShort reviewer calls the venue's publicly listed number. That number comes from an independent source such as Google Business, the venue's own website or a signboard photo, and never from the claimant.
      - The person who answers confirms the claimant's name and reads back a 6-digit code shown in the claimant's app.
    - **Documents:** a business registration, lease, GST certificate or an official letter that names the venue. These are uploaded to a private evidence bucket, viewable only by reviewers, and deleted 90 days after the decision.
    - **Email domain:** a one-time link sent to an address on the venue's own website domain. Free-mail domains are never accepted.
@@ -214,7 +214,7 @@ Each phase ships with tests covering:
 ## 10. Open questions for approval
 
 1. Reviewer capacity: who handles the claim and photo queues, and what turnaround is acceptable?
-2. Should GoFindr allow venues that aren't in the seed list, such as "Add a ground"? That needs its own verification path.
+2. Should OneShort allow venues that aren't in the seed list, such as "Add a ground"? That needs its own verification path.
 3. Which provider: Cloudflare R2 with Cloudflare CDN, or AWS S3 with CloudFront?
 4. Which vision moderation provider, and how will its processing of Indian users' images be disclosed in the privacy policy?
 5. How long should claim evidence be kept? Proposed: 90 days after the decision.

@@ -14,7 +14,7 @@ export function SmartSearchBar({ value, onChange, onSubmit, autoFocus }: { value
     if (voice.listening) return voice.stop();
     if (!voice.available) {
       input.current?.focus();
-      return Alert.alert("Speak using your keyboard", "Voice search needs the installed GoFindr app or the website. Here, tap the microphone on your phone's keyboard to dictate.");
+      return Alert.alert("Speak using your keyboard", "Voice search needs the installed OneShort app or the website. Here, tap the microphone on your phone's keyboard to dictate.");
     }
     await voice.start();
   };

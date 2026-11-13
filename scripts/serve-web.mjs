@@ -1,5 +1,5 @@
 // Public demo web server (no dependencies):
-//   /          -> GoFindr app (Expo web export)        ../.data/web-app
+//   /          -> OneShort app (Expo web export)        ../.data/web-app
 //   /classic/  -> previous React web app (vite build) ../.data/web-classic
 //   /api, /uploads (HTTP + WebSocket) -> FastAPI on 127.0.0.1:8000
 // Binds to 127.0.0.1 only; the Cloudflare tunnel is the public entry point.
@@ -21,18 +21,18 @@ const PUBLIC_URL = (process.env.PUBLIC_URL ?? "").replace(/\/$/, "");
 
 // ---- Link previews (WhatsApp, iMessage, Slack read <meta> tags without running JS) ----
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const DEFAULT_META = { title: "GoFindr", description: "Your game, one tap away. Find cricket players, teams and grounds near you." };
+const DEFAULT_META = { title: "OneShort", description: "Your game, one tap away. Find cricket players, teams and grounds near you." };
 function originOf(req) {
   if (PUBLIC_URL) return PUBLIC_URL;
   const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "";
   return host ? `https://${host}` : "";
 }
 function metaTags(m, origin, pathName) {
-  const img = origin ? `${origin}/og/gofindr-card.png` : "/og/gofindr-card.png";
+  const img = origin ? `${origin}/og/oneshort-card.png` : "/og/oneshort-card.png";
   const tags = [
-    ["property", "og:type", "website"], ["property", "og:site_name", "GoFindr"], ["property", "og:title", m.title],
+    ["property", "og:type", "website"], ["property", "og:site_name", "OneShort"], ["property", "og:title", m.title],
     ["property", "og:description", m.description], ["property", "og:image", img], ["property", "og:image:width", "1200"],
-    ["property", "og:image:height", "630"], ["property", "og:image:alt", "GoFindr"], ["property", "og:url", `${origin}${pathName}`],
+    ["property", "og:image:height", "630"], ["property", "og:image:alt", "OneShort"], ["property", "og:url", `${origin}${pathName}`],
     ["name", "twitter:card", "summary_large_image"], ["name", "description", m.description],
   ];
   return tags.map(([k, n, v]) => `<meta ${k}="${n}" content="${esc(v)}">`).join("") + `<title>${esc(m.title)}</title>`;
@@ -40,13 +40,13 @@ function metaTags(m, origin, pathName) {
 async function joinMeta(code) {
   try {
     const r = await fetch(`http://${API.host}:${API.port}/api/v1/join/${encodeURIComponent(code)}`, { signal: AbortSignal.timeout(1500) });
-    if (r.status === 404 || r.status === 410) return { title: "This GoFindr invite has expired", description: "Ask your captain for a new link." };
+    if (r.status === 404 || r.status === 410) return { title: "This OneShort invite has expired", description: "Ask your captain for a new link." };
     if (!r.ok) return null;
     const d = (await r.json()).data;
     const when = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: d.timezone || "Asia/Kolkata" }).format(new Date(d.start_at));
     const place = d.area ? ` · ${d.area}` : "";
     const spots = d.status === "open" && d.spots_left > 0 ? ` · ${d.spots_left} spot${d.spots_left === 1 ? "" : "s"} left` : d.status === "open" ? " · Squad full" : "";
-    return { title: `${d.team_name}: ${d.match_title}`, description: `${when}${place}${spots}. Tap to add yourself to the squad on GoFindr.` };
+    return { title: `${d.team_name}: ${d.match_title}`, description: `${when}${place}${spots}. Tap to add yourself to the squad on OneShort.` };
   } catch { return null; }
 }
 async function appHtml(req, res, pathName) {
@@ -99,4 +99,4 @@ server.on("upgrade", (req, socket, head) => {
   socket.on("error", () => up.destroy());
 });
 
-server.listen(PORT, "127.0.0.1", () => console.log(`GoFindr web on http://127.0.0.1:${PORT}`));
+server.listen(PORT, "127.0.0.1", () => console.log(`OneShort web on http://127.0.0.1:${PORT}`));

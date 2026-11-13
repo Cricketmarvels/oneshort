@@ -49,7 +49,7 @@ export default function FixtureDetail() {
   );
   return (
     <ScrollView style={{ backgroundColor: T.bg }} contentContainerStyle={{ paddingBottom: 60 }}>
-      <Stack.Screen options={{ title: "Match centre", headerTitleAlign: "center", headerRight: () => <ShareButton message={`${f.home_team.team_name} vs ${f.away_team.team_name}${r ? ` — ${r.summary}` : ""} · GoFindr`} /> }} />
+      <Stack.Screen options={{ title: "Match centre", headerTitleAlign: "center", headerRight: () => <ShareButton message={`${f.home_team.team_name} vs ${f.away_team.team_name}${r ? ` — ${r.summary}` : ""} · OneShort`} /> }} />
       <View style={{ paddingHorizontal: SP.page, paddingTop: SP.sm }}>
         <PhotoHero photo="stadium" height={232}>
           <View style={{ flex: 1, padding: 16, justifyContent: "space-between" }}>
@@ -156,7 +156,7 @@ export default function FixtureDetail() {
       </View>
 
       <ConfirmationModal visible={verifying} title="Verify this result?" confirm="Yes, it's correct"
-        body="Only verify if the score and scorecard are accurate. Verified results update team and player ratings and can only be reversed by a GoFindr admin."
+        body="Only verify if the score and scorecard are accurate. Verified results update team and player ratings and can only be reversed by a OneShort admin."
         onCancel={() => setVerifying(false)} onConfirm={() => { setVerifying(false); run.mutate({ action: "verify" }); }} loading={run.isPending} />
       <PromptModal visible={disputing} title="Dispute result" body="Explain what's wrong. The other captain can then submit a corrected result, or an admin will review it." placeholder="e.g. We scored 141/9, not 150/9" minLength={5} confirm="Dispute"
         onCancel={() => setDisputing(false)} onSubmit={(reason) => { setDisputing(false); run.mutate({ action: "dispute", body: { reason } }); }} />

@@ -1,6 +1,6 @@
-# GoFindr: DPDP Act 2023 compliance map
+# OneShort: DPDP Act 2023 compliance map
 
-Last updated: 9 November 2026. This file maps each obligation to how GoFindr meets it. It is an engineering record, not legal advice; Indian counsel should review the Terms and Privacy Notice before launch.
+Last updated: 9 November 2026. This file maps each obligation to how OneShort meets it. It is an engineering record, not legal advice; Indian counsel should review the Terms and Privacy Notice before launch.
 
 **Status key**
 - **Done**: built and covered by tests.
@@ -17,7 +17,7 @@ Last updated: 9 November 2026. This file maps each obligation to how GoFindr mee
 
 ## Obligations
 
-| # | Obligation | How GoFindr meets it | Where | Status |
+| # | Obligation | How OneShort meets it | Where | Status |
 |---|---|---|---|---|
 | 1 | Itemised notice in clear language (s.5, Rule 3) | Privacy Notice v1 lists each data category with its purpose, sharing, storage location, retention, rights, how to complain, and the Board. Readable before sign-up. | `app/modules/agreements/legal.py`, `/legal/privacy` | Done |
 | 2 | Notice available in English or any Eighth Schedule language (s.5(3)) | The notice explains how to ask for another language. A Hindi translation should be published for launch. | Privacy Notice §10 | Set at launch |
@@ -31,7 +31,7 @@ Last updated: 9 November 2026. This file maps each obligation to how GoFindr mee
 | 10 | Right to nominate (s.14) | A "Nominate someone" request records the nominee's name and contact. | `/privacy` | Done |
 | 11 | Contact for questions: Grievance Officer (Rule 9; IT Rules 3(2)) | Name, email and address come from settings. Production refuses to start without them. | `LEGAL_ENTITY_NAME`, `LEGAL_ENTITY_ADDRESS`, `GRIEVANCE_OFFICER_NAME`, `GRIEVANCE_EMAIL` | Set at launch |
 | 12 | IT Rules: acknowledge content complaints in 24 h, resolve in 15 days | Stated in the Terms §13. In-app reports and moderation exist. Operations must meet the timeline. | Reports module, admin queue | Process |
-| 13 | Children: verifiable parental consent; no tracking or targeted ads (s.9, Rule 10) | GoFindr is 18+ only. Users confirm their age, and accounts found to be under 18 are closed. No advertising or behavioural tracking exists. Supporting under-18 players later needs a parental-consent flow (Rule 10) first. | Terms §2, Notice §8 | Done (18+ policy) |
+| 13 | Children: verifiable parental consent; no tracking or targeted ads (s.9, Rule 10) | OneShort is 18+ only. Users confirm their age, and accounts found to be under 18 are closed. No advertising or behavioural tracking exists. Supporting under-18 players later needs a parental-consent flow (Rule 10) first. | Terms §2, Notice §8 | Done (18+ policy) |
 | 14 | Reasonable security safeguards (s.8(5), Rule 6) | TLS. Hashed passwords and OTPs. Role and ownership checks (IDOR tests). Rate limits and login lockout. Images re-encoded with EXIF/GPS stripped. Request size caps. Logs redacted. Sentry scrubbed. Security headers. | `SECURITY_DESIGN.md`, tests | Done |
 | 15 | Keep personal data, traffic data and logs for at least one year (Rule 6/8) | Audit logs have no TTL. WhatsApp delivery logs are kept 400 days. Access logs must be kept 1 year in the log platform. Consent records are kept. | `indexes.py`, hosting config | Done (code) / Set at launch (log platform) |
 | 16 | Erasure when the purpose ends; 48 h notice before inactivity erasure (Rule 8) | The deletion path exists. Inactivity erasure is not switched on. If enabled, it must send a 48-hour warning first (stated in Notice §6). | — | Process |

@@ -25,7 +25,7 @@ def settings() -> Settings:
         app_env="test",
         mongodb_uri=os.environ.get("TEST_MONGODB_URI", "mongodb://127.0.0.1:27018/?replicaSet=rs0"),
         mongodb_db=TEST_DB,
-        gofindr_beta_sport=None,  # tests cover every sport; the developer's .env may run a single-sport beta
+        oneshort_beta_sport=None,  # tests cover every sport; the developer's .env may run a single-sport beta
         tester_signup_prefix=None,
         otp_daily_budget=1_000_000,  # the whole suite shares one 24h window; budget logic is tested explicitly
         otp_ip_max_sends_per_hour=1_000_000,  # the ASGI test client shares one IP

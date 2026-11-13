@@ -58,7 +58,7 @@ _OWN_MEDIA = re.compile(r"^/uploads/[A-Za-z0-9_-]{1,40}/[a-f0-9]{32}\.(?:jpg|png
 
 
 def normalize_media_key(url: str | None, settings: Settings) -> str | None:
-    """Private key for a GoFindr-stored file, from either the key itself, a legacy absolute URL on our base,
+    """Private key for a OneShort-stored file, from either the key itself, a legacy absolute URL on our base,
     or a signed media link the API handed out. None for anything else (external URLs are never stored)."""
     if not url:
         return None
@@ -72,7 +72,7 @@ def normalize_media_key(url: str | None, settings: Settings) -> str | None:
 
 
 def is_own_media(url: str | None, settings: Settings) -> bool:
-    """True only for files GoFindr stored itself."""
+    """True only for files OneShort stored itself."""
     return normalize_media_key(url, settings) is not None
 
 

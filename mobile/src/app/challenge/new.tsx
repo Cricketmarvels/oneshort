@@ -36,7 +36,7 @@ export default function NewChallenge() {
   const venues = useQuery({ queryKey: ["venues", lat, lng], queryFn: () => api<S<"VenueSearchOut">[]>("/venues", { query: { lat, lng } }) });
   const set = (patch: Partial<typeof proposal>) => setProposal({ ...proposal, ...patch });
   const step = !proposal.venue ? 2 : 3;
-  // A ground GoFindr knows has an id; a map suggestion only has a provider key. Either identifies the row.
+  // A ground OneShort knows has an id; a map suggestion only has a provider key. Either identifies the row.
   const venueKey = (v: S<"VenueSearchOut">) => v.id ?? v.place_id ?? v.name;
   const chosen = venues.data?.find((v) => v.name === proposal.venue?.name);
   const venueId = chosen ? venueKey(chosen) : null;
@@ -79,7 +79,7 @@ export default function NewChallenge() {
         </View>
         <Field label="Match conditions (optional)" value={proposal.conditions} onChangeText={(c) => set({ conditions: c })} placeholder="Ball type, ground fee split, umpires…" />
         <Field label="Message to their captain (optional)" value={message} onChangeText={setMessage} placeholder="Fancy a game?" maxLength={200} />
-        <Txt v="small" color={T.muted}>Both teams must be free within 4 hours of this time. GoFindr checks for clashes before confirming.</Txt>
+        <Txt v="small" color={T.muted}>Both teams must be free within 4 hours of this time. OneShort checks for clashes before confirming.</Txt>
         <Button title="Save as draft" variant="ghost" disabled={!body} loading={send.isPending && send.variables === true} onPress={() => send.mutate(true)} />
       </ScrollView>
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: SP.page, paddingBottom: SP.xl, backgroundColor: T.bg }}>

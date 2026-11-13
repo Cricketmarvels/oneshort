@@ -147,7 +147,7 @@ export default function RootLayout() {
 function OfflineStart({ onRetry }: { onRetry: () => void }) {
   return (
     <View style={{ flex: 1, backgroundColor: T.bg, alignItems: "center", justifyContent: "center", padding: 32, gap: 14 }}>
-      <Txt v="h2" accessibilityRole="header" style={{ textAlign: "center" }}>Can't reach GoFindr</Txt>
+      <Txt v="h2" accessibilityRole="header" style={{ textAlign: "center" }}>Can't reach OneShort</Txt>
       <Txt v="body" color={T.muted} style={{ textAlign: "center" }}>Check your connection. You're still signed in.</Txt>
       <Button title="Try again" size="lg" onPress={onRetry} style={{ alignSelf: "stretch" }} />
     </View>

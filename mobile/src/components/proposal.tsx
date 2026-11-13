@@ -71,7 +71,7 @@ export function ProposalForm({ value, onChange }: { value: ProposalState; onChan
         {value.format === "CUSTOM" ? <Field label="Overs per side" value={value.overs} onChangeText={(o) => set({ overs: o.replace(/\D/g, "") })} keyboardType="number-pad" placeholder="e.g. 12" /> : null}
       </Section>
       <Field label="Match conditions (optional)" value={value.conditions} onChangeText={(c) => set({ conditions: c })} multiline placeholder="Ball type, ground fee split, umpires, whites…" style={{ minHeight: 80, paddingTop: 12, textAlignVertical: "top" }} />
-      <Txt v="small" color={T.muted}>Both teams must be free within 4 hours of this time. GoFindr checks for clashes before confirming.</Txt>
+      <Txt v="small" color={T.muted}>Both teams must be free within 4 hours of this time. OneShort checks for clashes before confirming.</Txt>
     </View>
   );
 }

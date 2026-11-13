@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the GoFindr Android beta APK on this Mac (free; no EAS cloud build).
+# Build the OneShort Android beta APK on this Mac (free; no EAS cloud build).
 # Uses exactly the env of the "android-beta" profile in mobile/eas.json, so local and EAS builds match.
 #   ./scripts/android-build-local.sh            bump versionCode, build, copy to .data/android-builds/
 #   ./scripts/android-build-local.sh --no-bump  rebuild with the current versionCode (emulator testing only)
@@ -58,7 +58,7 @@ else SIGN=(); echo "note: no ANDROID_BETA_KEYSTORE set; signing with the debug k
 ABIS="arm64-v8a,armeabi-v7a"; [ "$MODE" = "--e2e" ] && ABIS="arm64-v8a"
 (cd "$M/android" && ./gradlew --no-daemon -q assembleRelease -PreactNativeArchitectures="$ABIS" ${SIGN[@]+"${SIGN[@]}"})
 KIND=beta; [ "$MODE" = "--e2e" ] && KIND=e2e
-APK="$OUT/gofindr-$KIND-$VN-$VC.apk"; cp "$M/android/app/build/outputs/apk/release/app-release.apk" "$APK"
+APK="$OUT/oneshort-$KIND-$VN-$VC.apk"; cp "$M/android/app/build/outputs/apk/release/app-release.apk" "$APK"
 printf '{"versionName":"%s","versionCode":%s,"api":"%s","commit":"%s","built_at":"%s","signed_with":"%s"}\n' \
   "$VN" "$VC" "$EXPO_PUBLIC_API_URL" "$(git -C "$ROOT" rev-parse --short HEAD)" "$(date -u +%FT%TZ)" "${ANDROID_BETA_KEYSTORE:+beta-keystore}${ANDROID_BETA_KEYSTORE:-debug}" > "$APK.json"
 echo "APK: $APK"

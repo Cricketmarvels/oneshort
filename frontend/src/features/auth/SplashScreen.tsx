@@ -1,6 +1,6 @@
 export function SplashScreen() {
   return (
-    <div className="pitch-gradient grid min-h-dvh place-items-center" role="status" aria-label="Loading GoFindr">
+    <div className="pitch-gradient grid min-h-dvh place-items-center" role="status" aria-label="Loading OneShort">
       <div className="flex flex-col items-center gap-4 text-white">
         <div className="relative">
           <img src="/icon.svg" alt="" className="size-20 animate-[spin_3s_linear_infinite] rounded-3xl" />

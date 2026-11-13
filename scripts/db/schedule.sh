@@ -22,14 +22,14 @@ XML
 }
 case "${1:-status}" in
   install)
-    plist in.gofindr.db-backup backup.sh "<key>StartInterval</key><integer>3600</integer>" true
-    plist in.gofindr.db-verify restore-verify.sh "<key>StartCalendarInterval</key><dict><key>Hour</key><integer>4</integer><key>Minute</key><integer>30</integer></dict>" false
-    for j in in.gofindr.db-backup in.gofindr.db-verify; do launchctl unload "$LA/$j.plist" 2>/dev/null || true; launchctl load "$LA/$j.plist"; done
+    plist in.oneshort.db-backup backup.sh "<key>StartInterval</key><integer>3600</integer>" true
+    plist in.oneshort.db-verify restore-verify.sh "<key>StartCalendarInterval</key><dict><key>Hour</key><integer>4</integer><key>Minute</key><integer>30</integer></dict>" false
+    for j in in.oneshort.db-backup in.oneshort.db-verify; do launchctl unload "$LA/$j.plist" 2>/dev/null || true; launchctl load "$LA/$j.plist"; done
     echo "Installed: hourly backup, daily restore check. Backups in $ROOT/.data/backups" ;;
   uninstall)
-    for j in in.gofindr.db-backup in.gofindr.db-verify; do launchctl unload "$LA/$j.plist" 2>/dev/null || true; rm -f "$LA/$j.plist"; done
+    for j in in.oneshort.db-backup in.oneshort.db-verify; do launchctl unload "$LA/$j.plist" 2>/dev/null || true; rm -f "$LA/$j.plist"; done
     echo "Removed" ;;
   status)
-    launchctl list | grep in.gofindr.db || echo "not scheduled"
+    launchctl list | grep in.oneshort.db || echo "not scheduled"
     tail -3 "$ROOT/.data/backups/backup.log" 2>/dev/null || true ;;
 esac

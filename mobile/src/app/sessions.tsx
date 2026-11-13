@@ -23,7 +23,7 @@ function deviceLabel(ua: string): string {
   if (/android/i.test(ua)) return "Android phone";
   if (/macintosh|mac os/i.test(ua)) return "Mac browser";
   if (/windows/i.test(ua)) return "Windows browser";
-  if (/okhttp|expo|playr/i.test(ua)) return "GoFindr app";
+  if (/okhttp|expo|playr/i.test(ua)) return "OneShort app";
   return ua ? "Browser" : "Unknown device";
 }
 

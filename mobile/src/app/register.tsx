@@ -29,7 +29,7 @@ import { SP, T } from "@/theme";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const ROLES = [["batsman", "Batter"], ["bowler", "Bowler"], ["all_rounder", "All-rounder"], ["wicketkeeper", "Wicketkeeper"]] as const;
-const PLACEHOLDER = "GoFindr player";
+const PLACEHOLDER = "OneShort player";
 
 export default function Register() {
   const insets = useSafeAreaInsets();
@@ -120,7 +120,7 @@ export default function Register() {
           </View>
         ) : step === 2 ? (
           <View style={{ gap: 12 }} accessibilityRole="radiogroup">
-            <H title="How will you use GoFindr?" sub="You can do both later from Home." />
+            <H title="How will you use OneShort?" sub="You can do both later from Home." />
             <ChoiceRow testID="reg-player" lead={<RoleIcon name="cricket" />} title="Player" body="Find matches and teams near you" selected={playAs === "player"} onPress={() => reg.update({ playAs: "player" })} />
             <ChoiceRow testID="reg-captain" lead={<RoleIcon name="shield" />} title="Captain" body="Run a team, find players and opponents" selected={playAs === "captain"} onPress={() => reg.update({ playAs: "captain" })} />
           </View>

@@ -10,7 +10,7 @@ import { create } from "zustand";
 export type PlayAs = "player" | "captain";
 export type Draft = { step: 1 | 2 | 3; email: string; playAs: PlayAs; name: string; role: string | null };
 
-const KEY = "gofindr.registration";
+const KEY = "oneshort.registration";
 const web = Platform.OS === "web";
 const ls = () => (globalThis as { localStorage?: Storage }).localStorage;
 const EMPTY: Draft = { step: 1, email: "", playAs: "player", name: "", role: null };

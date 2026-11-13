@@ -242,7 +242,7 @@ export default function Login() {
                     <NewHere onPress={() => { setSignup(true); setErr(null); }} />
                   </>}
               <Txt v="small" color={T.muted} style={{ textAlign: "center" }}>
-                By continuing you agree to the GoFindr{" "}
+                By continuing you agree to the OneShort{" "}
                 <Txt v="small" color={T.primaryDark} accessibilityRole="link" onPress={() => router.push("/legal/terms")} style={{ textDecorationLine: "underline" }}>Terms of Use</Txt>
                 {" "}and{" "}
                 <Txt v="small" color={T.primaryDark} accessibilityRole="link" onPress={() => router.push("/legal/privacy")} style={{ textDecorationLine: "underline" }}>Privacy Notice</Txt>
@@ -275,7 +275,7 @@ function EmailOffNotice({ prefix, sent }: { prefix: string | null; sent?: boolea
     <View accessibilityRole="alert" style={{ padding: 12, borderRadius: 14, backgroundColor: T.warningBackground, gap: 4 }}>
       <Txt v="smallSemi" color={T.warningText}>{sent ? "No email was sent" : "Emails aren't being sent yet"}</Txt>
       <Txt v="small" color={T.warningText}>
-        GoFindr isn't connected to an email service yet, so codes can't reach real inboxes.
+        OneShort isn't connected to an email service yet, so codes can't reach real inboxes.
         {sample ? ` For now, use a test mobile number like ${sample} and the code shows on screen.` : " Please try again later."}
       </Txt>
     </View>
@@ -285,9 +285,9 @@ function EmailOffNotice({ prefix, sent }: { prefix: string | null; sent?: boolea
 /** Sign-up entry: new players register with their mobile number (the code verifies it), never by email. */
 function NewHere({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable testID="login-signup" accessibilityRole="button" accessibilityLabel="New to GoFindr? Create an account" onPress={onPress}
+    <Pressable testID="login-signup" accessibilityRole="button" accessibilityLabel="New to OneShort? Create an account" onPress={onPress}
       style={({ pressed }) => ({ marginTop: 6, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: T.line, backgroundColor: pressed ? T.surface2 : T.surface, alignItems: "center" })}>
-      <Txt v="small" color={T.muted}>New to GoFindr? <Txt v="smallSemi" color={T.primaryDark}>Create an account</Txt></Txt>
+      <Txt v="small" color={T.muted}>New to OneShort? <Txt v="smallSemi" color={T.primaryDark}>Create an account</Txt></Txt>
     </Pressable>
   );
 }

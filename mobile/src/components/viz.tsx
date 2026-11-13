@@ -29,7 +29,7 @@ export function Sparkline({ values, w = 64, h = 24, color, dark }: { values: num
 }
 
 /** Ring that fills with rating confidence; the rating sits in the middle. */
-export function RatingRing({ rating, confidence, size = 120, dark, label = "GoFindr rating" }: { rating: number | null; confidence: number; size?: number; dark?: boolean; label?: string }) {
+export function RatingRing({ rating, confidence, size = 120, dark, label = "OneShort rating" }: { rating: number | null; confidence: number; size?: number; dark?: boolean; label?: string }) {
   const sw = size * 0.075;
   const r = (size - sw) / 2;
   const c = 2 * Math.PI * r;

@@ -33,7 +33,7 @@ from app.modules.search.indexer import SearchIndexer
 from app.modules.users.schemas import CompleteRegistrationIn
 
 log = get_logger("users.registration")
-PLACEHOLDER_NAME = "GoFindr player"  # what /auth/verify-otp names a phone-only sign-up
+PLACEHOLDER_NAME = "OneShort player"  # what /auth/verify-otp names a phone-only sign-up
 
 
 def _is_tester_number(c: Container, mobile: str | None) -> bool:
@@ -52,7 +52,7 @@ async def complete_registration(c: Container, user: CurrentUser, data: CompleteR
         raise Forbidden("Verify your mobile number first", code="PHONE_NOT_VERIFIED")
     if doc.get("registration_completed_at"):
         raise Conflict("Your registration is already complete", code="REGISTRATION_COMPLETE")
-    beta = c.settings.gofindr_beta_sport
+    beta = c.settings.oneshort_beta_sport
     if beta and data.sport not in (None, beta):
         raise BusinessRuleViolation(f"Only {beta} is available in this release", code="SPORT_NOT_AVAILABLE")
     tester = _is_tester_number(c, doc.get("mobile_number"))
@@ -92,7 +92,7 @@ async def complete_registration(c: Container, user: CurrentUser, data: CompleteR
             return_document=ReturnDocument.AFTER,
         )
     except DuplicateKeyError as exc:
-        raise Conflict("This email is already used by another GoFindr account", code="EMAIL_IN_USE") from exc
+        raise Conflict("This email is already used by another OneShort account", code="EMAIL_IN_USE") from exc
     if updated is None:
         raise Conflict("Your registration is already complete", code="REGISTRATION_COMPLETE")
 

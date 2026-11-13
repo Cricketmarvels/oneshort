@@ -1,15 +1,15 @@
-# GoFindr — first TestFlight build (internal testing)
+# OneShort — first TestFlight build (internal testing)
 
 Date: 2026-11-10. Scope: one iOS build on the `beta` EAS profile, uploaded to App Store Connect and installed on the owner's iPhone through an internal TestFlight group. External testers come later (`PLAYR_APPLE_REVIEW_CHECKLIST.md`).
 
 ## Identity (unchanged, reuse only)
 | Item | Value |
 |---|---|
-| Display name | GoFindr |
+| Display name | OneShort |
 | Expo project | `@playrrs-team/playr`, id `e8df9e32-92c4-4c6b-9234-f594c0389eb8` (slug `playr` kept: renaming would create a second project) |
 | iOS bundle id | `in.gofindr.app` |
 | Version / build | `1.0.0` / build number auto-increments on the `beta` profile (`appVersionSource: local`) |
-| Scheme | `gofindr://` |
+| Scheme | `oneshort://` |
 
 ## Build profile: `beta`
 Store distribution, `environment: preview`, `autoIncrement`, no development client. Build-time env:
@@ -32,7 +32,7 @@ npx eas-cli@latest credentials -p ios          # one time, interactive: Apple lo
 npx eas-cli@latest build -p ios --profile beta # ~15–25 min on m-medium
 npx eas-cli@latest submit -p ios --latest --profile beta
 ```
-Then App Store Connect → GoFindr → TestFlight → Internal Testing → group **GoFindr Internal Beta** → add yourself → enable the build. Install the TestFlight app on the iPhone and accept the invitation e-mail.
+Then App Store Connect → OneShort → TestFlight → Internal Testing → group **OneShort Internal Beta** → add yourself → enable the build. Install the TestFlight app on the iPhone and accept the invitation e-mail.
 
 ## Checks run before the build (2026-11-10)
 `npx expo-doctor` 20/20 · `tsc --noEmit` clean · `jest` 2/2 · `expo export --platform ios` bundles (14 MB Hermes) · icon 1024×1024 RGB, no alpha · no `console.log`, no secrets in the app, refresh token in the keychain, no plain-http hosts in release profiles. ESLint (eslint-config-expo 58) reports 68 errors, 41 of them unescaped apostrophes in JSX text and the rest new React Compiler rules; none affect the build and they were left for a later cleanup.

@@ -1,4 +1,4 @@
-/** GoFindr · aqua/teal primitives (spec: .claude/skills/playr-aqua-design/SKILL.md §6). Theme tokens only. */
+/** OneShort · aqua/teal primitives (spec: .claude/skills/playr-aqua-design/SKILL.md §6). Theme tokens only. */
 import { STATUS_TONE } from "@cm/shared";
 import { Image } from "expo-image";
 import { Search, X } from "lucide-react-native";
@@ -140,7 +140,7 @@ export function Row({ children, onPress, label, last, height = SIZE.row, style }
   return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [base, style, pressed ? { opacity: 0.65 } : null]}>{children}</Pressable>;
 }
 
-/** InlineNotice: a quiet explanatory panel (e.g. "GoFindr does not process payments"). */
+/** InlineNotice: a quiet explanatory panel (e.g. "OneShort does not process payments"). */
 export function InlineNotice({ children, tone = "info", icon }: { children: ReactNode; tone?: "info" | "warning"; icon?: ReactNode }) {
   return (
     <View style={{ flexDirection: "row", gap: 10, padding: 14, borderRadius: R.lg, backgroundColor: tone === "warning" ? T.warningBackground : T.tint }}>

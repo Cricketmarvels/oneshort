@@ -1,5 +1,5 @@
 /**
- * GoFindr premium design system (3-screen reference, Nov 2026): app header + role switcher, sports hero,
+ * OneShort premium design system (3-screen reference, Nov 2026): app header + role switcher, sports hero,
  * match / player / team discovery cards, discovery search header and filters. The home action cards
  * live in `components/dashboard/`.
  * Only real API values are rendered; missing data shows a neutral fallback, never an invented number.
@@ -13,6 +13,7 @@ import { memo, useRef } from "react";
 import { Pressable, ScrollView, TextInput, useWindowDimensions, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { OneShortMark, Wordmark } from "@/components/brand";
 import { PlayRIcon, type PlayRIconName } from "@/components/icons";
 import { PHOTO } from "@/components/identity";
 import { MatchCoverImage, TeamCoverImage, TeamLogo } from "@/components/media";
@@ -25,13 +26,7 @@ import { FW, R, shadow, SP, T } from "@/theme";
 export type IconT = ComponentType<{ size?: number; color?: string; strokeWidth?: number; fill?: string }>;
 
 // ---------------------------------------------------------------- header
-export function Wordmark({ size = 30 }: { size?: number }) {
-  return (
-    <Txt accessibilityRole="header" accessibilityLabel="GoFindr" style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", letterSpacing: -1, color: T.ink }}>
-      Go<Txt style={{ ...FW.display, fontSize: size, lineHeight: size * 1.15, fontStyle: "italic", color: T.primary }}>Findr</Txt>
-    </Txt>
-  );
-}
+export { Wordmark };
 
 /** "Player ⌄" pill → sheet. Captains switch context; players get a path to start a team (one account, never a second one). */
 export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" | "captain"; canCaptain: boolean; onChange: (v: "player" | "captain") => void }) {
@@ -49,7 +44,7 @@ export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" 
         <Txt v="smallSemi" style={{ fontSize: 14 }}>{value === "player" ? "Player" : "Captain"}</Txt>
         <PlayRIcon name="caret" size={15} color={T.ink} weight="bold" />
       </Pressable>
-      <FilterBottomSheet ref={sheet} title="View GoFindr as" snap={["44%"]}>
+      <FilterBottomSheet ref={sheet} title="View OneShort as" snap={["44%"]}>
         <View style={{ gap: 10 }}>
           {opt("player", "Player", "Find games, teams and playing partners")}
           {canCaptain ? opt("captain", "Captain", "Manage your team, matches and invitations") : (
@@ -67,9 +62,11 @@ export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" 
 export function AppHeader({ role, canCaptain, onRole, unread, avatarUri, name }: {
   role: "player" | "captain"; canCaptain: boolean; onRole: (v: "player" | "captain") => void; unread?: number; avatarUri?: string | null; name: string;
 }) {
+  const { width } = useWindowDimensions();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48 }}>
-      <View style={{ flex: 1 }}><Wordmark /></View>
+      {/* Small phones: the mark alone, so the role pill, bell and avatar never squeeze the wordmark. */}
+      <View style={{ flex: 1, minWidth: 0 }}>{width < 380 ? <OneShortMark size={30} /> : <Wordmark size={18} />}</View>
       <RoleSwitcher value={role} canCaptain={canCaptain} onChange={onRole} />
       <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Notifications, ${unread} unread` : "Notifications"} onPress={() => router.push("/notifications")} hitSlop={4}
         style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
@@ -146,13 +143,13 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
   );
 }
 
-/** Branded fallback where a real photo doesn't exist (grounds, team covers): deep-teal gradient + soft pitch lines. */
+/** Branded fallback where a real photo doesn't exist (grounds, team covers): deep-green gradient + soft pitch lines. */
 export function BrandFallback({ style, icon: Icon, label }: { style?: ViewStyle; icon?: IconT; label?: string }) {
   return (
-    <LinearGradient colors={["#0B5D58", "#063F3D"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ alignItems: "center", justifyContent: "center", overflow: "hidden" }, style]}>
+    <LinearGradient colors={["#10704F", "#0A2A20"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ alignItems: "center", justifyContent: "center", overflow: "hidden" }, style]}>
       <View style={{ position: "absolute", width: "70%", aspectRatio: 1, borderRadius: 999, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.10)" }} />
       <View style={{ position: "absolute", width: 22, top: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.06)" }} />
-      <View style={{ position: "absolute", width: "160%", height: 40, backgroundColor: "rgba(127,224,214,0.08)", transform: [{ rotate: "-18deg" }], top: "30%" }} />
+      <View style={{ position: "absolute", width: "160%", height: 40, backgroundColor: "rgba(255,106,61,0.10)", transform: [{ rotate: "-18deg" }], top: "30%" }} />
       {Icon ? <Icon size={26} color="rgba(255,255,255,0.75)" strokeWidth={1.6} /> : <PlayRIcon name="trophy" size={26} color="rgba(255,255,255,0.75)" />}
       {label ? <Txt v="micro" color="rgba(255,255,255,0.7)" style={{ marginTop: 4, fontSize: 9.5 }}>{label}</Txt> : null}
     </LinearGradient>

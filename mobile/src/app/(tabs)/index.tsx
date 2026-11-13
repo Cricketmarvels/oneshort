@@ -12,12 +12,13 @@ import { FlatList, Pressable, RefreshControl, ScrollView, useWindowDimensions, V
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ago, LocationOptions } from "@/components/cricket";
+import { ShortChip, shortLabel } from "@/components/brand";
 import { ActionCardGrid } from "@/components/dashboard/ActionCardGrid";
 import { captainActions, playerActions } from "@/components/dashboard/dashboardActions";
 import { CricHeroesEditor, HomeCricHeroesCard } from "@/components/cricheroes-link";
 import { PlayRIcon } from "@/components/icons";
 import { InvitationCard } from "@/components/invites";
-import { AppHeader, AvailabilityPill, MatchDiscoveryCard, SectionHeader, SportsHeroBanner } from "@/components/premium";
+import { AppHeader, MatchDiscoveryCard, SectionHeader, SportsHeroBanner } from "@/components/premium";
 import { RacketHome } from "@/components/racket";
 import { SmartSearchBar } from "@/components/search-bar";
 import { FilterBottomSheet } from "@/components/sheet";
@@ -138,11 +139,11 @@ function CricketHome() {
 
         {ctx === "player" ? (
           <SportsHeroBanner eyebrow={weekend ? "WEEKEND MATCHES" : "NEAR YOU"} title={"Game on\nthis weekend?"}
-            body={opps.isPending ? "Checking games near you…" : games.length ? `${games.length} game${games.length === 1 ? " needs" : "s need"} players within ${radius} km` : `No open games within ${radius} km yet — start one`}
+            body={opps.isPending ? "Checking games near you…" : games.length ? `${games.length} team${games.length === 1 ? " is" : "s are"} short of players within ${radius} km` : `No open games within ${radius} km yet — start one`}
             cta={games.length ? "Find a Game" : "Create Match"} onCta={() => router.push(games.length ? "/quick-match" : "/match/new")} />
         ) : (
           <SportsHeroBanner photo="ground" focus={{ left: "55%", top: "45%" }} eyebrow="CAPTAIN HUB" title={team ? team.team_name : "Your team"}
-            body={teamMatches.length ? `${teamMatches.length} upcoming match${teamMatches.length === 1 ? "" : "es"} · ${openSpots} open spot${openSpots === 1 ? "" : "s"}` : "No upcoming matches — create one"}
+            body={teamMatches.length ? `${teamMatches.length} upcoming match${teamMatches.length === 1 ? "" : "es"} · ${openSpots ? `${shortLabel(openSpots).toLowerCase()} across the squads` : "every squad is full"}` : "No upcoming matches — create one"}
             cta={teamMatches.length && openSpots ? "Fill Squad" : "Create Match"}
             onCta={() => router.push(teamMatches[0] && openSpots ? { pathname: "/match/players", params: { match: teamMatches[0].id } } : team ? { pathname: "/match/new", params: { team: team.id } } : "/match/new")} />
         )}
@@ -213,17 +214,17 @@ function CricketHome() {
               </View>
             ) : null}
             <View style={{ gap: 12 }}>
-              <SectionHeader title="Squad gaps" action="My Games" onAction={() => router.push("/games")} />
+              <SectionHeader title="Squad status" action="My Games" onAction={() => router.push("/games")} />
               {teamMatches.length ? teamMatches.slice(0, 2).map((m) => {
                 const gaps = Object.entries(m.composition.required).map(([r, n]) => [r, n - (m.composition.confirmed[r] ?? 0)] as const).filter(([, n]) => n > 0);
                 return (
                   <Panel key={m.id} label={m.title} onPress={() => router.push({ pathname: "/match/[id]", params: { id: m.id } })}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <Txt v="h3" numberOfLines={2} style={{ flex: 1, fontSize: 16.5, lineHeight: 21 }}>{m.title}</Txt>
-                      <Txt v="smallSemi" color={T.muted}>{m.composition.confirmed_total}/{m.composition.capacity}</Txt>
+                      <ShortChip short={m.composition.vacancies} />
                     </View>
-                    <Txt v="small" color={T.muted}>{when(m.start_at)}</Txt>
-                    {gaps.length ? <AvailabilityPill text={`Need ${gaps.map(([r, n]) => roleCount(r, n).toLowerCase()).join(", ")}`} /> : m.composition.vacancies ? <AvailabilityPill text={`${m.composition.vacancies} spot${m.composition.vacancies === 1 ? "" : "s"} open`} /> : <Txt v="small" color={T.successText}>Squad full</Txt>}
+                    <Txt v="small" color={T.muted}>{when(m.start_at)} · {m.composition.confirmed_total}/{m.composition.capacity} confirmed</Txt>
+                    {gaps.length ? <Txt v="small" color={T.ink}>Need {gaps.map(([r, n]) => roleCount(r, n).toLowerCase()).join(", ")}</Txt> : null}
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       <Button title="Invite regulars" size="sm" onPress={() => router.push({ pathname: "/match/[id]", params: { id: m.id } })} style={{ flex: 1 }} />
                       <Button title="Find players" size="sm" variant="secondary" onPress={() => router.push({ pathname: "/match/players", params: { match: m.id } })} style={{ flex: 1 }} />

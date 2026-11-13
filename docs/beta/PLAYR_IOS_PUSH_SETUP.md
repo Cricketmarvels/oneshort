@@ -1,4 +1,4 @@
-# GoFindr beta — iOS push notifications: setup and verification
+# OneShort beta — iOS push notifications: setup and verification
 
 Status: **code complete; BLOCKED on an EAS project, an Apple Developer account (APNs key) and physical iPhones.** Architecture detail: `docs/design/PUSH_NOTIFICATIONS.md`. Date: 2026-11-10.
 

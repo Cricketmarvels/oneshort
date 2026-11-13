@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Critical-path E2E for the GoFindr app (Expo web build) against an isolated, freshly seeded stack.
+ * Critical-path E2E for the OneShort app (Expo web build) against an isolated, freshly seeded stack.
  *   ../scripts/e2e-stack.sh start          # API :8002 on database "cricket_e2e", web :4174
  *   npx playwright test -c playwright.app.config.ts
  * Tests run in order and share state (a match created in one test is joined in the next), so reseed

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Isolated staging backend for Android beta and automated tests. Separate from the demo and from production:
-#   own database (gofindr_staging), own uploads folder, own JWT secret (generated once into .data/staging.env,
+#   own database (oneshort_staging), own uploads folder, own JWT secret (generated once into .data/staging.env,
 #   which git ignores), APP_ENV=staging (startup refuses weak secrets and debug), no codes in API replies.
 #   Only brand-new numbers in the fictional +44 7700 900xxx range see their code on screen (tester mode);
 #   real numbers get real SMS once OTP_PROVIDER is set in .data/staging.env (paid: needs owner approval).
@@ -17,7 +17,7 @@ if [ ! -f "$ENVF" ]; then
   umask 077
   cat > "$ENVF" <<CFG
 APP_ENV=staging
-MONGODB_DB=gofindr_staging
+MONGODB_DB=oneshort_staging
 LOCAL_UPLOAD_DIR=$D/staging-uploads
 JWT_SECRET=$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')
 OTP_PROVIDER=console

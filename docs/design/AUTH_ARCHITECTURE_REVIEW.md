@@ -1,4 +1,4 @@
-# GoFindr authentication: review and proposed architecture
+# OneShort authentication: review and proposed architecture
 
 Status: **review only. No authentication code or identity records changed.** Awaiting approval. Date: 2026-11-09.
 Scope: backend `app/modules/auth`, `app/core/security.py`, `app/api/dependencies.py`, rate limiting, invite-link registration, the mobile session layer (`mobile/src/lib/{tokens,api,auth}`), and the classic web client.
@@ -62,14 +62,14 @@ sequenceDiagram
 | **C1** | **Critical** | **Takeover of invite-link accounts using only their phone number.** `/auth/register` treats any account with `mobile_verified=false` as a pending registration and overwrites its email and password. Invite-link accounts are unverified but can log in with a password, so the attacker's new credentials log straight into the victim's account (teams, squads, fee records). The victim is locked out. | Reproduced on the test database: attacker register → 201; attacker login → 200, **same user id as the victim**; victim login → 401 |
 | **C2** | **Critical** | **Pre-account takeover.** An attacker registers a number they don't own with their own email and password (inert until verified). When the real owner later signs in by phone code, the login-OTP path verifies the number **and keeps the attacker's email and password**, so the attacker can log in by password. | Reproduced: attacker login before → 403 `MOBILE_NOT_VERIFIED`; victim OTP login → 200 (account email = attacker's); attacker login after → **200** |
 | H1 | High | **SMS pumping / toll fraud.** No limit across numbers per device, no global daily SMS budget, and no restriction to +91. With a real provider, a script rotating IPs can send OTPs to premium international numbers at our cost. | Code review (`_issue_otp`, `RateLimitMiddleware`) |
-| H2 | ~~High~~ **Fixed 2026-11-10** | **Phone-number enumeration.** `send-otp` returns `ACCOUNT_NOT_FOUND` for unregistered numbers and `register` returns `ACCOUNT_EXISTS`, so anyone can check whether a number uses GoFindr. | Fixed: codes go to every number and the account is created or opened only at verification; sign-up details travel with the code (`verify-otp` `profile`), which also closes the "re-register before the owner types the code" race. Residual (Medium): `/auth/invite-register` still says a number exists — it needs a valid, active invite link and is rate-limited. Tests: `test_auth.py`, `test_security_takeover.py`, e2e journey 11 |
+| H2 | ~~High~~ **Fixed 2026-11-10** | **Phone-number enumeration.** `send-otp` returns `ACCOUNT_NOT_FOUND` for unregistered numbers and `register` returns `ACCOUNT_EXISTS`, so anyone can check whether a number uses OneShort. | Fixed: codes go to every number and the account is created or opened only at verification; sign-up details travel with the code (`verify-otp` `profile`), which also closes the "re-register before the owner types the code" race. Residual (Medium): `/auth/invite-register` still says a number exists — it needs a valid, active invite link and is rate-limited. Tests: `test_auth.py`, `test_security_takeover.py`, e2e journey 11 |
 | M1 | Medium | Sessions never hard-expire: each rotation issues a fresh 30-day token. There's no absolute limit, no device list and no "sign out everywhere". | `_issue_tokens` |
 | M2 | Medium | Access tokens can't be revoked instantly. After logout or a password reset they stay valid for up to 15 minutes. (Suspension and deletion are instant because every request reloads the user.) | `get_current_user` |
 | M3 | Medium | The in-memory rate limiter isn't shared between API instances or across restarts, so limits multiply when scaling out. | `InMemoryRateLimiter` |
 | M4 | Medium | The web refresh token sits in `sessionStorage`, readable by injected scripts. | `lib/tokens.ts` |
 | M5 | Medium | The emails used for password login are never verified, and `PUT /users/me` can change the email freely. | `users/service.py` |
 | L1 | Low | A transient refresh failure (5xx, 429, network) clears the session and signs the user out. | `lib/api.ts refresh()` |
-| L2 | Low | HS256 shared secret with no key ID: rotating it logs everyone out. The issuer is still `gofindr`. There's no `aud` claim. | `security.py`, `config.py` |
+| L2 | Low | HS256 shared secret with no key ID: rotating it logs everyone out. The issuer is still `oneshort`. There's no `aud` claim. | `security.py`, `config.py` |
 | L3 | Low | Keychain items use the default accessibility setting, so they can be restored to a new device from an encrypted backup. `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` is preferred. | `lib/tokens.ts` |
 | L4 | Low | No device attestation (Play Integrity / App Attest) or CAPTCHA protects `send-otp`. | — |
 
@@ -152,7 +152,7 @@ flowchart LR
 | `app/infrastructure/database/indexes.py` | `identities` (unique provider+subject), `sessions` (user, last_seen; TTL on expiry), `users.sessions_valid_after` |
 | `scripts/auth_risk_report.py` (new), `scripts/backfill_identities.py` (new) | Dry-run-first data scripts |
 
-### Mobile (UI keeps GoFindr teal and the `#F5F6F0` canvas)
+### Mobile (UI keeps OneShort teal and the `#F5F6F0` canvas)
 | File | Change |
 |---|---|
 | `src/app/(auth)/login.tsx` | One flow: mobile → code; new numbers go to onboarding. Email/password behind "Other ways to sign in" |

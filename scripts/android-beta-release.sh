@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Upload a GoFindr Android beta APK to Firebase App Distribution, after checking it is the right app, a newer
+# Upload a OneShort Android beta APK to Firebase App Distribution, after checking it is the right app, a newer
 # version, pointed at staging and not debug-signed. Dry run by default: nothing is uploaded without --confirm.
-#   ./scripts/android-beta-release.sh [path/to.apk] [--notes "text"] [--group gofindr-qa] [--confirm]
+#   ./scripts/android-beta-release.sh [path/to.apk] [--notes "text"] [--group oneshort-qa] [--confirm]
 # Needs .data/firebase-android.env (git-ignored) with FIREBASE_PROJECT_ID and FIREBASE_ANDROID_APP_ID, taken from
 # the Firebase console or `firebase apps:list ANDROID --project <id>`, and a signed-in Firebase CLI.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; CFG="$ROOT/.data/firebase-android.env"; LOG="$ROOT/docs/beta/ANDROID_RELEASES.md"
 export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
 BT="$(ls -d "$ANDROID_HOME"/build-tools/* 2>/dev/null | sort -V | tail -1)"
-APK=""; NOTES=""; GROUP="gofindr-qa"; CONFIRM=0; ALLOW_DEBUG=0
+APK=""; NOTES=""; GROUP="oneshort-qa"; CONFIRM=0; ALLOW_DEBUG=0
 while [ $# -gt 0 ]; do case "$1" in
   --notes) NOTES="$2"; shift 2;; --group) GROUP="$2"; shift 2;; --confirm) CONFIRM=1; shift;;
   --allow-debug-signing) ALLOW_DEBUG=1; shift;; *) APK="$1"; shift;; esac; done
@@ -44,7 +44,7 @@ if grep -q "CN=Android Debug" <<<"$CERT"; then
 else echo "✓ release-signed: $(grep -m1 'certificate SHA-256' <<<"$CERT" | sed 's/.*: //' | cut -c1-23)…"; fi
 
 # 4. release notes
-[ -n "$NOTES" ] || NOTES="GoFindr Android beta $VN ($VC), $(git -C "$ROOT" rev-parse --short HEAD). Changes: $(git -C "$ROOT" log -5 --pretty='%s' | paste -sd ';' - | cut -c1-400)"
+[ -n "$NOTES" ] || NOTES="OneShort Android beta $VN ($VC), $(git -C "$ROOT" rev-parse --short HEAD). Changes: $(git -C "$ROOT" log -5 --pretty='%s' | paste -sd ';' - | cut -c1-400)"
 echo "notes: $NOTES"
 
 [ -f "$CFG" ] || fail "missing $CFG (FIREBASE_PROJECT_ID, FIREBASE_ANDROID_APP_ID)"; . "$CFG"

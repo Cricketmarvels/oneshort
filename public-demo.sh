@@ -13,7 +13,7 @@ tunnel() { # $1 port, $2 name -> prints URL
   for _ in $(seq 1 60); do u=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$D/tunnel-$2.log" | head -1 || true); [ -n "$u" ] && { echo "$u" > "$D/tunnel-$2.url"; echo "$u"; return; }; sleep 1; done
   echo "tunnel $2 failed" >&2; exit 1
 }
-stop_public() { pkill -f "cloudflared tunnel --no-autoupdate" || true; pkill -f "gofindr.yml run" || true; stop_apps; }
+stop_public() { pkill -f "cloudflared tunnel --no-autoupdate" || true; pkill -f "oneshort.yml run" || true; stop_apps; }
 # Fixed addresses when scripts/cloudflare-setup.sh has been run (named tunnel on your domain)
 NAMED=0; [ -f "$D/named-tunnel.env" ] && { . "$D/named-tunnel.env"; NAMED=1; }
 stop_apps() { pkill -f "vite preview" || true; pkill -f "serve-web.mjs" || true; pkill -f "expo start" || true; }
@@ -39,15 +39,15 @@ fi
 # Tunnels first: the API needs the public web address for links it puts in messages (invite/join links).
 if [ "$NAMED" = 1 ]; then
   WEB="https://$WEB_HOST"; EXPO="https://$EXPO_HOST"
-  pgrep -f "gofindr.yml run" >/dev/null || \
-    (nohup cloudflared tunnel --no-autoupdate --config "$HOME/.cloudflared/gofindr.yml" run "$TUNNEL_NAME" </dev/null > "$D/tunnel-named.log" 2>&1 &)
+  pgrep -f "oneshort.yml run" >/dev/null || \
+    (nohup cloudflared tunnel --no-autoupdate --config "$HOME/.cloudflared/oneshort.yml" run "$TUNNEL_NAME" </dev/null > "$D/tunnel-named.log" 2>&1 &)
 elif [ "$RELOAD" = 1 ]; then WEB=$(cat "$D/tunnel-web.url"); EXPO=$(cat "$D/tunnel-expo.url"); else WEB=$(tunnel 4173 web); EXPO=$(tunnel 8081 expo); fi
 pkill -f "uvicorn app.main:create_app" || true; sleep 1
 (cd "$ROOT/backend" && APP_BASE_URL="$WEB" exec nohup uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log \
   --proxy-headers --forwarded-allow-ips 127.0.0.1) </dev/null >> "$D/api.log" 2>&1 &
 wait_for http://127.0.0.1:8000/health/ready
 
-# Website = the GoFindr app itself (Expo web export); the previous React web app stays at /classic
+# Website = the OneShort app itself (Expo web export); the previous React web app stays at /classic
 (cd "$ROOT/mobile" && EXPO_PUBLIC_API_URL=/api/v1 EXPO_PUBLIC_DEFAULT_LOGIN=email \
   npx expo export --platform web --output-dir "$D/web-app" >/dev/null)
 (cd "$ROOT/frontend" && npx vite build --mode tunnel --base /classic/ --outDir "$D/web-classic" --emptyOutDir >/dev/null)

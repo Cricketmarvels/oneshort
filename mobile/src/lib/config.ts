@@ -18,7 +18,7 @@ export let API_URL: string = DEFAULT_API_URL;
 
 export const SERVER_OVERRIDE_ALLOWED: boolean = process.env.EXPO_PUBLIC_ALLOW_SERVER_OVERRIDE === "true" && Platform.OS !== "web";
 
-const OVERRIDE_KEY = "gofindr.api_url";
+const OVERRIDE_KEY = "oneshort.api_url";
 const API_URL_RE = /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)+(:\d{2,5})?\/api\/v1$/i;
 
 /** True for an address this app is willing to talk to: HTTPS, a real host name, ending in /api/v1. */

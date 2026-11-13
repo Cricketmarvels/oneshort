@@ -31,7 +31,7 @@ export async function readLocation(): Promise<LocationResult> {
     if (!perm.granted) {
       return { ok: false, reason: Platform.OS === "web"
         ? "Location is blocked for this site. Allow it from the icon in the address bar, or pick an area instead."
-        : "Location permission is off for GoFindr. Turn it on in Settings, or pick an area instead." };
+        : "Location permission is off for OneShort. Turn it on in Settings, or pick an area instead." };
     }
     const timeout = new Promise<null>((r) => setTimeout(() => r(null), 15_000));
     const pos = await Promise.race([Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }), timeout])
@@ -137,7 +137,7 @@ async function shrinkForUpload(blob: Blob): Promise<Blob> {
 }
 
 /**
- * A human name for a position, from the phone's own geocoder (nothing is sent to GoFindr): "Sector 76, Noida".
+ * A human name for a position, from the phone's own geocoder (nothing is sent to OneShort): "Sector 76, Noida".
  * Null on the web (browsers have no geocoder) or when the phone can't name the place.
  */
 export async function placeName(lat: number, lng: number): Promise<string | null> {

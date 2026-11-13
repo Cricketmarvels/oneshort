@@ -1,12 +1,12 @@
-"""WhatsApp Cloud API (Meta) setup helper for GoFindr. Reads credentials from backend/.env; never prints them.
+"""WhatsApp Cloud API (Meta) setup helper for OneShort. Reads credentials from backend/.env; never prints them.
 
   uv run python -m scripts.whatsapp_meta_setup status            # token, phone number, templates + approval status
-  uv run python -m scripts.whatsapp_meta_setup create-templates  # submit GoFindr's 3 templates for approval
+  uv run python -m scripts.whatsapp_meta_setup create-templates  # submit OneShort's 3 templates for approval
   uv run python -m scripts.whatsapp_meta_setup test +9198XXXXXXXX  # send a test message (text in the 24-h window, else template)
 
 Templates (names must match WHATSAPP_META_*_TEMPLATE in .env):
   playr_login_code    AUTHENTICATION  copy-code button; Meta supplies the fixed wording ("{code} is your verification code")
-  playr_update        UTILITY         "GoFindr update: {{1}} ... {{2}} ... Open GoFindr: {{3}} to reply."
+  playr_update        UTILITY         "OneShort update: {{1}} ... {{2}} ... Open OneShort: {{3}} to reply."
   playr_match_invite  UTILITY         captain, title, when, where, format/role, fee, link
 """
 
@@ -35,7 +35,7 @@ TEMPLATES: list[dict[str, Any]] = [
         "components": [
             {
                 "type": "BODY",
-                "text": "GoFindr update: {{1}}\n\n{{2}}\n\nOpen GoFindr: {{3}} to see details and reply.",
+                "text": "OneShort update: {{1}}\n\n{{2}}\n\nOpen OneShort: {{3}} to see details and reply.",
                 "example": {
                     "body_text": [["Match cancelled", "Sunday T20 at Noida Stadium is off.", "https://gofindr.in"]]
                 },
@@ -49,8 +49,8 @@ TEMPLATES: list[dict[str, Any]] = [
             {
                 "type": "BODY",
                 "text": (
-                    "You're invited to a GoFindr match.\n{{1}}\nMatch: {{2}}\nWhen: {{3}}\nWhere: {{4}}\n"
-                    "Format: {{5}}\nFee: {{6}}\nAccept or decline in the GoFindr app: {{7}} before the match starts."
+                    "You're invited to a OneShort match.\n{{1}}\nMatch: {{2}}\nWhen: {{3}}\nWhere: {{4}}\n"
+                    "Format: {{5}}\nFee: {{6}}\nAccept or decline in the OneShort app: {{7}} before the match starts."
                 ),
                 "example": {
                     "body_text": [
@@ -112,7 +112,7 @@ async def status() -> None:
         for t in sorted(rows, key=lambda t: t["name"]):
             mark = "*" if t["name"].startswith("playr_") else " "
             print(f" {mark} {t['name']:<24} {t['category']:<15} {t['language']:<6} {t['status']}")
-        print(f"{len(rows)} template(s). GoFindr's are marked *.")
+        print(f"{len(rows)} template(s). OneShort's are marked *.")
 
 
 async def create_templates() -> None:
@@ -145,8 +145,8 @@ async def test(number: str) -> None:
     wa = build_whatsapp_sender(s)
     st = await wa.send(
         number,
-        "GoFindr test: WhatsApp is connected.",
-        ["WhatsApp is connected", "This is a GoFindr test message.", s.app_base_url or s.web_base_url],
+        "OneShort test: WhatsApp is connected.",
+        ["WhatsApp is connected", "This is a OneShort test message.", s.app_base_url or s.web_base_url],
         "notify",
     )
     print(

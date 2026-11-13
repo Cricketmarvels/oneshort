@@ -1,5 +1,5 @@
 /**
- * CricHeroes profile links (players + teams) and a player's self-reported CricHeroes stats. GoFindr stores what the
+ * CricHeroes profile links (players + teams) and a player's self-reported CricHeroes stats. OneShort stores what the
  * person pastes or types and opens the link in the browser; nothing is fetched from CricHeroes, imported or
  * verified, and the stats are always labelled as self-reported. Validation mirrors the server (https, exact
  * cricheroes.com host, /player-profile|/team-profile/<id>/…) — the server is still the authority.
@@ -64,7 +64,7 @@ export function CricHeroesStatsFields({ value, onChange }: { value: StatsForm; o
   return (
     <View style={{ gap: 8 }}>
       <Txt v="label">Your CricHeroes stats (optional)</Txt>
-      <Txt v="small" color={T.muted}>Copy them from your CricHeroes profile. They're shown as self-reported and don't affect your GoFindr rating.</Txt>
+      <Txt v="small" color={T.muted}>Copy them from your CricHeroes profile. They're shown as self-reported and don't affect your OneShort rating.</Txt>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {STAT_FIELDS.map((d) => (
           <View key={d.k} style={{ width: "47%", flexGrow: 1 }}>
@@ -92,7 +92,7 @@ export function CricHeroesStatsGrid({ stats }: { stats: CHStatsOut }) {
           </View>
         ))}
       </View>
-      <Txt v="small" color={T.faint} style={{ fontSize: 11.5 }}>Self-reported from CricHeroes{updated ? ` · updated ${updated}` : ""} · not verified by GoFindr</Txt>
+      <Txt v="small" color={T.faint} style={{ fontSize: 11.5 }}>Self-reported from CricHeroes{updated ? ` · updated ${updated}` : ""} · not verified by OneShort</Txt>
     </View>
   );
 }
@@ -173,7 +173,7 @@ export function CricHeroesCard({ kind, url, onEdit, compact, stats }: { kind: CH
         <Txt v="h3" color={T.primaryDark} style={{ fontSize: 15 }}>{action}</Txt>
         <PlayRIcon name="external" size={18} color={T.primaryDark} weight="bold" />
       </Pressable>
-      {err ? <Txt v="small" color={T.dangerText}>{err}</Txt> : <Txt v="small" color={T.faint} style={{ fontSize: 11.5 }}>Opens cricheroes.com · stats there aren't verified by GoFindr</Txt>}
+      {err ? <Txt v="small" color={T.dangerText}>{err}</Txt> : <Txt v="small" color={T.faint} style={{ fontSize: 11.5 }}>Opens cricheroes.com · stats there aren't verified by OneShort</Txt>}
       </>) : null}
     </View>
   );

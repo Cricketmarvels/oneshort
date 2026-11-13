@@ -205,7 +205,7 @@ async def test_existing_accounts_are_backfilled_and_not_sent_back_to_registratio
     )
     old_placeholder = await users.insert_one(
         {
-            "full_name": "GoFindr player",
+            "full_name": "OneShort player",
             "mobile_number": unique_mobile(),
             "mobile_verified": True,
             "roles": ["player"],

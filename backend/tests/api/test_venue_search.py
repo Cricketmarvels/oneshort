@@ -1,4 +1,4 @@
-"""Ground search: GoFindr's own venues, map suggestions merged in, and picking one that isn't ours yet.
+"""Ground search: OneShort's own venues, map suggestions merged in, and picking one that isn't ours yet.
 
 The provider is faked here. The real adapters (Photon, Google Places) are network calls; what matters
 is that a search never writes, a pick writes once, and a provider failure can't break the ground list.
@@ -53,7 +53,7 @@ class BrokenPlaces:
 
 @pytest.fixture
 async def ground(container: Container) -> str:
-    """A ground GoFindr already knows. The name is unique so one test's rows can't answer another's search."""
+    """A ground OneShort already knows. The name is unique so one test's rows can't answer another's search."""
     r = await container.mongo["venues"].insert_one(
         {
             "name": f"Sector 18 Ground {uuid.uuid4().hex[:8]}",
@@ -90,7 +90,7 @@ async def test_our_own_grounds_come_first_and_without_a_provider_call(
 
     rows = (await client.get(f"{API}/venues?lat={SECTOR_18[0]}&lng={SECTOR_18[1]}", headers=me.h)).json()["data"]
     assert fake.calls == 0  # no search term: this is "grounds near me", not a map lookup
-    assert all(r["source"] == "gofindr" and r["id"] for r in rows)
+    assert all(r["source"] == "oneshort" and r["id"] for r in rows)
     assert ground in [r["id"] for r in rows]
 
 
@@ -104,15 +104,15 @@ async def test_picking_a_map_ground_stores_it_once(
 
     first = (await client.post(f"{API}/venues/resolve", headers=me.h, json=body)).json()["data"]
     # Once a captain picks it, it is one of our grounds — not a suggestion any more.
-    assert first["id"] and first["source"] == "gofindr" and first["name"] == "Howzzat Cricket Arena"
+    assert first["id"] and first["source"] == "oneshort" and first["name"] == "Howzzat Cricket Arena"
     again = (await client.post(f"{API}/venues/resolve", headers=other.h, json=body)).json()["data"]
     assert again["id"] == first["id"]  # one ground, however many captains pick it
     assert await container.mongo["venues"].count_documents({"place_id": "osm:N123"}) == 1
 
-    # It is now a GoFindr ground: found without the provider, and usable as a match venue.
+    # It is now a OneShort ground: found without the provider, and usable as a match venue.
     monkeypatch.setattr(container, "places", FakePlaces())
     rows = (await client.get(f"{API}/venues?q=Howzzat", headers=me.h)).json()["data"]
-    assert [(r["id"], r["source"]) for r in rows] == [(first["id"], "gofindr")]
+    assert [(r["id"], r["source"]) for r in rows] == [(first["id"], "oneshort")]
 
 
 async def test_a_dead_provider_still_returns_our_grounds(

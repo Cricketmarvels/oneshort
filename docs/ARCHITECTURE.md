@@ -129,7 +129,7 @@ Expo Router app consuming the same API through `@cm/shared`. Device features use
 - `expo-notifications` for push, with the FCM token registered at `/users/me/devices`
 - `expo-image-picker` for the camera and image upload
 - the native `Share` API for sharing
-- deep links through the `gofindr://` scheme
+- deep links through the `oneshort://` scheme
 
 ## 7. Technology decisions
 | Area | Choice | Why |

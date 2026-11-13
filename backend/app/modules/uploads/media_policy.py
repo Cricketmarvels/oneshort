@@ -1,4 +1,4 @@
-"""Bring stored media fields in line with the media policy: only files GoFindr stored itself may be shown.
+"""Bring stored media fields in line with the media policy: only files OneShort stored itself may be shown.
 
 This uses the same rule the API enforces on write (``is_own_media``, behind ``OwnMediaUrl``). It only removes values
 that fail it, so every client falls back to the branded initials or banner. Nothing new is ever written into a
@@ -70,6 +70,6 @@ async def enforce_media_policy(mongo: Mongo, settings: Settings, *, apply: bool)
                         entity_type=entity,
                         entity_id=doc["_id"],
                         previous_value={f: value},
-                        new_value={f: None, "reason": "not a GoFindr upload"},
+                        new_value={f: None, "reason": "not a OneShort upload"},
                     )
     return report

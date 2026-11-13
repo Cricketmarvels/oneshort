@@ -1,4 +1,4 @@
-"""Place search behind ``GET /venues``: finds grounds that aren't in GoFindr's own database yet.
+"""Place search behind ``GET /venues``: finds grounds that aren't in OneShort's own database yet.
 
 Captains look for a ground by the name on the gate ("Howzzat Arena"), which only exists in a map
 provider's data until somebody plays there. The adapter below is chosen with ``PLACES_PROVIDER``:
@@ -16,9 +16,9 @@ provider's data until somebody plays there. The adapter below is chosen with ``P
 * ``ola`` — Ola Maps (Krutrim), built for India. A free key, no card and no billing account: 100,000
   events a month cost nothing (``maps.olakrutrim.com``, Nov 2026). Coverage of Indian turf grounds and
   local businesses is far better than OpenStreetMap's. Set ``PLACES_PROVIDER=ola`` and ``PLACES_API_KEY``.
-* ``none`` — no external calls at all. Search then returns only grounds GoFindr already knows.
+* ``none`` — no external calls at all. Search then returns only grounds OneShort already knows.
 
-Results are suggestions, not records: a place becomes a GoFindr venue only when a captain picks it
+Results are suggestions, not records: a place becomes a OneShort venue only when a captain picks it
 (``POST /venues/resolve``), so typing never writes to the database. Provider failures and timeouts
 are swallowed — the seeded and captain-added grounds still answer the search.
 """
@@ -35,11 +35,11 @@ from app.core.logging import get_logger
 log = get_logger("places")
 TIMEOUT = 4.0  # a slow geocoder must not hold up the ground list
 # Polite, generic identification. Never put a user's details in here: these requests leave our network.
-UA = "GoFindr/1.0 (+https://gofindr.in)"
+UA = "OneShort/1.0 (+https://gofindr.in)"
 
 
 class Place(BaseModel):
-    """One suggestion from a map provider. It has no GoFindr id until a captain picks it."""
+    """One suggestion from a map provider. It has no OneShort id until a captain picks it."""
 
     source: Literal["osm", "google", "ola"]
     place_id: str
@@ -70,12 +70,43 @@ class DisabledPlaces:
 # Indian addresses end "…, city, state, pincode, India". Naming the states is what lets the city be found
 # whichever of those tails a provider includes.
 STATES = {
-    "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh", "goa", "gujarat", "haryana",
-    "himachal pradesh", "jharkhand", "karnataka", "kerala", "madhya pradesh", "maharashtra", "manipur",
-    "meghalaya", "mizoram", "nagaland", "odisha", "punjab", "rajasthan", "sikkim", "tamil nadu", "telangana",
-    "tripura", "uttar pradesh", "uttarakhand", "west bengal", "andaman and nicobar islands", "chandigarh",
-    "dadra and nagar haveli and daman and diu", "delhi", "nct of delhi", "jammu and kashmir", "ladakh",
-    "lakshadweep", "puducherry",
+    "andhra pradesh",
+    "arunachal pradesh",
+    "assam",
+    "bihar",
+    "chhattisgarh",
+    "goa",
+    "gujarat",
+    "haryana",
+    "himachal pradesh",
+    "jharkhand",
+    "karnataka",
+    "kerala",
+    "madhya pradesh",
+    "maharashtra",
+    "manipur",
+    "meghalaya",
+    "mizoram",
+    "nagaland",
+    "odisha",
+    "punjab",
+    "rajasthan",
+    "sikkim",
+    "tamil nadu",
+    "telangana",
+    "tripura",
+    "uttar pradesh",
+    "uttarakhand",
+    "west bengal",
+    "andaman and nicobar islands",
+    "chandigarh",
+    "dadra and nagar haveli and daman and diu",
+    "delhi",
+    "nct of delhi",
+    "jammu and kashmir",
+    "ladakh",
+    "lakshadweep",
+    "puducherry",
 }
 
 

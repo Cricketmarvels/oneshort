@@ -1,5 +1,5 @@
 /**
- * The two core GoFindr journeys: Find players and Find teams. Search field, location selector,
+ * The two core OneShort journeys: Find players and Find teams. Search field, location selector,
  * horizontal filter chips (sheet with Clear/Apply + selected count), compact player rows in a
  * white list; team cards with vacancies and one primary action.
  * Used full-screen (/find/players, /find/teams) and inside the Discover tab.

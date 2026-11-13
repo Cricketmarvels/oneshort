@@ -15,7 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { isRacket, useSport } from "@/lib/sports";
 import { ICON, R, SIZE, SP, T } from "@/theme";
 
-/** Header: GoFindr mark + wordmark, compact sport switcher, bell with unread dot, profile avatar. */
+/** Header: OneShort mark + wordmark, compact sport switcher, bell with unread dot, profile avatar. */
 export function TopBar() {
   const { user } = useAuth();
   const unread = useQuery({ queryKey: ["notifications", "unread"], queryFn: () => api<{ meta: { unread: number } }>("/notifications", { query: { page_size: 1 } }), refetchInterval: 60_000 });

@@ -390,7 +390,10 @@ async def resolve_fixture(fixture_id: str, data: ResolveIn, admin: AdminDep, svc
 
 
 @router.get(
-    "/home", response_model=Envelope[HomeOut], tags=["Home"], summary="GoFindr home: rating, rank, fixtures, challenges"
+    "/home",
+    response_model=Envelope[HomeOut],
+    tags=["Home"],
+    summary="OneShort home: rating, rank, fixtures, challenges",
 )
 async def home(user: UserDep, c: ContainerDep, lat: Lat = None, lng: Lng = None) -> Envelope[HomeOut]:
     return ok(await build_home(c, user, _at(lat, lng)))

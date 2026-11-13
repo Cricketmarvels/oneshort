@@ -38,7 +38,7 @@ export default function Onboarding() {
   const done = useOnboarding((s) => s.finish);
   const [step, setStep] = useState(1);
   const [playAs, setPlayAs] = useState<PlayAs>("player");
-  const [name, setName] = useState(user?.full_name && user.full_name !== "GoFindr player" ? user.full_name : ""); // placeholder for phone-only sign-ups
+  const [name, setName] = useState(user?.full_name && user.full_name !== "OneShort player" ? user.full_name : ""); // placeholder for phone-only sign-ups
   const [area, setArea] = useState(PLACES.find((p) => p.label === loc.label) ?? null);
   const [role, setRole] = useState<string | null>(null);
   const [days, setDays] = useState<string[]>(["sat", "sun"]);
@@ -85,7 +85,7 @@ export default function Onboarding() {
 
         {step === 1 ? (
           <View style={{ gap: 12 }} accessibilityRole="radiogroup">
-            <H title="Your Role" sub="How do you want to use GoFindr?" />
+            <H title="Your Role" sub="How do you want to use OneShort?" />
             <ChoiceRow lead={<RoleIcon name="cricket" />} title="Player" body="Find games, join teams and play regularly" selected={playAs === "player"} onPress={() => setPlayAs("player")} />
             <ChoiceRow lead={<RoleIcon name="shield" />} title="Captain" body="Create teams, manage squads and organise matches" selected={playAs === "captain"} onPress={() => setPlayAs("captain")} />
             <ChoiceRow lead={<RoleIcon name="users" />} title="Both" body="Play for others and run your own team" selected={playAs === "both"} onPress={() => setPlayAs("both")} />
@@ -122,7 +122,7 @@ export default function Onboarding() {
               placeholder="e.g. Opening bat, part-time off-spin. Weekend T20s for 6 years." hint={`${bio.length}/280 · shown on your profile`} style={{ minHeight: 84, textAlignVertical: "top" }} />
             <View style={{ gap: 12, padding: 14, borderRadius: 16, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line }}>
               <Txt v="h2">Your CricHeroes profile</Txt>
-              <Txt v="small" color={T.muted}>Captains and players can open it from your GoFindr profile.</Txt>
+              <Txt v="small" color={T.muted}>Captains and players can open it from your OneShort profile.</Txt>
               <CricHeroesField kind="player" value={chUrl} onChange={setChUrl} />
             </View>
           </View>

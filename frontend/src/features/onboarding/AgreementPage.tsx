@@ -50,11 +50,11 @@ export function AgreementPage() {
             </Card>
             <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 ring-1 ring-sand-300">
               <input type="checkbox" className="mt-1 size-5 accent-brand-700" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-              <span className="text-sm text-ink-700">I have read and agree to the GoFindr Terms of Use.</span>
+              <span className="text-sm text-ink-700">I have read and agree to the OneShort Terms of Use.</span>
             </label>
             <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 ring-1 ring-sand-300">
               <input type="checkbox" className="mt-1 size-5 accent-brand-700" checked={priv} onChange={(e) => setPriv(e.target.checked)} />
-              <span className="text-sm text-ink-700">I have read the <a className="font-semibold text-brand-700 underline" href="/legal/privacy" target="_blank" rel="noreferrer">Privacy Notice</a> and consent to GoFindr using my data as it describes.</span>
+              <span className="text-sm text-ink-700">I have read the <a className="font-semibold text-brand-700 underline" href="/legal/privacy" target="_blank" rel="noreferrer">Privacy Notice</a> and consent to OneShort using my data as it describes.</span>
             </label>
             <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 ring-1 ring-sand-300">
               <input type="checkbox" className="mt-1 size-5 accent-brand-700" checked={adult} onChange={(e) => setAdult(e.target.checked)} />

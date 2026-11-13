@@ -992,7 +992,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GoFindr home: rating, rank, fixtures, challenges */
+        /** OneShort home: rating, rank, fixtures, challenges */
         get: operations["home_api_v1_home_get"];
         put?: never;
         post?: never;
@@ -2983,7 +2983,7 @@ export interface paths {
         put?: never;
         /**
          * Save a picked map place as a venue
-         * @description Turn a suggestion into a real GoFindr ground, reusing it if this place is already known.
+         * @description Turn a suggestion into a real OneShort ground, reusing it if this place is already known.
          *
          *     Called when a captain picks a map result, so a ground enters the database once it is actually used —
          *     and the next captain searching the same area finds it without a provider call.
@@ -3981,7 +3981,7 @@ export interface components {
             is_demo: boolean;
             /**
              * Booking Available
-             * @description False until a facility shares live slots with GoFindr
+             * @description False until a facility shares live slots with OneShort
              */
             booking_available: boolean;
         };
@@ -4194,8 +4194,8 @@ export interface components {
         };
         /**
          * CricHeroesStats
-         * @description Career numbers the player copies from their CricHeroes profile. Self-reported: GoFindr shows them labelled
-         *     as such, never mixes them into GoFindr ratings, and never fetches them from CricHeroes.
+         * @description Career numbers the player copies from their CricHeroes profile. Self-reported: OneShort shows them labelled
+         *     as such, never mixes them into OneShort ratings, and never fetches them from CricHeroes.
          */
         CricHeroesStats: {
             /** Matches */
@@ -5350,7 +5350,7 @@ export interface components {
             teams: string[];
             /**
              * Has Cricheroes
-             * @description Player linked a CricHeroes profile (open their GoFindr profile to view it)
+             * @description Player linked a CricHeroes profile (open their OneShort profile to view it)
              * @default false
              */
             has_cricheroes: boolean;
@@ -5967,7 +5967,7 @@ export interface components {
             achievements?: components["schemas"]["AchievementOut"][];
             /**
              * Cricheroes Profile Url
-             * @description Player-supplied CricHeroes link (not verified by GoFindr)
+             * @description Player-supplied CricHeroes link (not verified by OneShort)
              */
             cricheroes_profile_url?: string | null;
             /** Cricheroes Player Id */
@@ -7832,7 +7832,7 @@ export interface components {
         VenueSearchOut: {
             /**
              * Id
-             * @description GoFindr venue id; null for a map suggestion not yet saved
+             * @description OneShort venue id; null for a map suggestion not yet saved
              */
             id?: string | null;
             /** Name */
@@ -7851,8 +7851,8 @@ export interface components {
             distance_km?: number | null;
             /**
              * Source
-             * @description gofindr (a ground we know) | osm | google
-             * @default gofindr
+             * @description oneshort (a ground we know) | osm | google
+             * @default oneshort
              */
             source: string;
             /**

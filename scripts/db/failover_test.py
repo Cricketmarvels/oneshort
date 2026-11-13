@@ -1,4 +1,4 @@
-"""Failover drill: write through the GoFindr Mongo client while the primary steps down and then crashes.
+"""Failover drill: write through the OneShort Mongo client while the primary steps down and then crashes.
 
 Needs a 3-node replica set "rsft" on 127.0.0.1:27041-27043 (see docs/design/DATABASE_RELIABILITY.md).
 Run from backend/:  PYTHONPATH=. uv run python ../scripts/db/failover_test.py

@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "GoFindr API",
+    "title": "OneShort API",
     "description": "Hyperlocal cricket matchmaking & team management API. All responses use the envelope `{data, meta?}`; errors use `{error: {code, message, details}, request_id}`.",
     "version": "1.0.0"
   },
@@ -6851,7 +6851,7 @@
         "tags": [
           "Home"
         ],
-        "summary": "GoFindr home: rating, rank, fixtures, challenges",
+        "summary": "OneShort home: rating, rank, fixtures, challenges",
         "operationId": "home_api_v1_home_get",
         "security": [
           {
@@ -23005,7 +23005,7 @@
           "Venues"
         ],
         "summary": "Save a picked map place as a venue",
-        "description": "Turn a suggestion into a real GoFindr ground, reusing it if this place is already known.\n\nCalled when a captain picks a map result, so a ground enters the database once it is actually used \u2014\nand the next captain searching the same area finds it without a provider call.",
+        "description": "Turn a suggestion into a real OneShort ground, reusing it if this place is already known.\n\nCalled when a captain picks a map result, so a ground enters the database once it is actually used \u2014\nand the next captain searching the same area finds it without a provider call.",
         "operationId": "resolve_venue_api_v1_venues_resolve_post",
         "requestBody": {
           "content": {
@@ -25767,7 +25767,7 @@
           "booking_available": {
             "type": "boolean",
             "title": "Booking Available",
-            "description": "False until a facility shares live slots with GoFindr"
+            "description": "False until a facility shares live slots with OneShort"
           }
         },
         "type": "object",
@@ -26643,7 +26643,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "CricHeroesStats",
-        "description": "Career numbers the player copies from their CricHeroes profile. Self-reported: GoFindr shows them labelled\nas such, never mixes them into GoFindr ratings, and never fetches them from CricHeroes."
+        "description": "Career numbers the player copies from their CricHeroes profile. Self-reported: OneShort shows them labelled\nas such, never mixes them into OneShort ratings, and never fetches them from CricHeroes."
       },
       "CricHeroesStatsOut": {
         "properties": {
@@ -29776,7 +29776,7 @@
           "has_cricheroes": {
             "type": "boolean",
             "title": "Has Cricheroes",
-            "description": "Player linked a CricHeroes profile (open their GoFindr profile to view it)",
+            "description": "Player linked a CricHeroes profile (open their OneShort profile to view it)",
             "default": false
           }
         },
@@ -31693,7 +31693,7 @@
               }
             ],
             "title": "Cricheroes Profile Url",
-            "description": "Player-supplied CricHeroes link (not verified by GoFindr)"
+            "description": "Player-supplied CricHeroes link (not verified by OneShort)"
           },
           "cricheroes_player_id": {
             "anyOf": [
@@ -37378,7 +37378,7 @@
               }
             ],
             "title": "Id",
-            "description": "GoFindr venue id; null for a map suggestion not yet saved"
+            "description": "OneShort venue id; null for a map suggestion not yet saved"
           },
           "name": {
             "type": "string",
@@ -37418,8 +37418,8 @@
           "source": {
             "type": "string",
             "title": "Source",
-            "description": "gofindr (a ground we know) | osm | google",
-            "default": "gofindr"
+            "description": "oneshort (a ground we know) | osm | google",
+            "default": "oneshort"
           },
           "place_id": {
             "anyOf": [

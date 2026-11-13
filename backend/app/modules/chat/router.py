@@ -2,7 +2,7 @@
 
 Only the invitation's player and captain can read or write. The WhatsApp option is a deep link
 (wa.me) to the OTHER person's number, offered only when that person has opted in to WhatsApp
-(notification_prefs.whatsapp) — GoFindr never shows a number to someone who hasn't been allowed it.
+(notification_prefs.whatsapp) — OneShort never shows a number to someone who hasn't been allowed it.
 """
 
 import re
@@ -70,7 +70,7 @@ async def _load(
 def _wa_text(to_name: str, from_name: str, match: dict[str, Any], base_url: str) -> str:
     """Opening WhatsApp message with the full match details, so the chat makes sense on its own."""
     tz = ZoneInfo(match.get("timezone") or "Asia/Kolkata")
-    lines = [f"Hi {to_name.split()[0]}, it's {from_name} from GoFindr about this match:", match.get("title", "Match")]
+    lines = [f"Hi {to_name.split()[0]}, it's {from_name} from OneShort about this match:", match.get("title", "Match")]
     if match.get("start_at") and match.get("end_at"):
         start, end = ensure_utc(match["start_at"]).astimezone(tz), ensure_utc(match["end_at"]).astimezone(tz)
         lines.append(f"{start.strftime('%a %d %b, %I:%M %p')} to {end.strftime('%I:%M %p')}".replace(" 0", " "))
@@ -96,7 +96,7 @@ async def thread(invitation_id: str, user: UserDep, c: ContainerDep) -> Envelope
     inv, match, other_id = await _load(c, user, invitation_id)
     other = await c.mongo["users"].find_one(
         {"_id": other_id}, {"full_name": 1, "profile_image": 1, "mobile_number": 1, "notification_prefs": 1}
-    ) or {"_id": other_id, "full_name": "GoFindr player"}
+    ) or {"_id": other_id, "full_name": "OneShort player"}
     is_open = inv["invitation_status"] in OPEN
     wa = None
     if is_open and (other.get("notification_prefs") or {}).get("whatsapp") and other.get("mobile_number"):

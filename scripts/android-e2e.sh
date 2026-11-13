@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"; D="$ROOT/.data"
 export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17}"
 export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"; export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
-AVD=gofindr_e2e; IMG="system-images;android-35;google_apis;arm64-v8a"
+AVD=oneshort_e2e; IMG="system-images;android-35;google_apis;arm64-v8a"
 APK="${1:-}"; [ -f "$APK" ] && shift || APK="$(ls -t "$D"/android-builds/*.apk 2>/dev/null | head -1)"
 [ -f "$APK" ] || { echo "no APK: run ./scripts/android-build-local.sh --e2e"; exit 1; }
 # Default: an e2e build (./scripts/android-build-local.sh --e2e) reaching the staging API on this Mac via 10.0.2.2.

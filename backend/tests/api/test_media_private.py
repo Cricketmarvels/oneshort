@@ -14,7 +14,9 @@ from tests.api.test_media import _jpeg_with_gps, _upload
 API = "/api/v1"
 
 
-async def test_uploads_only_readable_through_valid_signed_links(client: httpx.AsyncClient, container: Container) -> None:
+async def test_uploads_only_readable_through_valid_signed_links(
+    client: httpx.AsyncClient, container: Container
+) -> None:
     u = await player(client, "Private Media", "batsman", SECTOR_18)
     link = await _upload(client, u.h, _jpeg_with_gps((600, 600)), "profile")
     key = normalize_media_key(link, container.settings)

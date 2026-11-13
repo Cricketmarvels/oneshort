@@ -1,11 +1,11 @@
-# GoFindr beta — Apple TestFlight / App Review checklist
+# OneShort beta — Apple TestFlight / App Review checklist
 
 External TestFlight builds go through a light Apple review before testers can install. Date: 2026-11-10.
 
 | # | Item | State | Notes |
 |---|---|---|---|
 | 1 | Apple Developer Program membership | ☐ owner | US$99/yr, needed for TestFlight at all |
-| 2 | App record in App Store Connect, bundle `in.gofindr.app`, name "GoFindr" | ☐ owner | Created by `eas submit` or manually |
+| 2 | App record in App Store Connect, bundle `in.gofindr.app`, name "OneShort" | ☐ owner | Created by `eas submit` or manually |
 | 3 | Signing: distribution cert + provisioning profile | ☐ via `eas credentials` | EAS manages |
 | 4 | Push entitlement + APNs key | ☐ via `eas credentials` | `expo-notifications` plugin adds `aps-environment` |
 | 5 | App icon 1024×1024 without alpha | ⚠ verify | `mobile/assets/icon.png` present; confirm no transparency |
@@ -25,4 +25,4 @@ External TestFlight builds go through a light Apple review before testers can in
 | 19 | Minimum iOS version | ✅ | Expo SDK 58 default (iOS 15.1+) |
 | 20 | Build/version | ☐ | `version` 1.0.0, `buildNumber` auto-increments on the `beta` profile |
 
-Tester group: **"GoFindr Cricket Beta"** (external, up to 10,000; we start with 30–50). Steps: App Store Connect → TestFlight → External Testing → New group → add emails or enable the public link → attach the build → submit for Beta App Review (usually < 24 h first time).
+Tester group: **"OneShort Cricket Beta"** (external, up to 10,000; we start with 30–50). Steps: App Store Connect → TestFlight → External Testing → New group → add emails or enable the public link → attach the build → submit for Beta App Review (usually < 24 h first time).

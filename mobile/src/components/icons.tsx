@@ -1,7 +1,7 @@
 /**
- * GoFindr icon system.
+ * OneShort icon system.
  * - PlayRIcon: one consistent family (Tabler, MIT) for navigation + utility icons; outline + filled variants.
- * - SportsActionIcon: original two-tone cricket pictograms (drawn for GoFindr, no third-party artwork) for the
+ * - SportsActionIcon: original two-tone cricket pictograms (drawn for OneShort, no third-party artwork) for the
  *   primary sports actions, so they don't read as generic outline icons.
  * Sizes: action 36–42 · bottom nav 24 · utility 20–22. Default colour = primary teal.
  */

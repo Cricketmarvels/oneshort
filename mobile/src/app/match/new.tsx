@@ -61,7 +61,7 @@ export default function CreateMatch() {
     queryFn: () => api<Venue[]>("/venues", { query: { lat, lng, q: dq || undefined } }),
     placeholderData: (prev) => prev,
   });
-  // A map suggestion has no id until somebody uses it; picking one stores it as a GoFindr ground.
+  // A map suggestion has no id until somebody uses it; picking one stores it as a OneShort ground.
   const pick = async (v: Venue) => {
     setVenue(v);
     if (v.id) return;
@@ -125,8 +125,8 @@ export default function CreateMatch() {
               <View style={{ borderRadius: R.card, borderWidth: 1, borderColor: T.line, backgroundColor: T.surface, overflow: "hidden" }}>
                 {venues.data.map((v, i) => {
                   const on = isPicked(v);
-                  const fromMap = v.source !== "gofindr";
-                  const first = fromMap && (i === 0 || venues.data![i - 1]?.source === "gofindr");
+                  const fromMap = v.source !== "oneshort";
+                  const first = fromMap && (i === 0 || venues.data![i - 1]?.source === "oneshort");
                   return (
                     <View key={v.place_id ?? v.id ?? v.name}>
                       {first ? (
@@ -148,7 +148,7 @@ export default function CreateMatch() {
                 })}
               </View>
             )}
-            <InlineNotice>GoFindr doesn't book grounds — confirm the slot with the ground first.</InlineNotice>
+            <InlineNotice>OneShort doesn't book grounds — confirm the slot with the ground first.</InlineNotice>
           </View>
         ) : step === 2 ? (
           <View style={{ gap: SP.lg }}>

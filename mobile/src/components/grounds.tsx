@@ -25,7 +25,7 @@ import { ICON, R, SP, T } from "@/theme";
 
 type Ground = S<"VenueSearchOut">;
 
-/** A ground GoFindr knows has an id; a map suggestion only has a provider key. Either identifies the row. */
+/** A ground OneShort knows has an id; a map suggestion only has a provider key. Either identifies the row. */
 const gid = (g: Ground) => g.id ?? g.place_id ?? g.name;
 
 /** Venue card: name, type · ~km, area. Price is never shown — no venue supplies one — so the CTA is "Contact venue". */
@@ -56,7 +56,7 @@ export function FindGrounds() {
   useEffect(() => {
     if (!params.focus || !params.name) return;
     const fromList = res.data?.find((g) => gid(g) === params.focus);
-    const g: Ground = fromList ?? { id: params.focus, name: params.name, address: params.address ?? "", area: params.area ?? "", city: params.city ?? "", lat: Number(params.lat) || 0, lng: Number(params.lng) || 0, distance_km: null, source: "gofindr" };
+    const g: Ground = fromList ?? { id: params.focus, name: params.name, address: params.address ?? "", area: params.area ?? "", city: params.city ?? "", lat: Number(params.lat) || 0, lng: Number(params.lng) || 0, distance_km: null, source: "oneshort" };
     setFocus(g); setPicked(gid(g)); setView("list");
     const t = setTimeout(() => detail.current?.present(), 250);
     return () => clearTimeout(t);
@@ -92,7 +92,7 @@ export function FindGrounds() {
               <Txt v="body">{focus.address}</Txt>
               <Txt v="small" color={T.muted}>{[focus.area, focus.city].filter(Boolean).join(", ")}{focus.distance_km != null ? ` · ~${focus.distance_km} km away` : ""}</Txt>
             </View>
-            <InlineNotice>Booking isn't available in GoFindr. Slots, prices and facilities aren't listed — contact the venue directly; Maps shows its phone number and hours where the venue has published them.</InlineNotice>
+            <InlineNotice>Booking isn't available in OneShort. Slots, prices and facilities aren't listed — contact the venue directly; Maps shows its phone number and hours where the venue has published them.</InlineNotice>
             <Button title="Contact venue (opens Maps)" icon={<MapPinned size={18} color={T.onPrimary} strokeWidth={ICON.stroke} />} onPress={() => maps(focus)} />
             {myTeam ? <Button title="Challenge a team to play here" variant="secondary" icon={<Swords size={17} color={T.ink} strokeWidth={ICON.stroke} />} onPress={() => { detail.current?.dismiss(); router.push({ pathname: "/challenge/new", params: { from: myTeam } }); }} /> : null}
           </View>

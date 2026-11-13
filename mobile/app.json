@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GoFindr",
+    "name": "OneShort",
     "slug": "playr",
     "owner": "playrrs-team",
     "version": "1.0.0",
@@ -11,16 +11,16 @@
       "supportsTablet": true,
       "bundleIdentifier": "in.gofindr.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "GoFindr uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared.",
-        "NSCameraUsageDescription": "GoFindr uses the camera only when you choose to take a profile photo or a team photo.",
-        "NSPhotoLibraryUsageDescription": "GoFindr opens your photo library only when you choose a profile photo or a team photo. Nothing else is read.",
+        "NSLocationWhenInUseUsageDescription": "OneShort uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared.",
+        "NSCameraUsageDescription": "OneShort uses the camera only when you choose to take a profile photo or a team photo.",
+        "NSPhotoLibraryUsageDescription": "OneShort opens your photo library only when you choose a profile photo or a team photo. Nothing else is read.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#171A1B",
+        "backgroundColor": "#0A2A20",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -43,11 +43,11 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F5F6F0",
+          "backgroundColor": "#F6F7F3",
           "image": "./assets/icon.png",
           "imageWidth": 160,
           "dark": {
-            "backgroundColor": "#0D1716"
+            "backgroundColor": "#0B1511"
           }
         }
       ],
@@ -56,20 +56,20 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "GoFindr uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared."
+          "locationWhenInUsePermission": "OneShort uses your approximate location to rank players and find matches, teams and communities near you. Your exact location is never shared."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "GoFindr opens your photo library only when you choose a profile photo or a team photo. Nothing else is read.",
-          "cameraPermission": "GoFindr uses the camera only when you choose to take a profile photo or a team photo."
+          "photosPermission": "OneShort opens your photo library only when you choose a profile photo or a team photo. Nothing else is read.",
+          "cameraPermission": "OneShort uses the camera only when you choose to take a profile photo or a team photo."
         }
       ],
       [
         "expo-notifications",
         {
-          "color": "#008C86",
+          "color": "#0E9F6E",
           "defaultChannel": "default"
         }
       ],
@@ -78,15 +78,15 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "GoFindr uses the microphone only while you search by voice. Audio isn't recorded or stored.",
-          "speechRecognitionPermission": "GoFindr turns what you say into search text, e.g. 'I want to play on Saturday morning'.",
+          "microphonePermission": "OneShort uses the microphone only while you search by voice. Audio isn't recorded or stored.",
+          "speechRecognitionPermission": "OneShort turns what you say into search text, e.g. 'I want to play on Saturday morning'.",
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
           ]
         }
       ]
     ],
-    "scheme": "gofindr",
+    "scheme": "oneshort",
     "experiments": {
       "typedRoutes": true
     },
@@ -96,6 +96,6 @@
         "projectId": "e8df9e32-92c4-4c6b-9234-f594c0389eb8"
       }
     },
-    "description": "Your game, one tap away."
+    "description": "Never one short again."
   }
 }

@@ -273,7 +273,7 @@ class PlayerRatingOut(BaseModel):
     includes_demo_data: bool
     achievements: list[AchievementOut] = Field(default_factory=list, description="From verified data only")
     cricheroes_profile_url: str | None = Field(
-        default=None, description="Player-supplied CricHeroes link (not verified by GoFindr)"
+        default=None, description="Player-supplied CricHeroes link (not verified by OneShort)"
     )
     cricheroes_player_id: str | None = None
     attendance: AttendanceOut | None = Field(default=None, description="Pickup-game attendance (rate needs 3+ marked)")
@@ -408,7 +408,7 @@ class NearbyPlayerOut(BaseModel):
     available_this_week: bool
     teams: list[str]
     has_cricheroes: bool = Field(
-        default=False, description="Player linked a CricHeroes profile (open their GoFindr profile to view it)"
+        default=False, description="Player linked a CricHeroes profile (open their OneShort profile to view it)"
     )
 
 

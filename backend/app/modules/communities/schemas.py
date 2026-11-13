@@ -10,8 +10,8 @@ from app.modules.competition.schemas import PlayerLeaderboardEntry, TeamCard
 from app.modules.users.schemas import PublicUserOut
 
 PLATFORM_DISCLAIMER = (
-    "GoFindr helps cricketers find each other. Matches and meet-ups are organised by members, not by GoFindr. "
-    "GoFindr does not supervise matches and is not responsible for members' conduct, injuries, payments or "
+    "OneShort helps cricketers find each other. Matches and meet-ups are organised by members, not by OneShort. "
+    "OneShort does not supervise matches and is not responsible for members' conduct, injuries, payments or "
     "offline disputes. Play safely, respect the ground and each other, and report anything inappropriate."
 )
 

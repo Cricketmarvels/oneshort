@@ -150,7 +150,7 @@
 
 | Method | Path | Purpose | Auth | Resource rules | Request | Response | Query |
 |---|---|---|---|---|---|---|---|
-| `GET` | `/home` | GoFindr home: rating, rank, fixtures, challenges | user |  | — | `Envelope_HomeOut_` | `lat`, `lng` |
+| `GET` | `/home` | OneShort home: rating, rank, fixtures, challenges | user |  | — | `Envelope_HomeOut_` | `lat`, `lng` |
 
 ## Communities
 

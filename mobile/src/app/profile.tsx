@@ -58,7 +58,7 @@ export default function Profile() {
       const msg: Record<string, string> = {
         sent: simulatorMode ? "Sent to the WhatsApp simulator (test mode) — open it below." : "Sent — check WhatsApp on your phone.",
         failed: "WhatsApp rejected the message. If you're using the Twilio sandbox, send the join code from your phone first.",
-        not_configured: "WhatsApp isn't connected to GoFindr yet (no provider set up on the server).",
+        not_configured: "WhatsApp isn't connected to OneShort yet (no provider set up on the server).",
         opted_out: "Switch on WhatsApp updates first.",
         no_number: "Add a mobile number to your account first.",
       };

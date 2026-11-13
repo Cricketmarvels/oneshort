@@ -88,6 +88,8 @@ async def test_search_hides_blocked_users_and_deleted_accounts(client: httpx.Asy
     assert all(x["id"] != other.id for x in r.json()["data"]["players"])
 
     gone = await player(client, "Vanishing Fourth", "bowler", SECTOR_18)
-    assert (await client.request("DELETE", f"{API}/users/me", headers=gone.h, json={"confirm": "DELETE", "reason": "test"})).status_code == 204
+    assert (
+        await client.request("DELETE", f"{API}/users/me", headers=gone.h, json={"confirm": "DELETE", "reason": "test"})
+    ).status_code == 204
     r = await client.get(f"{API}/search", headers=me.h, params={"q": "vanishing", "types": "players"})
     assert all(x["id"] != gone.id for x in r.json()["data"]["players"])

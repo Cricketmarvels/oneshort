@@ -1,10 +1,10 @@
-# GoFindr on gofindr.in — getting the web app live on the domain
+# OneShort on gofindr.in — getting the web app live on the domain
 
 Date: 2026-11-10. Domain: **gofindr.in** (registered at GoDaddy).
 
 ## Why GoDaddy alone can't host it
 
-GoFindr is three parts: a static web app, a Python (FastAPI) API and a MongoDB database. GoDaddy's domain portfolio manages DNS records only, and GoDaddy's shared web hosting runs PHP/static sites, not FastAPI + MongoDB. So the domain must **point at a server that runs the API**. Two ways to get there:
+OneShort is three parts: a static web app, a Python (FastAPI) API and a MongoDB database. GoDaddy's domain portfolio manages DNS records only, and GoDaddy's shared web hosting runs PHP/static sites, not FastAPI + MongoDB. So the domain must **point at a server that runs the API**. Two ways to get there:
 
 | | Option A — Cloudflare tunnel to the current server (today, free) | Option B — real hosting (the beta environment) |
 |---|---|---|
@@ -20,7 +20,7 @@ Do A now, B before inviting outside testers. Nothing about A is wasted: the same
 
 Done through the owner's Cloudflare account (free plan, US$0):
 - Zone `gofindr.in` created (id `6586c3f2…`), nameservers **merlin.ns.cloudflare.com** / **sierra.ns.cloudflare.com**; HTTPS enforced, Full SSL, TLS ≥ 1.2.
-- `cloudflared` authorised on the Mac (browser approval); tunnel **`gofindr`** (`eb812615…`) created; proxied CNAMEs for `gofindr.in`, `www.gofindr.in`, `expo.gofindr.in` → the tunnel.
+- `cloudflared` authorised on the Mac (browser approval); tunnel **`oneshort`** (`eb812615…`) created; proxied CNAMEs for `gofindr.in`, `www.gofindr.in`, `expo.gofindr.in` → the tunnel.
 - `public-demo.sh` runs in named-tunnel mode (`.data/named-tunnel.env`).
 
 Waiting on: the nameserver change at GoDaddy (zone status `pending` until then). Nothing in this setup costs money: Cloudflare Free plan, Cloudflare Tunnel is free, no paid add-ons enabled.
@@ -40,7 +40,7 @@ A browser page opens; pick **gofindr.in**. This writes a certificate to `~/.clou
 **4. Create the tunnel and DNS records, then start the app:**
 ```
 cd ~/cricketmarvels/platform
-scripts/cloudflare-setup.sh gofindr.in     # tunnel "gofindr", DNS for gofindr.in, www, expo
+scripts/cloudflare-setup.sh gofindr.in     # tunnel "oneshort", DNS for gofindr.in, www, expo
 ./public-demo.sh                            # now serves the fixed addresses
 ```
 From then on `./public-demo.sh reload` ships code changes to the same addresses, and restarts never change the URL.
@@ -53,7 +53,7 @@ Follow `PLAYR_BETA_DEPLOYMENT_RUNBOOK.md`. The only DNS difference: the `gofindr
 
 ## What changed in the app for the domain
 
-- Name **GoFindr**, tagline **"Your game, one tap away."** everywhere users see it (app, web title, share preview card, legal pages).
-- iOS bundle id / Android package: **`in.gofindr.app`** (changed now, before any store record exists). Deep-link scheme `gofindr://`.
+- Name **OneShort**, tagline **"Your game, one tap away."** everywhere users see it (app, web title, share preview card, legal pages).
+- iOS bundle id / Android package: **`in.gofindr.app`** (changed now, before any store record exists). Deep-link scheme `oneshort://`.
 - Placeholder hosts in build profiles: `beta-api.gofindr.in`, `api.gofindr.in`.
 - The Expo project slug stays `playr` under `playrrs-team` (dashboard name only; renaming would mean creating a second project). Tell me if you want it renamed too.

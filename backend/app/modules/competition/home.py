@@ -1,4 +1,4 @@
-"""GoFindr home: one call for the personalised command centre."""
+"""OneShort home: one call for the personalised command centre."""
 
 from datetime import timedelta
 from typing import Any

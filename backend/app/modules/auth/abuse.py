@@ -35,7 +35,7 @@ async def enforce_send_budgets(c: Container, mobile: str, ip: str | None, channe
     s = c.settings
     if not any(mobile.startswith(p) for p in s.otp_allowed_prefixes):
         raise AppError(
-            "GoFindr can only send codes to Indian mobile numbers right now.",
+            "OneShort can only send codes to Indian mobile numbers right now.",
             code="OTP_REGION_UNSUPPORTED",
             status_code=422,
         )

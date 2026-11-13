@@ -1,7 +1,7 @@
 /**
  * Manage fees (player). Three questions, in order: what do I owe and to whom; what has cricket cost me
  * (by team, by month, filterable by year/month); and the individual fee records to pay or dispute.
- * Captains mark payments; GoFindr never moves money.
+ * Captains mark payments; OneShort never moves money.
  */
 import { formatPaise, type S } from "@cm/shared";
 import { useQuery } from "@tanstack/react-query";

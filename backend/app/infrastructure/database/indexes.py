@@ -264,7 +264,7 @@ INDEXES: dict[str, list[IndexModel]] = {
     "venues": [
         IndexModel([("location", GEOSPHERE)]),
         IndexModel([("name", TEXT), ("area", TEXT)], name="venue_text"),
-        # A map place becomes one GoFindr venue however many captains pick it.
+        # A map place becomes one OneShort venue however many captains pick it.
         IndexModel([("place_id", ASCENDING)], unique=True, sparse=True, name="venue_place"),
     ],
     # Map-provider answers, reused for a day so typing doesn't hammer a free geocoder.
