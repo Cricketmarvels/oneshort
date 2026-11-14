@@ -48,8 +48,7 @@ pkill -f "uvicorn app.main:create_app" || true; sleep 1
 wait_for http://127.0.0.1:8000/health/ready
 
 # Website = the OneShort app itself (Expo web export); the previous React web app stays at /classic
-(cd "$ROOT/mobile" && EXPO_PUBLIC_API_URL=/api/v1 EXPO_PUBLIC_DEFAULT_LOGIN=email \
-  npx expo export --platform web --output-dir "$D/web-app" >/dev/null)
+"$ROOT/scripts/web-export.sh" >/dev/null  # builds aside, then swaps in: the running server never serves a half-built folder
 (cd "$ROOT/frontend" && npx vite build --mode tunnel --base /classic/ --outDir "$D/web-classic" --emptyOutDir >/dev/null)
 (PUBLIC_URL="$WEB" exec nohup node "$ROOT/scripts/serve-web.mjs") </dev/null >> "$D/web.log" 2>&1 &
 wait_for http://127.0.0.1:4173/

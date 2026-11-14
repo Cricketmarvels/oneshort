@@ -52,9 +52,17 @@ async function joinMeta(code) {
 async function appHtml(req, res, pathName) {
   const m = pathName.match(/^\/join\/([A-Za-z0-9_-]{4,40})\/?$/);
   const meta = (m && (await joinMeta(m[1]))) || DEFAULT_META;
-  const html = fs.readFileSync(path.join(APP, "index.html"), "utf8").replace(/<title>[^<]*<\/title>/, "").replace("</head>", `${metaTags(meta, originOf(req), pathName)}</head>`);
+  let html;
+  try { html = fs.readFileSync(path.join(APP, "index.html"), "utf8"); } catch { return updating(res); }
+  html = html.replace(/<title>[^<]*<\/title>/, "").replace("</head>", `${metaTags(meta, originOf(req), pathName)}</head>`);
   res.writeHead(200, { "content-type": TYPES[".html"], "cache-control": "no-cache", "x-content-type-options": "nosniff", "referrer-policy": "strict-origin-when-cross-origin" });
   res.end(html);
+}
+
+/** The app folder is being rebuilt: say so for a moment instead of crashing or sending a Cloudflare 502. */
+function updating(res) {
+  if (!res.headersSent) res.writeHead(503, { "content-type": "text/html; charset=utf-8", "retry-after": "10", "cache-control": "no-store" });
+  res.end("<!doctype html><title>OneShort</title><meta http-equiv=refresh content=10><body style=\"font-family:system-ui;padding:40px;text-align:center\"><h2>Updating OneShort…</h2><p>Back in a few seconds. This page retries on its own.</p>");
 }
 
 function file(res, base, rel, fallback) {
@@ -65,10 +73,15 @@ function file(res, base, rel, fallback) {
     f = fs.existsSync(html) ? html : path.join(base, fallback);
   }
   const immutable = /\/(_expo|assets)\//.test(f);
+  if (!fs.existsSync(f)) return updating(res); // fallback missing too: the folder is mid-rebuild
   res.writeHead(200, { "content-type": TYPES[path.extname(f)] ?? "application/octet-stream", "cache-control": immutable ? "public, max-age=31536000, immutable" : "no-cache",
     "x-content-type-options": "nosniff", "referrer-policy": "strict-origin-when-cross-origin" });
-  fs.createReadStream(f).pipe(res);
+  fs.createReadStream(f).on("error", () => res.destroy()).pipe(res);
 }
+
+// Never let one bad request take the whole site down.
+process.on("uncaughtException", (e) => console.error("serve-web: unhandled", e?.message ?? e));
+process.on("unhandledRejection", (e) => console.error("serve-web: unhandled rejection", e?.message ?? e));
 
 const server = http.createServer((req, res) => {
   const url = req.url ?? "/";
