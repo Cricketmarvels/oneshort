@@ -7,6 +7,7 @@ from app.common.enums import Role
 from app.common.types import GeoPointOut, utcnow
 from app.core.container import Container
 from app.core.exceptions import NotFound
+from app.modules.cricheroes.shortlinks import expand as expand_share_link
 from app.modules.cricheroes.urls import safe_profile_url
 from app.modules.players.schemas import (
     CricHeroesIn,
@@ -61,6 +62,7 @@ class PlayerService:
         sent = data.model_fields_set
         if "cricheroes_profile_url" in sent or "cricheroes_url" in sent:
             link = data.cricheroes_profile_url if "cricheroes_profile_url" in sent else data.cricheroes_url
+            link = await expand_share_link(link, "player")  # chshare.link → canonical, or unchanged
             fields["cricheroes_url"], fields["cricheroes_player_id"] = safe_profile_url(link, "player")
         if data.home_location is not None:
             fields["home_location"] = data.home_location.to_geojson()
@@ -104,7 +106,8 @@ class PlayerService:
         set_: dict[str, Any] = {"updated_at": now}
         unset: dict[str, str] = {}
         if "profile_url" in sent:
-            set_["cricheroes_url"], set_["cricheroes_player_id"] = safe_profile_url(data.profile_url, "player")
+            link = await expand_share_link(data.profile_url, "player")
+            set_["cricheroes_url"], set_["cricheroes_player_id"] = safe_profile_url(link, "player")
         if "stats" in sent:
             if data.stats is None or data.stats.is_empty():
                 unset["cricheroes_stats"] = ""

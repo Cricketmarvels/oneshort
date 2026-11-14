@@ -30,6 +30,7 @@ from app.modules.cricheroes.schemas import (
     CricHeroesSnapshotOut,
     CricHeroesStatOut,
 )
+from app.modules.cricheroes.shortlinks import expand as expand_share_link
 from app.modules.cricheroes.urls import parse_team_ref, safe_cricheroes_url, safe_profile_url
 from app.modules.teams.policy import can_manage_team, ensure_team_manager
 from app.modules.teams.service import TeamService
@@ -112,7 +113,7 @@ class CricHeroesService:
     async def link(self, user: CurrentUser, team_id: ObjectId, url: str) -> CricHeroesProfileOut:
         team = await self.teams.get_team(team_id)
         ensure_team_manager(team, user.id)
-        ref = parse_team_ref(url)
+        ref = parse_team_ref(await expand_share_link(url, "team") or url)
         link = {
             "external_team_id": ref.external_team_id,
             "slug": ref.slug,

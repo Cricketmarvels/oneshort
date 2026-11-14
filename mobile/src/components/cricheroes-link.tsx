@@ -98,16 +98,23 @@ export function CricHeroesStatsGrid({ stats }: { stats: CHStatsOut }) {
 }
 const EXAMPLE = { player: "https://cricheroes.com/player-profile/4794795/your-name/stats", team: "https://cricheroes.com/team-profile/1275057/your-team/stats" };
 const HOSTS = new Set(["cricheroes.com", "www.cricheroes.com"]);
+const SHARE_HOSTS = new Set(["chshare.link", "www.chshare.link"]); // what the CricHeroes app's Share button gives; the server expands it
+const SHARE_PATH = /^\/(team|player)\/[A-Za-z0-9_-]{3,64}\/?$/;
 const PATH = { player: /^\/player-profile\/(\d{1,12})(?:\/[A-Za-z0-9._~%-]{1,120})?(?:\/[a-z-]{1,20})?\/?$/, team: /^\/team-profile\/(\d{1,12})(?:\/[A-Za-z0-9._~%-]{1,120})?(?:\/[a-z-]{1,20})?\/?$/ };
 
 /** Returns null when valid (or empty), else a friendly message. */
 export function cricHeroesError(raw: string, kind: CHKind): string | null {
   const v = raw.trim();
   if (!v) return null;
-  const withScheme = /^(www\.)?cricheroes\.com\//i.test(v) ? `https://${v}` : v;
+  const withScheme = /^(www\.)?(cricheroes\.com|chshare\.link)\//i.test(v) ? `https://${v}` : v;
   let u: URL;
   try { u = new URL(withScheme); } catch { return `That isn't a valid link. Use e.g. ${EXAMPLE[kind]}`; }
   if (u.protocol !== "https:") return "Only secure https:// CricHeroes links are accepted";
+  if (SHARE_HOSTS.has(u.hostname.toLowerCase())) {
+    const m = SHARE_PATH.exec(u.pathname);
+    if (!m) return "That CricHeroes share link doesn't look right. Use Share → copy link on CricHeroes.";
+    return m[1] === kind ? null : `That's a CricHeroes ${m[1]} link — paste your ${kind} link instead`;
+  }
   if (!HOSTS.has(u.hostname.toLowerCase()) || u.username || u.password || (u.port && u.port !== "443")) return "Only links on cricheroes.com are accepted";
   const other: CHKind = kind === "player" ? "team" : "player";
   if (!PATH[kind].test(u.pathname)) return PATH[other].test(u.pathname) ? `That's a CricHeroes ${other} profile — paste your ${kind} profile link` : `That isn't a CricHeroes ${kind} profile link, e.g. ${EXAMPLE[kind]}`;

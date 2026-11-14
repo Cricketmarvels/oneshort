@@ -14,11 +14,14 @@ from app.common.enums import (
 )
 from app.common.types import GeoPointIn, GeoPointOut, StrictModel
 from app.common.validators import LongText, ShortText
-from app.modules.cricheroes.urls import normalize_profile_url
+from app.modules.cricheroes.urls import normalize_profile_url, share_link_kind
 
 
 def _cricheroes(v: str) -> str:
-    """Strict: https, exact cricheroes.com host, /player-profile/<id>/… — returns the normalised link."""
+    """Strict: https, exact cricheroes.com host, /player-profile/<id>/… — returns the normalised link.
+    A chshare.link share link is accepted as typed; the service expands it before anything is stored."""
+    if share_link_kind(v) == "player":
+        return v.strip()
     return normalize_profile_url(v, "player")[0]
 
 

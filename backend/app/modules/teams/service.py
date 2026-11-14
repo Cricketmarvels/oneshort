@@ -12,6 +12,7 @@ from app.common.types import utcnow
 from app.core.container import Container
 from app.core.exceptions import BusinessRuleViolation, Conflict, NotFound, ValidationFailed
 from app.modules.captains.service import CaptainService
+from app.modules.cricheroes.shortlinks import expand as expand_share_link
 from app.modules.cricheroes.urls import safe_profile_url
 from app.modules.search.indexer import SearchIndexer
 from app.modules.teams.policy import can_manage_team, ensure_team_captain, ensure_team_manager
@@ -66,6 +67,7 @@ class TeamService:
     async def _create(self, user: CurrentUser, data: TeamIn) -> TeamOut:
         await CaptainService(self.c).ensure_profile(user.id)
         now = utcnow()
+        ch_url, ch_id = safe_profile_url(await expand_share_link(data.cricheroes_team_url, "team"), "team")
         doc: dict[str, Any] = {
             "team_name": data.team_name,
             "slug": re.sub(r"[^a-z0-9]+", "-", data.team_name.lower()).strip("-"),
@@ -78,8 +80,8 @@ class TeamService:
             "category": data.category.value,
             "looking_for_opponents": data.looking_for_opponents,
             "preferred_formats": [f.value for f in data.preferred_formats],
-            "cricheroes_team_url": data.cricheroes_team_url,
-            "cricheroes_team_id": safe_profile_url(data.cricheroes_team_url, "team")[1],
+            "cricheroes_team_url": ch_url,
+            "cricheroes_team_id": ch_id,
             "captain_id": user.id,
             "admin_ids": [],
             "member_count": 1,
@@ -129,7 +131,7 @@ class TeamService:
             fields["location"] = data.location.to_geojson()
         if "cricheroes_team_url" in fields:  # null removes the link
             fields["cricheroes_team_url"], fields["cricheroes_team_id"] = safe_profile_url(
-                fields["cricheroes_team_url"], "team"
+                await expand_share_link(fields["cricheroes_team_url"], "team"), "team"
             )
         if not fields:
             raise ValidationFailed("Nothing to update")

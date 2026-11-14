@@ -124,3 +124,35 @@ def safe_profile_url(raw: str | None, kind: str) -> tuple[str | None, str | None
         return normalize_profile_url(raw, kind)
     except ValueError:
         return None, None
+
+
+# ---------------------------------------------------------------- CricHeroes share links (chshare.link)
+# The CricHeroes app's Share button gives https://chshare.link/team/<code> or /player/<code>. The page embeds the
+# real profile URL; shortlinks.expand() fetches it (only ever from these hosts) and the canonical link is stored.
+_SHARE_HOSTS = {"chshare.link", "www.chshare.link"}
+_SHARE_PATH = re.compile(r"^/(team|player)/[A-Za-z0-9_-]{3,64}/?$")
+_EMBEDDED = {
+    "player": re.compile(r"https?://(?:www\.)?cricheroes\.(?:com|in)/player-profile/\d{1,12}[^\s\"'<>\\]*"),
+    "team": re.compile(r"https?://(?:www\.)?cricheroes\.(?:com|in)/team-profile/\d{1,12}[^\s\"'<>\\]*"),
+}
+
+
+def share_link_kind(raw: str) -> str | None:
+    """'player' / 'team' when the value is a CricHeroes share link of that kind, else None."""
+    value = (raw or "").strip()
+    if "://" not in value and value.lower().startswith(("chshare.link/", "www.chshare.link/")):
+        value = "https://" + value
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return None
+    if parts.scheme not in ("http", "https") or (parts.hostname or "").lower() not in _SHARE_HOSTS:
+        return None
+    m = _SHARE_PATH.match(parts.path)
+    return m.group(1) if m else None
+
+
+def embedded_profile_url(html: str, kind: str) -> str | None:
+    """The first CricHeroes profile URL of this kind found in a share page."""
+    m = _EMBEDDED["player" if kind == "player" else "team"].search(html)
+    return m.group(0) if m else None

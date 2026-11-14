@@ -7,12 +7,15 @@ from app.common.enums import FixtureFormat, MatchCategory, PlayingRole, TeamMemb
 from app.common.media import OwnMediaUrl
 from app.common.types import GeoPointIn, ObjectIdStr, StrictModel
 from app.common.validators import LongText, MobileNumber, ShortText
-from app.modules.cricheroes.urls import normalize_profile_url
+from app.modules.cricheroes.urls import normalize_profile_url, share_link_kind
 from app.modules.users.schemas import PublicUserOut
 
 
 def _ch_team(v: str) -> str:
-    """Strict: https, exact cricheroes.com host, /team-profile/<id>/… — returns the normalised link."""
+    """Strict: https, exact cricheroes.com host, /team-profile/<id>/… — returns the normalised link.
+    A chshare.link share link is accepted as typed; the service expands it before anything is stored."""
+    if share_link_kind(v) == "team":
+        return v.strip()
     return normalize_profile_url(v, "team")[0]
 
 
