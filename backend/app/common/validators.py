@@ -1,4 +1,5 @@
 import re
+from datetime import date
 from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -30,6 +31,22 @@ def _password(v: str) -> str:
     return v
 
 
+def _strong_password(v: str) -> str:
+    if len(v) < 12 or not re.search(r"[A-Za-z]", v) or not re.search(r"\d", v):
+        raise ValueError("must be at least 12 characters and include a letter and a digit")
+    return v
+
+
+def _date_of_birth(v: date) -> date:
+    today = date.today()
+    years = today.year - v.year - ((today.month, today.day) < (v.month, v.day))
+    if years < 18:
+        raise ValueError("you must be 18 or older to use OneShort")
+    if years > 100:
+        raise ValueError("enter a valid date of birth")
+    return v
+
+
 def _https_url(v: str) -> str:
     if not re.match(r"^https?://", v):
         raise ValueError("must be an http(s) URL")
@@ -39,6 +56,8 @@ def _https_url(v: str) -> str:
 MobileNumber = Annotated[str, AfterValidator(_mobile)]
 Timezone = Annotated[str, AfterValidator(_tz)]
 Password = Annotated[str, StringConstraints(max_length=128), AfterValidator(_password)]
+StrongPassword = Annotated[str, StringConstraints(max_length=128), AfterValidator(_strong_password)]
+DateOfBirth = Annotated[date, AfterValidator(_date_of_birth)]
 Name = Annotated[str, StringConstraints(min_length=2, max_length=80, strip_whitespace=True)]
 ShortText = Annotated[str, StringConstraints(max_length=200, strip_whitespace=True)]
 LongText = Annotated[str, StringConstraints(max_length=2000, strip_whitespace=True)]

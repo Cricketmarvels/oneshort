@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import AfterValidator, BaseModel, EmailStr, Field, model_validator
 
+from app.common.enums import PlayingRole
 from app.common.types import StrictModel
-from app.common.validators import MobileNumber, Name, Otp, Password, ShortText, Timezone
+from app.common.validators import DateOfBirth, MobileNumber, Name, Otp, Password, ShortText, StrongPassword, Timezone
 from app.modules.users.schemas import UserOut
 
 OtpPurpose = Literal["register", "login", "reset_password"]
@@ -21,6 +22,44 @@ class RegisterIn(StrictModel):
     otp_channel: OtpChannel = Field(default="sms", description="Where to send the verification code")
 
 
+def _unique_roles(v: list[PlayingRole]) -> list[PlayingRole]:
+    if len(set(v)) != len(v):
+        raise ValueError("each playing role at most once")
+    return v
+
+
+PlayingRoles = Annotated[list[PlayingRole], Field(min_length=1, max_length=4), AfterValidator(_unique_roles)]
+
+
+class EmailRegisterIn(StrictModel):
+    """Create an account with email + password (no OTP). The confirmation password is checked here and never
+    stored; the password itself is stored only as an Argon2id hash."""
+
+    full_name: Name
+    date_of_birth: DateOfBirth
+    email: EmailStr
+    password: StrongPassword
+    confirm_password: str | None = Field(default=None, max_length=128, description="Must equal password when sent")
+    playing_roles: PlayingRoles
+    sport: Literal["cricket", "badminton", "pickleball"] = "cricket"
+    city: ShortText | None = None
+    timezone: Timezone = "Asia/Kolkata"
+
+    @model_validator(mode="after")
+    def _confirm(self) -> "EmailRegisterIn":
+        if self.confirm_password is not None and self.confirm_password != self.password:
+            raise ValueError("passwords don't match")
+        return self
+
+
+class GoogleSignInIn(StrictModel):
+    id_token: str = Field(min_length=20, max_length=4096, description="Google ID token from the native Google SDK")
+
+
+class EmailVerifyIn(StrictModel):
+    code: Otp
+
+
 class SendOtpIn(StrictModel):
     mobile_number: MobileNumber
     purpose: OtpPurpose = "login"
@@ -31,6 +70,8 @@ class AuthOptionsOut(BaseModel):
     sms_otp: bool = Field(description="A real SMS provider is configured (or the dev adapter is active)")
     whatsapp_otp: bool = Field(description="WhatsApp codes can be delivered (provider configured)")
     email_otp: bool = Field(default=False, description="Sign-up codes can be sent by email")
+    google: bool = Field(default=False, description="Google sign-in is configured on the server")
+    password_signup: bool = Field(default=True, description="Create an account with email + password (no code)")
     email_test_mode: bool = Field(
         default=False,
         description="No email account is connected: codes are not delivered (shown only for test numbers)",

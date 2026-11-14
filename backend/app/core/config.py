@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     mongodb_max_pool_size: int = Field(default=100, ge=5, le=1_000)
 
     # Auth
+    # Google Sign-In: the OAuth client ids whose ID tokens we accept (Web client id used by the app, plus iOS and
+    # Android client ids), comma-separated. Empty = Google sign-in off.
+    google_client_ids: str | None = None
     jwt_secret: str = _INSECURE_DEFAULT
     jwt_issuer: str = "gofindr"
     access_token_ttl_minutes: int = 15
@@ -236,6 +239,10 @@ class Settings(BaseSettings):
             if problems:
                 raise ValueError("; ".join(problems))
         return self
+
+    @property
+    def google_audiences(self) -> list[str]:
+        return [x.strip() for x in (self.google_client_ids or "").split(",") if x.strip()]
 
     @property
     def is_dev_like(self) -> bool:

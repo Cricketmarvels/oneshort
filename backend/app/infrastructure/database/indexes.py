@@ -22,6 +22,10 @@ INDEXES: dict[str, list[IndexModel]] = {
             name="uniq_mobile",
         ),
         IndexModel([("email", ASCENDING)], unique=True, partialFilterExpression={"email": _STR}, name="uniq_email"),
+        # one Google account → one OneShort account (sign-in looks the subject up; see auth/accounts.py)
+        IndexModel(
+            [("google_sub", ASCENDING)], unique=True, partialFilterExpression={"google_sub": _STR}, name="uniq_google"
+        ),
         # Lookups: the partial unique indexes above can't serve a plain equality match ({"mobile_number": x}),
         # because the planner can't prove x is a string. Without these, login/OTP/sign-up scan every user.
         IndexModel([("mobile_number", ASCENDING)], name="mobile_lookup"),

@@ -29,7 +29,7 @@ from app.core.security import generate_otp, hash_secret, verify_secret
 from app.modules.auth.schemas import OtpSentOut, TokenOut
 
 log = get_logger("auth.email_codes")
-EmailPurpose = Literal["signup", "reset_password"]
+EmailPurpose = Literal["signup", "reset_password", "verify_email"]
 
 
 class EmailCodes:
@@ -100,7 +100,11 @@ class EmailCodes:
                 "created_at": now,
             }
         )
-        what = "create your OneShort account" if purpose == "signup" else "reset your OneShort password"
+        what = {
+            "signup": "create your OneShort account",
+            "reset_password": "reset your OneShort password",
+            "verify_email": "verify your OneShort email",
+        }[purpose]
         await self.c.email.send(
             email,
             f"{code} is your OneShort code",
@@ -223,3 +227,32 @@ async def finish_email_reset(c: Container, email: str, code: str, new_password: 
     await c.audit.log(
         actor_id=user["_id"], action="user.password_reset_email", entity_type="user", entity_id=user["_id"]
     )
+
+
+async def start_email_verify(c: Container, user: Any, ip: str | None) -> OtpSentOut:
+    """Signed-in user proves the email on their account. Only then can that address recover the password."""
+    email = (user.doc.get("email") or "").lower()
+    if not email:
+        raise AppError("Add an email address to your account first.", code="EMAIL_MISSING", status_code=422)
+    if user.doc.get("email_verified"):
+        raise Conflict("This email is already verified.", code="EMAIL_ALREADY_VERIFIED")
+    return await EmailCodes(c).send(email, "verify_email", ip)
+
+
+async def finish_email_verify(c: Container, user: Any, code: str) -> dict[str, Any]:
+    email = (user.doc.get("email") or "").lower()
+    if not email:
+        raise AppError("Add an email address to your account first.", code="EMAIL_MISSING", status_code=422)
+    await EmailCodes(c).consume(email, "verify_email", code)
+    users = c.mongo["users"]
+    now = utcnow()
+    # Conditional on the address still being the one the code went to.
+    updated = await users.find_one_and_update(
+        {"_id": user.id, "email": email},
+        {"$set": {"email_verified": True, "email_verified_at": now, "updated_at": now}},
+        return_document=True,
+    )
+    if updated is None:
+        raise Unauthorized("Code expired or not requested", code="OTP_EXPIRED")
+    await c.audit.log(actor_id=user.id, action="user.email_verified", entity_type="user", entity_id=user.id)
+    return updated

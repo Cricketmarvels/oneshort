@@ -1,7 +1,7 @@
 import { ROLE_LABELS, type PlayerSelf, type S } from "@cm/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Bell, CalendarDays, ChevronRight, LogOut, MapPin, Plus, Trophy, Users, Wallet } from "lucide-react-native";
+import { Bell, CalendarDays, ChevronRight, LogOut, MapPin, Plus, Trophy, Users, Wallet, KeyRound, Mail } from "lucide-react-native";
 import { type ComponentType, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, Switch, View } from "react-native";
 
@@ -9,6 +9,7 @@ import { TeamLogo } from "@/components/cricket";
 import { Avatar, Button, Card, Divider, Section, Segmented, Txt } from "@/components/ui";
 import { useAppearance } from "@/lib/appearance";
 import { api, errorText } from "@/lib/api";
+import { googleAvailable, googleIdToken } from "@/lib/google";
 import { useAuth } from "@/lib/auth";
 import { pickAndUpload, readLocation } from "@/lib/device";
 import { SP, T } from "@/theme";
@@ -35,6 +36,14 @@ function Row({ icon: Icon, label, onPress }: { icon: IconT; label: string; onPre
 
 export default function Profile() {
   const { user, reload, signOut } = useAuth();
+  const opts = useQuery({ queryKey: ["auth-options"], queryFn: () => api<S<"AuthOptionsOut">>("/auth/options"), staleTime: 60_000 });
+  const linkGoogle = async () => {
+    const r = await googleIdToken();
+    if ("cancelled" in r) return;
+    if ("error" in r) return Alert.alert("Couldn't link Google", r.error);
+    try { await api("/auth/google/link", { method: "POST", body: { id_token: r.idToken } }); await reload(); }
+    catch (e) { Alert.alert("Couldn't link Google", errorText(e)); }
+  };
   const prof = useQuery({ queryKey: ["player", "me"], queryFn: () => api<PlayerSelf>("/players/me"), retry: false });
   const teams = useQuery({ queryKey: ["teams", "member"], queryFn: () => api<{ data: S<"TeamOut">[] }>("/teams", { query: { scope: "member" } }) });
   const meQ = useQuery({ queryKey: ["users", "me"], queryFn: () => api<S<"UserOut">>("/users/me") });
@@ -128,6 +137,14 @@ export default function Profile() {
           <Divider />
           <Row icon={Users} label="My teams" onPress={() => router.push("/teams")} />
         </Card>
+        <Section title="Account">
+          {user?.email ? <Row icon={Mail} label={user.email_verified ? `Email verified · ${user.email}` : "Verify my email"} onPress={() => router.push("/verify-email")} /> : null}
+          {user && !user.auth_providers?.includes("google") && googleAvailable() && opts.data?.google ? (
+            <Row icon={KeyRound} label="Link my Google account" onPress={() => void linkGoogle()} />
+          ) : user?.auth_providers?.includes("google") ? (
+            <Txt v="small" color={T.muted} style={{ paddingVertical: 8 }}>Signed in with Google{user.has_password ? " and password" : ""}.</Txt>
+          ) : null}
+        </Section>
         <Section title="Appearance">
           <Card style={{ gap: 10 }}>
             <Segmented value={appearance.pref} onChange={appearance.set} options={[{ v: "light", l: "Light" }, { v: "dark", l: "Dark" }, { v: "system", l: "System" }]} />

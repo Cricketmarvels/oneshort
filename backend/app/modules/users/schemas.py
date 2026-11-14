@@ -1,12 +1,12 @@
-from datetime import datetime
-from typing import Any, Literal
+from datetime import date, datetime
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import AfterValidator, BaseModel, EmailStr, Field
 
-from app.common.enums import NotificationType
+from app.common.enums import NotificationType, PlayingRole
 from app.common.media import OwnMediaUrl
 from app.common.types import StrictModel
-from app.common.validators import Name, Password, ShortText, Timezone
+from app.common.validators import DateOfBirth, Name, Password, ShortText, Timezone
 
 
 class NotificationPrefs(BaseModel):
@@ -52,6 +52,10 @@ class UserOut(BaseModel):
     agreement: AgreementState
     notification_prefs: NotificationPrefs
     preferred_sport: Literal["cricket", "badminton", "pickleball"] = "cricket"
+    date_of_birth: date | None = Field(default=None, description="Never shown to other users")
+    playing_roles: list[str] = Field(default_factory=list, description="Cricket roles the player can fill, in order")
+    auth_providers: list[str] = Field(default_factory=list, description="How this account signs in: password, google")
+    onboarding_completed: bool = Field(default=False, description="True once registration is finished")
     created_at: datetime
 
 
@@ -74,6 +78,23 @@ class UpdateMeIn(StrictModel):
     preferred_sport: Literal["cricket", "badminton", "pickleball"] | None = None
 
 
+def _unique_roles(v: list[PlayingRole]) -> list[PlayingRole]:
+    if len(set(v)) != len(v):
+        raise ValueError("each playing role at most once")
+    return v
+
+
+PlayingRoles = Annotated[list[PlayingRole], Field(min_length=1, max_length=4), AfterValidator(_unique_roles)]
+
+
+class ProfilePatchIn(StrictModel):
+    """Partial update of the player profile fields that live on the account."""
+
+    player_name: Name | None = None
+    date_of_birth: DateOfBirth | None = None
+    playing_roles: PlayingRoles | None = None
+
+
 class CompleteRegistrationIn(StrictModel):
     """Last step of sign-up, after the mobile number is verified. Verification flags are never accepted
     from the client (StrictModel rejects unknown fields)."""
@@ -88,6 +109,10 @@ class CompleteRegistrationIn(StrictModel):
         default=None, description="Cricket only: creates the player profile so nearby captains can find you"
     )
     profile_image: OwnMediaUrl | None = None
+    date_of_birth: DateOfBirth | None = Field(default=None, description="Asked at sign-up; 18+ only")
+    playing_roles: PlayingRoles | None = Field(
+        default=None, description="Cricket roles the player can fill (several allowed); replaces primary_role"
+    )
     password: Password | None = Field(default=None, description="Test mode only: lets a tester log back in by email")
 
 

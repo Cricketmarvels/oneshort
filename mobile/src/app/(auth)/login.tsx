@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GoogleButton } from "@/components/google-button";
 import { Wordmark } from "@/components/premium";
 import { Button, Field, Muted, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
@@ -186,6 +187,7 @@ export default function Login() {
             ) : null}
           </View>
           {notice ? <Txt v="small" color={T.successText}>{notice}</Txt> : null}
+          {!reset && step === "phone" ? <GoogleButton onError={setErr} /> : null}
 
           {reset === "phone" ? (
             <View style={{ gap: 14 }}>

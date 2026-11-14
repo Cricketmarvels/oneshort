@@ -53,6 +53,10 @@ class UserService:
             agreement=AgreementState(accepted_version=accepted, required_version=required, satisfied=satisfied),
             notification_prefs=NotificationPrefs(**(doc.get("notification_prefs") or {})),
             preferred_sport=self.c.settings.oneshort_beta_sport or doc.get("preferred_sport") or "cricket",
+            date_of_birth=doc.get("date_of_birth"),
+            playing_roles=list(doc.get("playing_roles") or []),
+            auth_providers=list(doc.get("auth_providers") or (["password"] if doc.get("password_hash") else [])),
+            onboarding_completed=doc.get("registration_completed_at") is not None,
             created_at=doc["created_at"],
         )
 

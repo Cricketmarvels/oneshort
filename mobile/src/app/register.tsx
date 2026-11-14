@@ -1,10 +1,11 @@
 /**
- * Registration, opened by the root gate for a phone-verified account whose sign-up isn't finished
- * (`registration_completed_at` is null). Three short steps, one primary action each:
- *   1 · Full name and email (email is format-checked, not verified in this release)
+ * Complete profile, opened by the root gate for an account whose sign-up isn't finished
+ * (`registration_completed_at` is null): phone-OTP sign-ups and Google sign-ins. Three short steps:
+ *   1 · Name, date of birth and email (prefilled from Google when it came from there; a verified email is fixed)
  *   2 · Player or Captain
- *   3 · Profile photo (optional) and main role for cricket players → POST /users/me/registration
+ *   3 · Profile photo (optional) and playing roles for cricket players → POST /users/me/registration
  *       (test numbers also set a password here, so an interruption can't lose it: it is never stored)
+ * Google accounts are never asked for a password here or anywhere else.
  * Progress is kept on the device (lib/registration.ts), so closing the app resumes on the same step.
  */
 import type { S } from "@cm/shared";
@@ -18,17 +19,18 @@ import { PlayRIcon } from "@/components/icons";
 import { CameraBadge } from "@/components/premium";
 import { KickerChip } from "@/components/refined";
 import { ChoiceRow, H } from "@/components/starter";
-import { Avatar, Button, Chip, Field, Txt } from "@/components/ui";
+import { DobField, type PlayingRoleId, RolesField } from "@/components/profile-fields";
+import { Avatar, Button, Field, Txt } from "@/components/ui";
 import { api, ApiError, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useOnboarding } from "@/lib/onboarding";
 import { useProfilePhoto } from "@/lib/profile-photo";
 import { useRegistration } from "@/lib/registration";
 import { useSport } from "@/lib/sports";
+import { dobError, rolesError } from "@/lib/validation";
 import { SP, T } from "@/theme";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const ROLES = [["batsman", "Batter"], ["bowler", "Bowler"], ["all_rounder", "All-rounder"], ["wicketkeeper", "Wicketkeeper"]] as const;
 const PLACEHOLDER = "OneShort player";
 
 export default function Register() {
@@ -43,7 +45,11 @@ export default function Register() {
   const prefix = opts.data?.tester_signup_prefix;
   const tester = !!(prefix && user?.mobile_number?.startsWith(prefix) && !user.has_password);
   const [password, setPassword] = useState(""); // test mode only, never stored in the draft
-  const [err, setErr] = useState<{ field: "email" | "name" | "password" | "form"; text: string } | null>(null);
+  const [dob, setDob] = useState<string | null>(() => user?.date_of_birth ?? null); // prefilled when the account has one
+  const [roles, setRoles] = useState<PlayingRoleId[]>(() => (user?.playing_roles ?? []) as PlayingRoleId[]);
+  const [err, setErr] = useState<{ field: "email" | "name" | "password" | "dob" | "roles" | "form"; text: string } | null>(null);
+  const viaGoogle = !!user?.auth_providers?.includes("google");
+  const emailFixed = !!user?.email_verified && !!user.email; // proven address (Google, or an email code): not editable here
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (user) void reg.load(user.id); }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -56,7 +62,7 @@ export default function Register() {
   }, [reg.userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user || reg.userId !== user.id) return <View style={{ flex: 1, backgroundColor: T.bg }} />;
-  const { step, email, playAs, name, role } = reg.draft;
+  const { step, email, playAs, name } = reg.draft;
   const first = 1;
   const total = 3;
   const shown = step;
@@ -66,6 +72,8 @@ export default function Register() {
     setErr(null);
     if (step === 1) {
       if (name.trim().length < 2) return setErr({ field: "name", text: "Enter your full name" });
+      const de = dobError(dob);
+      if (de) return setErr({ field: "dob", text: de });
       if (!EMAIL_RE.test(email.trim())) return setErr({ field: "email", text: "Enter a valid email address" });
       return reg.update({ step: 2, name: name.trim(), email: email.trim() });
     }
@@ -76,12 +84,14 @@ export default function Register() {
   const submit = async () => {
     if (name.trim().length < 2) { reg.update({ step: 1 }); return setErr({ field: "name", text: "Enter your full name" }); }
     if (tester && password.length < 8) return setErr({ field: "password", text: "Use at least 8 characters" });
+    if (cricket && playAs !== "captain") { const re = rolesError(roles); if (re) return setErr({ field: "roles", text: re }); }
     setBusy(true);
     try {
       await api("/users/me/registration", { method: "POST", body: {
         full_name: name.trim(), email: email.trim(), play_as: playAs,
         ...(sport ? { sport } : {}),
-        ...(cricket && role && playAs !== "captain" ? { primary_role: role } : {}),
+        ...(dob ? { date_of_birth: dob } : {}),
+        ...(cricket && roles.length && playAs !== "captain" ? { playing_roles: roles } : {}),
         ...(tester && password ? { password } : {}),
       } });
       finishOnboarding(user.id); // the older onboarding screens are covered by this flow
@@ -104,7 +114,7 @@ export default function Register() {
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: T.bg }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: SP.page, paddingBottom: insets.bottom + SP.xl, gap: SP.xl, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, height: 40 }}>
-          <Button variant="ghost" size="sm" title={step > first ? "‹ Back" : "‹ Use another number"} onPress={back} style={{ paddingHorizontal: 0 }} />
+          <Button variant="ghost" size="sm" title={step > first ? "‹ Back" : viaGoogle ? "‹ Sign out" : "‹ Use another number"} onPress={back} style={{ paddingHorizontal: 0 }} />
           <View style={{ flex: 1 }} />
           <KickerChip label={`STEP ${shown} OF ${total}`} />
         </View>
@@ -112,11 +122,12 @@ export default function Register() {
 
         {step === 1 ? (
           <View style={{ gap: 16 }}>
-            <H title="Your details" sub="Your number is verified. Captains and players see your name." />
-            <Field testID="reg-name" label="Full name" value={name} onChangeText={(v) => { reg.update({ name: v }); if (err) setErr(null); }} autoComplete="name" textContentType="name" autoCapitalize="words"
-              autoFocus error={err?.field === "name" ? err.text : null} returnKeyType="next" />
-            <Field testID="reg-email" label="Email" hint="For match updates and receipts. No verification needed." value={email} onChangeText={(v) => { reg.update({ email: v }); if (err) setErr(null); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
-              autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" error={err?.field === "email" ? err.text : null} returnKeyType="next" onSubmitEditing={next} />
+            <H title={viaGoogle ? "Almost there" : "Your details"} sub={viaGoogle ? "Signed in with Google. Two more things and you're in." : "Your number is verified. Captains and players see your name."} />
+            <Field testID="reg-name" label="Player name" value={name} onChangeText={(v) => { reg.update({ name: v }); if (err) setErr(null); }} autoComplete="name" textContentType="name" autoCapitalize="words"
+              autoFocus={!viaGoogle} error={err?.field === "name" ? err.text : null} returnKeyType="next" />
+            <DobField value={dob} onChange={(v) => { setDob(v); if (err?.field === "dob") setErr(null); }} error={err?.field === "dob" ? err.text : null} />
+            <Field testID="reg-email" label="Email" hint={emailFixed ? "Verified. Change it later in Settings." : "For match updates and receipts. No verification needed."} value={email} editable={!emailFixed} onChangeText={(v) => { reg.update({ email: v }); if (err) setErr(null); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+              autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" error={err?.field === "email" ? err.text : null} returnKeyType="next" onSubmitEditing={next} style={emailFixed ? { opacity: 0.7 } : undefined} />
           </View>
         ) : step === 2 ? (
           <View style={{ gap: 12 }} accessibilityRole="radiogroup">
@@ -139,12 +150,7 @@ export default function Register() {
                 hint="Test numbers only get a code once, so you'll log back in with email and this password." error={err?.field === "password" ? err.text : null} />
             ) : null}
             {cricket && playAs !== "captain" ? (
-              <View style={{ gap: 8 }}>
-                <Txt v="label">Main role (optional)</Txt>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {ROLES.map(([v, l]) => <Chip key={v} label={l} active={role === v} onPress={() => reg.update({ role: role === v ? null : v })} />)}
-                </View>
-              </View>
+              <RolesField value={roles} onChange={(v) => { setRoles(v); if (err?.field === "roles") setErr(null); }} error={err?.field === "roles" ? err.text : null} />
             ) : null}
           </View>
         )}

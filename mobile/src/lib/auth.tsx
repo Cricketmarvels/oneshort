@@ -3,6 +3,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 
 import { api, refresh, setSessionExpiredHandler } from "./api";
 import { unregisterPush } from "./device";
+import { googleSignOut } from "./google";
 import { tokens } from "./tokens";
 
 type Ctx = {
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const rt = await tokens.getRefresh();
     if (rt) await api("/auth/logout", { method: "POST", body: { refresh_token: rt } }).catch(() => undefined);
     await tokens.clear();
+    await googleSignOut(); // so the next Google sign-in shows the account picker again
     setUser(null);
   }, []);
   useEffect(() => {

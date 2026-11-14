@@ -5,8 +5,16 @@ from pydantic import BaseModel, Field
 
 from app.api.dependencies import ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
+from app.modules.users.profile import patch_profile
 from app.modules.users.registration import complete_registration
-from app.modules.users.schemas import CompleteRegistrationIn, DeleteAccountIn, DeviceIn, UpdateMeIn, UserOut
+from app.modules.users.schemas import (
+    CompleteRegistrationIn,
+    DeleteAccountIn,
+    DeviceIn,
+    ProfilePatchIn,
+    UpdateMeIn,
+    UserOut,
+)
 from app.modules.users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["Users"], responses=ERROR_RESPONSES)
@@ -38,6 +46,11 @@ async def finish_registration(
     data: CompleteRegistrationIn, user: UserDep, svc: Svc, c: ContainerDep
 ) -> Envelope[UserOut]:
     return ok(await svc.to_out(await complete_registration(c, user, data)))
+
+
+@router.patch("/me/profile", response_model=Envelope[UserOut], summary="Update name, date of birth or playing roles")
+async def update_profile(data: ProfilePatchIn, user: UserDep, svc: Svc, c: ContainerDep) -> Envelope[UserOut]:
+    return ok(await svc.to_out(await patch_profile(c, user, data)))
 
 
 class WhatsAppTestOut(BaseModel):

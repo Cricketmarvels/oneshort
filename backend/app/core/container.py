@@ -12,6 +12,7 @@ from app.infrastructure.database.mongo import Mongo
 from app.infrastructure.integrations.ai import AIAssistant, build_ai_assistant
 from app.infrastructure.integrations.cricheroes import CricHeroesSource, build_cricheroes_source
 from app.infrastructure.integrations.email import DisabledEmailSender, EmailSender, build_email_sender
+from app.infrastructure.integrations.google import DisabledGoogle, GoogleVerifier, build_google
 from app.infrastructure.integrations.places import PlacesProvider, build_places_provider
 from app.infrastructure.integrations.push import PushProvider, build_push_provider
 from app.infrastructure.integrations.sms import OtpSender, build_otp_sender
@@ -35,6 +36,7 @@ class Container:
     places: PlacesProvider
     whatsapp: WhatsAppSender = field(default_factory=lambda: DisabledWhatsApp())
     email: EmailSender = field(default_factory=lambda: DisabledEmailSender())
+    google: GoogleVerifier = field(default_factory=lambda: DisabledGoogle())
     limiter: InMemoryRateLimiter | MongoRateLimiter = field(default_factory=InMemoryRateLimiter)
 
     @property
@@ -66,5 +68,6 @@ def build_container(settings: Settings) -> Container:
         cricheroes=build_cricheroes_source(settings),
         whatsapp=build_whatsapp_sender(settings, mongo),
         email=build_email_sender(settings),
+        google=build_google(settings),
         limiter=MongoRateLimiter(mongo) if settings.rate_limiter_backend == "mongo" else InMemoryRateLimiter(),
     )

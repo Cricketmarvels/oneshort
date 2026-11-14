@@ -350,7 +350,7 @@ class AuthService:
         await fails.delete_one({"email": key})
         # Players who joined through a captain's invite link can sign in with their password before their
         # mobile is verified (it stays marked unverified until they complete an OTP).
-        if not user.get("mobile_verified") and user.get("verified_via") not in ("captain_invite", "email"):
+        if not user.get("mobile_verified") and user.get("verified_via") not in ("captain_invite", "email", "password"):
             raise Forbidden("Verify your mobile number first", code="MOBILE_NOT_VERIFIED")
         self._ensure_can_login(user)
         return await self._issue_tokens(user, user_agent, family_id=None)

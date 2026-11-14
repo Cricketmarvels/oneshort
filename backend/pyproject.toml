@@ -18,6 +18,8 @@ dependencies = [
   "anthropic>=2.4.0",
   "pillow>=11",
   "sentry-sdk[fastapi]>=2.20",
+  "google-auth>=2.35",
+  "requests>=2.32",
 ]
 
 [dependency-groups]

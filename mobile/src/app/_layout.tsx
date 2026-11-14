@@ -59,7 +59,7 @@ function Gate() {
   const inAuth = seg[0] === "(auth)";
   const onJoin = (seg as string[])[0] === "join"; // captain invite links are reachable before login
   const onLegal = (seg as string[])[0] === "legal"; // Terms and Privacy Notice are public, and readable mid-consent
-  const onSport = inAuth && ["sport", "welcome", "server"].includes((seg as string[])[1] ?? ""); // server = beta server picker
+  const onSport = inAuth && ["sport", "welcome", "server", "signup"].includes((seg as string[])[1] ?? ""); // server = beta server picker; signup = email sign-up (no sport needed first)
   // An invited newcomer goes straight from the invite to sign-up; the sport is then taken from their profile.
   if (!user && !sport.sport && !onSport && !onJoin && !onLegal && !(pending.code && inAuth)) return <Redirect href="/welcome" />;
   const onSim = (seg as string[])[0] === "whatsapp-sim"; // WhatsApp simulator (test mode) is reachable before login
@@ -95,6 +95,7 @@ function Gate() {
       <Stack.Screen name="match/new" options={{ title: "Create a Match" }} />
       <Stack.Screen name="availability" options={{ title: "Share availability" }} />
       <Stack.Screen name="payments" options={{ title: "Manage fees" }} />
+      <Stack.Screen name="verify-email" options={{ title: "Verify email" }} />
       <Stack.Screen name="fee/index" options={{ title: "Match fee" }} />
       <Stack.Screen name="find/players" options={{ title: "Find Players", headerShown: false }} />
       <Stack.Screen name="find/teams" options={{ title: "Find Teams", headerShown: false }} />

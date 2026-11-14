@@ -76,6 +76,10 @@ async def complete_registration(c: Container, user: CurrentUser, data: CompleteR
         fields["phone_verified_at"] = now
     if data.profile_image is not None:
         fields["profile_image"] = data.profile_image
+    if data.date_of_birth is not None:
+        fields["date_of_birth"] = data.date_of_birth.isoformat()
+    if data.playing_roles:
+        fields["playing_roles"] = [r.value for r in data.playing_roles]
     if tester and data.password:
         fields["password_hash"] = hash_secret(data.password)
 
@@ -103,7 +107,11 @@ async def complete_registration(c: Container, user: CurrentUser, data: CompleteR
 
     if data.play_as == "captain":
         await CaptainService(c).ensure_profile(user.id)
-    if data.primary_role and fields["preferred_sport"] == "cricket":
+    if data.playing_roles and fields["preferred_sport"] == "cricket":
+        from app.modules.users.profile import seed_player_profile
+
+        await seed_player_profile(c, updated, list(data.playing_roles))
+    elif data.primary_role and fields["preferred_sport"] == "cricket":
         if not await c.mongo["player_profiles"].count_documents({"user_id": user.id}, limit=1):
             fresh = replace(user, doc=updated, full_name=updated["full_name"], roles=updated.get("roles", []))
             await PlayerService(c).upsert_me(fresh, PlayerProfileIn(primary_role=data.primary_role))

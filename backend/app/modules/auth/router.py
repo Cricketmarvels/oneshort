@@ -4,13 +4,24 @@ from fastapi import APIRouter, Depends, Request
 
 from app.api.dependencies import ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
-from app.modules.auth.email_codes import finish_email_reset, finish_email_signup, start_email_reset, start_email_signup
+from app.modules.auth.accounts import google_link, google_sign_in, register_with_email
+from app.modules.auth.email_codes import (
+    finish_email_reset,
+    finish_email_signup,
+    finish_email_verify,
+    start_email_reset,
+    start_email_signup,
+    start_email_verify,
+)
 from app.modules.auth.schemas import (
     AuthOptionsOut,
+    EmailRegisterIn,
     EmailResetStartIn,
     EmailResetVerifyIn,
     EmailSignupStartIn,
     EmailSignupVerifyIn,
+    EmailVerifyIn,
+    GoogleSignInIn,
     OtpSentOut,
     PasswordLoginIn,
     RefreshIn,
@@ -23,6 +34,8 @@ from app.modules.auth.schemas import (
     VerifyOtpIn,
 )
 from app.modules.auth.service import AuthService
+from app.modules.users.schemas import UserOut
+from app.modules.users.service import UserService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"], responses=ERROR_RESPONSES)
 
@@ -101,6 +114,7 @@ async def options(c: ContainerDep) -> Envelope[AuthOptionsOut]:
             if c.settings.app_env not in ("beta", "production")
             else None,
             beta_sport=c.settings.oneshort_beta_sport,
+            google=c.google.configured,
         )
     )
 
@@ -122,6 +136,36 @@ async def verify_otp(data: VerifyOtpIn, request: Request, svc: Svc) -> Envelope[
 @router.post("/login", response_model=Envelope[TokenOut], summary="Email + password login")
 async def login(data: PasswordLoginIn, request: Request, svc: Svc) -> Envelope[TokenOut]:
     return ok(await svc.password_login(str(data.email), data.password, _ua(request)))
+
+
+@router.post(
+    "/register/email",
+    status_code=201,
+    response_model=Envelope[TokenOut],
+    summary="Create an account with email + password, date of birth and playing roles",
+)
+async def register_email(data: EmailRegisterIn, request: Request, c: ContainerDep) -> Envelope[TokenOut]:
+    return ok(await register_with_email(c, data, _ua(request)))
+
+
+@router.post("/google", response_model=Envelope[TokenOut], summary="Sign in or sign up with a Google ID token")
+async def google(data: GoogleSignInIn, request: Request, c: ContainerDep) -> Envelope[TokenOut]:
+    return ok(await google_sign_in(c, data.id_token, _ua(request)))
+
+
+@router.post("/google/link", response_model=Envelope[UserOut], summary="Link a Google account to the signed-in user")
+async def google_link_route(data: GoogleSignInIn, user: UserDep, c: ContainerDep) -> Envelope[UserOut]:
+    return ok(await UserService(c).to_out(await google_link(c, user, data.id_token)))
+
+
+@router.post("/email-verify/start", response_model=Envelope[OtpSentOut], summary="Email a code to verify my address")
+async def email_verify_start(request: Request, user: UserDep, c: ContainerDep) -> Envelope[OtpSentOut]:
+    return ok(await start_email_verify(c, user, _ip(request)))
+
+
+@router.post("/email-verify", response_model=Envelope[UserOut], summary="Verify my email with the code")
+async def email_verify(data: EmailVerifyIn, user: UserDep, c: ContainerDep) -> Envelope[UserOut]:
+    return ok(await UserService(c).to_out(await finish_email_verify(c, user, data.code)))
 
 
 @router.post("/refresh", response_model=Envelope[TokenOut], summary="Rotate refresh token")
