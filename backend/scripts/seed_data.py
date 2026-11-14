@@ -193,6 +193,9 @@ class Seeder:
             },
         )
         if captain:
+            await self.c.mongo["users"].update_one(
+                {"_id": ObjectId(self.ids[key])}, {"$addToSet": {"roles": "captain"}}
+            )
             await self.call("PUT", "/captains/me", key, json={"bio": f"Running weekend games around {area}."})
 
     async def weekend_slots(self, key: str, area: str) -> None:

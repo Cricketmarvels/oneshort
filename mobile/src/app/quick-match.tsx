@@ -12,6 +12,7 @@ import { GameRow } from "@/components/refined";
 import { PhotoBanner } from "@/components/starter";
 import { Chip, EmptyState, ErrorBox, LoadingSkeleton, Txt } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useIsCaptain } from "@/lib/roles";
 import { roleCount, when } from "@/lib/format";
 import { useLocation } from "@/lib/location";
 import { SP, T } from "@/theme";
@@ -32,6 +33,7 @@ function windowFor(w: When): { start_at?: string; end_at?: string } {
 }
 
 export default function QuickMatch() {
+  const captain = useIsCaptain();
   const { lat, lng, label } = useLocation();
   const [w, setW] = useState<When>("any");
   const [radius, setRadius] = useState<5 | 10 | 20>(10);
@@ -62,7 +64,7 @@ export default function QuickMatch() {
         </View>
       }
       ListEmptyComponent={q.isPending || q.isError ? undefined : (
-        <EmptyState title="No open games right now" body="Try a wider distance or another day — or start your own match and invite players." action="Create a match" onAction={() => router.push("/match/new")} />
+        <EmptyState title="No open games right now" body={captain ? "Try a wider distance or another day — or start your own match and invite players." : "Try a wider distance or another day. Sharing your availability lets captains find you."} action={captain ? "Create a match" : "Share availability"} onAction={() => router.push(captain ? "/match/new" : "/availability")} />
       )}
       renderItem={({ item: o }) => (
         <GameRow

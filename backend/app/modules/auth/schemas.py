@@ -41,6 +41,9 @@ class EmailRegisterIn(StrictModel):
     password: StrongPassword
     confirm_password: str | None = Field(default=None, max_length=128, description="Must equal password when sent")
     playing_roles: PlayingRoles
+    play_as: Literal["player", "captain"] = Field(
+        default="player", description="Captains get the team, match and challenge tools; players only the player side"
+    )
     sport: Literal["cricket", "badminton", "pickleball"] = "cricket"
     city: ShortText | None = None
     timezone: Timezone = "Asia/Kolkata"

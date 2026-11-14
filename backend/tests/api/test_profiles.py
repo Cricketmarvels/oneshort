@@ -1,6 +1,6 @@
 import httpx
 
-from tests.conftest import KORAMANGALA, register
+from tests.conftest import KORAMANGALA, grant_captain, register
 
 API = "/api/v1"
 
@@ -68,6 +68,9 @@ async def test_player_profile_validation(client: httpx.AsyncClient) -> None:
 
 async def test_captain_profile(client: httpx.AsyncClient) -> None:
     u = await register(client, "Captain Dhoni")
+    denied = await client.put(f"{API}/captains/me", headers=u.h, json={"bio": "Weekend skipper"})
+    assert denied.status_code == 403 and denied.json()["error"]["code"] == "CAPTAIN_ONLY"  # players can't self-promote
+    await grant_captain(u.id)
     r = await client.put(f"{API}/captains/me", headers=u.h, json={"bio": "Weekend skipper"})
     assert r.status_code == 200
     assert r.json()["data"]["bio"] == "Weekend skipper"

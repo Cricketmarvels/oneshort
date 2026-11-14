@@ -8,6 +8,7 @@ import { ShieldCrest, Stepper } from "@/components/identity";
 import { DateChips, SelectField, TimeField } from "@/components/pickers";
 import { initialProposal, toProposalIn } from "@/components/proposal";
 import { Button, Card, Chip, ChipRow, EmptyState, ErrorBox, Field, LoadingSkeleton, SearchBar, Txt } from "@/components/ui";
+import { CaptainGate } from "@/components/captain-gate";
 import { api, errorText } from "@/lib/api";
 import { FORMATS, rating } from "@/lib/format";
 import { useLocation } from "@/lib/location";
@@ -17,7 +18,7 @@ import { R, SP, T } from "@/theme";
 const RANGE = [{ v: "any", l: "Any rating" }, { v: "similar", l: "Similar ±150" }, { v: "stronger", l: "Stronger" }, { v: "weaker", l: "Weaker" }] as const;
 type Range = (typeof RANGE)[number]["v"];
 
-export default function NewChallenge() {
+function NewChallenge() {
   const { from, to: preset } = useLocalSearchParams<{ from: string; to?: string }>();
   const [to, setTo] = useState<string | null>(preset ?? null);
   const [proposal, setProposal] = useState(initialProposal());
@@ -129,4 +130,8 @@ function PickOpponent({ from, myRating, onPick }: { from: string; myRating: numb
       ))}
     </ScrollView>
   );
+}
+
+export default function NewChallengeScreen() {
+  return <CaptainGate><NewChallenge /></CaptainGate>;
 }

@@ -26,6 +26,7 @@ import { SportSwitcher } from "@/components/sports";
 import { Avatar, Badge, Button, Chip, Txt } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { isCaptainAccount } from "@/lib/roles";
 import { savePlayerCricHeroes } from "@/lib/cricheroes";
 import { useHomeContext } from "@/lib/context";
 import { roleCount, roleLabel, when } from "@/lib/format";
@@ -84,7 +85,7 @@ function CricketHome() {
   const unread = useQuery({ queryKey: ["notifications", "unread"], queryFn: () => api<{ meta: { unread: number } }>("/notifications", { query: { page_size: 1 } }), refetchInterval: 60_000 });
   const myTeams = useQuery({ queryKey: ["teams", "mine"], queryFn: () => api<{ data: S<"TeamOut">[] }>("/teams", { query: { scope: "mine", page_size: 10 } }) });
   const managed = myTeams.data?.data.filter((t) => h?.managed_team_ids.includes(t.id)) ?? [];
-  const isCaptain = managed.length > 0;
+  const isCaptain = isCaptainAccount(user); // player accounts never see the captain side
   const ctx = isCaptain ? ctxStore.ctx ?? "captain" : "player";
   const [teamId, setTeamId] = useState<string | null>(null);
   const team = managed.find((t) => t.id === teamId) ?? managed[0];
@@ -232,7 +233,11 @@ function CricketHome() {
                   </Panel>
                 );
               }) : (
+                !team ? (
+                <Panel><Txt v="h3">Create your team</Txt><Txt v="small" color={T.muted}>Your matches, invite links and challenges all start from a team.</Txt><Button title="Create a team" size="sm" onPress={() => router.push("/team/new")} /></Panel>
+              ) : (
                 <Panel><Txt v="h3">No upcoming matches</Txt><Txt v="small" color={T.muted}>Create one, then invite available players by role and time.</Txt></Panel>
+              )
               )}
             </View>
           </>

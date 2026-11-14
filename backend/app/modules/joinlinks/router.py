@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 
-from app.api.dependencies import ContainerDep, MatchmakerDep, OptionalUserDep, UserDep
+from app.api.dependencies import CaptainDep, ContainerDep, MatchmakerDep, OptionalUserDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
 from app.common.types import parse_object_id
 from app.core.exceptions import AppError
@@ -27,7 +27,7 @@ Svc = Annotated[JoinLinkService, Depends(_svc)]
     response_model=Envelope[InviteLinkOut],
     summary="Get (or create) the squad invite link for WhatsApp groups",
 )
-async def invite_link(match_id: str, user: MatchmakerDep, svc: Svc, rotate: bool = False) -> Envelope[InviteLinkOut]:
+async def invite_link(match_id: str, user: CaptainDep, svc: Svc, rotate: bool = False) -> Envelope[InviteLinkOut]:
     return ok(await svc.get_or_create(user, parse_object_id(match_id, field="match", not_found=True), rotate))
 
 

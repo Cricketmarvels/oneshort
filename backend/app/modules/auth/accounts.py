@@ -83,8 +83,19 @@ async def register_with_email(c: Container, data: EmailRegisterIn, user_agent: s
         raise Conflict("This email already has a OneShort account. Log in instead.", code="ACCOUNT_EXISTS") from exc
     if sport == "cricket":
         await seed_player_profile(c, doc, data.playing_roles)
+    if data.play_as == "captain":
+        from app.modules.captains.service import CaptainService  # captains import users
+
+        await CaptainService(c).ensure_profile(doc["_id"])
+        doc = await users.find_one({"_id": doc["_id"]}) or doc  # tokens carry the granted role
     await SearchIndexer(c.mongo).index_user(doc["_id"])
-    await c.audit.log(actor_id=doc["_id"], action="user.registered_password", entity_type="user", entity_id=doc["_id"])
+    await c.audit.log(
+        actor_id=doc["_id"],
+        action="user.registered_password",
+        entity_type="user",
+        entity_id=doc["_id"],
+        new_value={"play_as": data.play_as},
+    )
     out = await svc._issue_tokens(doc, user_agent, family_id=None)
     out.is_new_user = True
     return out

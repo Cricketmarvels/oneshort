@@ -141,3 +141,14 @@ async def require_matchmaking(user: UserDep, c: ContainerDep) -> CurrentUser:
 
 
 MatchmakerDep = Annotated[CurrentUser, Depends(require_matchmaking)]
+
+
+async def require_captain(user: Annotated[CurrentUser, Depends(require_matchmaking)]) -> CurrentUser:
+    """Captain features (teams, matches, challenges, invite links). The captain role is chosen at sign-up or
+    granted by an administrator; during the beta a player cannot promote themselves from inside the app."""
+    if Role.CAPTAIN.value not in user.roles and not user.is_admin:
+        raise Forbidden("Captain features are not enabled on this account", code="CAPTAIN_ONLY")
+    return user
+
+
+CaptainDep = Annotated[CurrentUser, Depends(require_captain)]

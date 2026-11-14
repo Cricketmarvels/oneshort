@@ -4485,6 +4485,13 @@ export interface components {
             /** Playing Roles */
             playing_roles: components["schemas"]["PlayingRole"][];
             /**
+             * Play As
+             * @description Captains get the team, match and challenge tools; players only the player side
+             * @default player
+             * @enum {string}
+             */
+            play_as: "player" | "captain";
+            /**
              * Sport
              * @default cricket
              * @enum {string}

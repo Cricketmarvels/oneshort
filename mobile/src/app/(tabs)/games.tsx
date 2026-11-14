@@ -18,6 +18,7 @@ import { Button, EmptyState, ErrorBox, IconButton, List, LoadingSkeleton, Row, S
 import { api } from "@/lib/api";
 import { when } from "@/lib/format";
 import { useManagedTeam } from "@/lib/hooks";
+import { useIsCaptain } from "@/lib/roles";
 import { useLocation } from "@/lib/location";
 import type { Challenge, Fixture } from "@/lib/types";
 import { ICON, SP, T } from "@/theme";
@@ -37,7 +38,8 @@ export default function Games() {
   const locSheet = useRef<BottomSheetModal>(null);
   const menu = useRef<BottomSheetModal>(null);
   const [focus, setFocus] = useState<Fixture | null>(null);
-  const challenge = () => (myTeam ? router.push({ pathname: "/challenge/new", params: { from: myTeam } }) : router.push("/team/new"));
+  const canCaptain = useIsCaptain();
+  const challenge = () => (myTeam ? router.push({ pathname: "/challenge/new", params: { from: myTeam } }) : canCaptain ? router.push("/team/new") : router.push("/find/teams"));
   const more = (f: Fixture) => { setFocus(f); menu.current?.present(); };
   return (
     <>

@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query
 
-from app.api.dependencies import ContainerDep, MatchmakerDep, UserDep
+from app.api.dependencies import CaptainDep, ContainerDep, MatchmakerDep, UserDep
 from app.common.response import (
     ERROR_RESPONSES,
     Envelope,
@@ -40,7 +40,7 @@ def _tid(team_id: str) -> ObjectId:
 
 
 @router.post("", status_code=201, response_model=Envelope[TeamOut], summary="Create a team (you become its captain)")
-async def create_team(data: TeamIn, user: MatchmakerDep, svc: Svc) -> Envelope[TeamOut]:
+async def create_team(data: TeamIn, user: CaptainDep, svc: Svc) -> Envelope[TeamOut]:
     return ok(await svc.create(user, data))
 
 

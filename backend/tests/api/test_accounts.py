@@ -249,3 +249,34 @@ async def test_sessions_refresh_rotation_and_logout_for_password_accounts(client
     assert (await client.post(f"{API}/auth/logout", json={"refresh_token": t2["refresh_token"]})).status_code == 204
     assert (await client.post(f"{API}/auth/refresh", json={"refresh_token": t2["refresh_token"]})).status_code == 401
     assert (await client.get(f"{API}/users/me", headers={"Authorization": "Bearer not-a-token"})).status_code == 401
+
+
+# ------------------------------------------------------------------ player vs captain features
+async def test_players_only_get_player_features_and_captains_both(client: httpx.AsyncClient) -> None:
+    player = (await client.post(f"{API}/auth/register/email", json=form())).json()["data"]
+    assert "captain" not in player["user"]["roles"]  # the default is a player account
+    ph = {"Authorization": f"Bearer {player['access_token']}"}
+    cur = (await client.get(f"{API}/agreements/current")).json()["data"]["version"]
+    accept = {"version": cur, "accepted": True, "age_confirmed": True, "privacy_acknowledged": True}
+    assert (await client.post(f"{API}/agreements/acceptance", headers=ph, json=accept)).status_code == 200
+    team = {"team_name": "Copycats", "location": {"lat": 28.57, "lng": 77.32}, "area": "Sector 18", "city": "Noida"}
+    for method, path, body in (
+        ("POST", "/teams", team),
+        ("PUT", "/captains/me", {"bio": "x"}),
+        ("POST", "/challenges", {}),
+        ("POST", "/matches", {}),
+        ("POST", "/matches/000000000000000000000000/invite-link", None),
+    ):
+        r = await client.request(method, f"{API}{path}", headers=ph, json=body)
+        assert r.status_code == 403 and r.json()["error"]["code"] == "CAPTAIN_ONLY", (path, r.text)
+    # player features still work
+    assert (await client.get(f"{API}/players/me", headers=ph)).status_code == 200
+    assert (await client.get(f"{API}/teams?scope=all", headers=ph)).status_code == 200
+
+    captain = (await client.post(f"{API}/auth/register/email", json=form(play_as="captain"))).json()["data"]
+    assert "captain" in captain["user"]["roles"] and captain["user"]["has_captain_profile"] is True
+    ch = {"Authorization": f"Bearer {captain['access_token']}"}
+    assert (await client.post(f"{API}/agreements/acceptance", headers=ch, json=accept)).status_code == 200
+    r = await client.post(f"{API}/teams", headers=ch, json=team)
+    assert r.status_code == 201, r.text
+    assert (await client.get(f"{API}/players/me", headers=ch)).status_code == 200  # a captain is a player too

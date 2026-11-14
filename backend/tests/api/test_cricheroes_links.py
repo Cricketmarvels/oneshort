@@ -3,6 +3,7 @@
 import httpx
 
 from tests.api.test_competition import SECTOR_18, player, team
+from tests.conftest import grant_captain
 
 API = "/api/v1"
 P_URL = "https://cricheroes.com/player-profile/4794795/nitin-daksh/stats"
@@ -62,6 +63,7 @@ async def test_team_link_create_edit_remove_and_permissions(client: httpx.AsyncC
         "area": "Sector 18",
         "city": "Noida",
     }
+    await grant_captain(cap.id)
     r = await client.post(f"{API}/teams", headers=cap.h, json={**body, "cricheroes_team_url": T_URL})
     assert r.status_code == 201, r.text
     t = r.json()["data"]

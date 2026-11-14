@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Wordmark } from "@/components/brand";
 import { GoogleButton } from "@/components/google-button";
 import { DobField, type PlayingRoleId, RolesField } from "@/components/profile-fields";
-import { Button, Field, Muted, Txt } from "@/components/ui";
+import { Button, Field, Muted, Segmented, Txt } from "@/components/ui";
 import { api, ApiError, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSport } from "@/lib/sports";
@@ -28,6 +28,7 @@ export default function EmailSignup() {
   const cricket = (sport ?? "cricket") === "cricket";
   const [f, setF] = useState({ name: "", dob: null as string | null, email: "", password: "", confirm: "" });
   const [roles, setRoles] = useState<PlayingRoleId[]>([]);
+  const [playAs, setPlayAs] = useState<"player" | "captain">("player");
   const [err, setErr] = useState<Errs>({});
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => { setF((p) => ({ ...p, [k]: v })); if (err[k as keyof Errs] || err.form) setErr((e) => ({ ...e, [k]: undefined, form: undefined })); };
@@ -48,7 +49,7 @@ export default function EmailSignup() {
     try {
       const t = await api<S<"TokenOut">>("/auth/register/email", { method: "POST", body: {
         full_name: f.name.trim(), date_of_birth: f.dob, email: f.email.trim().toLowerCase(), password: f.password, confirm_password: f.confirm,
-        playing_roles: cricket ? roles : ["batsman"], sport: sport ?? "cricket",
+        playing_roles: cricket ? roles : ["batsman"], sport: sport ?? "cricket", play_as: playAs,
       } });
       await signIn(t.access_token, t.refresh_token, t.user); // the root gate takes it from here (consent, then Home)
     } catch (e) {
@@ -80,6 +81,11 @@ export default function EmailSignup() {
             hint="At least 12 characters, with a letter and a number." error={err.password} />
           <Field testID="su-confirm" label="Confirm password" value={f.confirm} onChangeText={(v) => set("confirm", v)} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" error={err.confirm} />
           {cricket ? <RolesField value={roles} onChange={(v) => { setRoles(v); if (err.roles) setErr((e) => ({ ...e, roles: undefined })); }} error={err.roles} /> : null}
+          <View style={{ gap: 8 }} testID="su-play-as">
+            <Txt v="h3">I'm joining as</Txt>
+            <Segmented value={playAs} onChange={setPlayAs} options={[{ v: "player", l: "Player" }, { v: "captain", l: "Captain" }]} />
+            <Muted>{playAs === "captain" ? "You run a team: create matches, invite players and challenge other teams. You can play too." : "You join squads through captains' invites and links, share when you're free and track your fees."}</Muted>
+          </View>
         </View>
 
         {err.form ? <Txt v="small" color={T.dangerText} accessibilityRole="alert">{err.form}</Txt> : null}

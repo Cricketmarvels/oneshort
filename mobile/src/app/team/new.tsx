@@ -6,6 +6,7 @@ import { Alert, ScrollView, Switch, View } from "react-native";
 
 import { Button, Chip, Field, Section, Txt } from "@/components/ui";
 import { CricHeroesField, cricHeroesError } from "@/components/cricheroes-link";
+import { CaptainGate } from "@/components/captain-gate";
 import { api, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { FORMATS } from "@/lib/format";
@@ -15,7 +16,7 @@ import { SP, T } from "@/theme";
 
 const CATS: { v: S<"MatchCategory">; l: string }[] = [{ v: "friendly", l: "Friendly" }, { v: "corporate", l: "Corporate" }, { v: "tournament", l: "Tournament" }, { v: "practice", l: "Practice" }];
 
-export default function NewTeam() {
+function NewTeam() {
   const { reload } = useAuth();
   const qc = useQueryClient();
   const loc = useLocation();
@@ -58,4 +59,8 @@ export default function NewTeam() {
       <Button title="Create team" size="lg" disabled={name.trim().length < 2 || !area.trim() || !!cricHeroesError(chUrl, "team")} loading={create.isPending} onPress={() => create.mutate()} />
     </ScrollView>
   );
+}
+
+export default function NewTeamScreen() {
+  return <CaptainGate><NewTeam /></CaptainGate>;
 }

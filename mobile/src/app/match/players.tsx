@@ -17,6 +17,7 @@ import { CancelMatch } from "@/components/match-admin";
 import { shareText, useInviteLink } from "@/components/regulars";
 import { FillBar, KickerChip, RadarSearch, RoleStepper, SectionHeader } from "@/components/refined";
 import { Avatar, Badge, Button, Chip, EmptyState, ErrorBox, InlineNotice, LoadingSkeleton, Segmented, Txt } from "@/components/ui";
+import { CaptainGate } from "@/components/captain-gate";
 import { api, errorText } from "@/lib/api";
 import { openInMaps } from "@/lib/maps";
 import { roleLabel } from "@/lib/format";
@@ -56,7 +57,7 @@ function nextDays(n = 7) {
 function at(day: Date, [h, m]: readonly [number, number]) { const d = new Date(day); d.setHours(h, m, 0, 0); return d; }
 const roleName = (r: string) => roleLabel(r);
 
-export default function FindPlayersRequest() {
+function FindPlayersRequest() {
   const qc = useQueryClient();
   const params = useLocalSearchParams<{ match?: string }>();
   const loc = useLocation();
@@ -407,4 +408,8 @@ function RegularsFirst({ matchId }: { matchId: string }) {
       <Txt v="smallSemi" color={T.primaryDark} style={{ flex: 1 }}>Share the squad link on WhatsApp</Txt>
     </Pressable>
   );
+}
+
+export default function FindPlayersRequestScreen() {
+  return <CaptainGate><FindPlayersRequest /></CaptainGate>;
 }

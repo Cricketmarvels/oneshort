@@ -6,14 +6,16 @@ import { ScrollView, View } from "react-native";
 import { TeamLogo } from "@/components/cricket";
 import { Button, Card, EmptyState, ErrorBox, LoadingSkeleton, Txt } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useIsCaptain } from "@/lib/roles";
 import { SP, T } from "@/theme";
 
 export default function Teams() {
   const q = useQuery({ queryKey: ["teams", "member"], queryFn: () => api<{ data: S<"TeamOut">[] }>("/teams", { query: { scope: "member" } }) });
   const inv = useQuery({ queryKey: ["teams", "invitations"], queryFn: () => api<S<"TeamOut">[]>("/teams/invitations") });
+  const captain = useIsCaptain();
   return (
     <ScrollView contentContainerStyle={{ padding: SP.page, gap: SP.md, paddingBottom: 60 }}>
-      <Button title="Create a team" onPress={() => router.push("/team/new")} />
+      {captain ? <Button title="Create a team" onPress={() => router.push("/team/new")} /> : null}
       {(inv.data ?? []).map((t) => (
         <Card key={t.id} onPress={() => router.push({ pathname: "/team/[id]", params: { id: t.id } })} style={{ borderWidth: 1.5, borderColor: T.line }}>
           <Txt v="label" color={T.accent}>Invitation</Txt>
@@ -21,7 +23,7 @@ export default function Teams() {
           <Txt v="small" color={T.muted}>Captain {t.captain.full_name}. Open to accept or decline.</Txt>
         </Card>
       ))}
-      {q.isPending ? <LoadingSkeleton rows={3} /> : q.isError ? <ErrorBox error={q.error} /> : !q.data.data.length ? <EmptyState title="No teams yet" body="Create a team, or ask a captain to invite you." /> : q.data.data.map((t) => (
+      {q.isPending ? <LoadingSkeleton rows={3} /> : q.isError ? <ErrorBox error={q.error} /> : !q.data.data.length ? <EmptyState title="No teams yet" body={captain ? "Create a team, or ask a captain to invite you." : "Ask a captain to invite you, or join through their link."} /> : q.data.data.map((t) => (
         <Card key={t.id} onPress={() => router.push({ pathname: "/team/[id]", params: { id: t.id } })} label={t.team_name}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <TeamLogo team={t} />

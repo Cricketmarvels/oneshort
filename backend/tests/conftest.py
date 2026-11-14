@@ -10,6 +10,7 @@ from typing import Any
 import httpx
 import pytest
 from asgi_lifespan import LifespanManager
+from bson import ObjectId
 from fastapi import FastAPI
 
 from app.core.config import Settings
@@ -52,6 +53,8 @@ def settings() -> Settings:
 async def container(settings: Settings) -> AsyncIterator[Container]:
     c = build_container(settings)
     await c.mongo.client.drop_database(TEST_DB)
+    global _CONTAINER
+    _CONTAINER = c
     yield c
 
 
@@ -165,6 +168,15 @@ def iso(dt: datetime) -> str:
     return dt.isoformat()
 
 
+_CONTAINER: Container | None = None
+
+
+async def grant_captain(user_id: str) -> None:
+    """What sign-up (play_as=captain) or an administrator does: players cannot promote themselves in-app."""
+    assert _CONTAINER is not None
+    await _CONTAINER.mongo["users"].update_one({"_id": ObjectId(user_id)}, {"$addToSet": {"roles": "captain"}})
+
+
 async def make_team(
     client: httpx.AsyncClient,
     captain: TestUser,
@@ -172,6 +184,7 @@ async def make_team(
     at: tuple[float, float] = KORAMANGALA,
     category: str = "friendly",
 ) -> str:
+    await grant_captain(captain.id)
     r = await client.post(
         "/api/v1/teams",
         headers=captain.h,

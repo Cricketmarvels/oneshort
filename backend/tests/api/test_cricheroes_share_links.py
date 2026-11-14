@@ -5,7 +5,7 @@ import pytest
 
 from app.modules.cricheroes import shortlinks
 from app.modules.cricheroes.urls import embedded_profile_url, share_link_kind
-from tests.conftest import register
+from tests.conftest import grant_captain, register
 
 API = "/api/v1"
 PAGE = """<html><head><script>window.location="https://cricheroes.com/team-profile/1275057/SFCC-Noida-Knights"</script>
@@ -69,6 +69,7 @@ async def test_team_share_link_on_create_and_update(client: httpx.AsyncClient, f
         "city": "Noida",
         "cricheroes_team_url": "https://chshare.link/team/ss8dDP",
     }
+    await grant_captain(u.id)
     r = await client.post(f"{API}/teams", headers=u.h, json=body)
     assert r.status_code == 201, r.text
     t = r.json()["data"]

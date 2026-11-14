@@ -8,7 +8,7 @@ from bson import ObjectId
 
 from app.core.container import Container
 from tests.conftest import TestUser as User
-from tests.conftest import future, iso, register
+from tests.conftest import future, grant_captain, iso, register
 
 API = "/api/v1"
 SECTOR_18 = (28.5708, 77.3261)
@@ -28,6 +28,7 @@ async def player(client: httpx.AsyncClient, name: str, role: str, at: tuple[floa
 
 
 async def team(client: httpx.AsyncClient, cap: User, name: str, at: tuple[float, float], members: list[User]) -> str:
+    await grant_captain(cap.id)
     r = await client.post(
         f"{API}/teams",
         headers=cap.h,

@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query
 
-from app.api.dependencies import ContainerDep, MatchmakerDep, UserDep
+from app.api.dependencies import CaptainDep, ContainerDep, MatchmakerDep, UserDep
 from app.common.enums import InvitationStatus, MatchStatus, PlayingRole
 from app.common.response import (
     ERROR_RESPONSES,
@@ -71,7 +71,7 @@ def _mid(match_id: str) -> ObjectId:
 
 
 @router.post("", status_code=201, response_model=Envelope[MatchOut], summary="Create a match (Build a Team)")
-async def create_match(data: MatchIn, user: MatchmakerDep, svc: Matches) -> Envelope[MatchOut]:
+async def create_match(data: MatchIn, user: CaptainDep, svc: Matches) -> Envelope[MatchOut]:
     return ok(await svc.create(user, data))
 
 

@@ -27708,6 +27708,16 @@
             "minItems": 1,
             "title": "Playing Roles"
           },
+          "play_as": {
+            "type": "string",
+            "enum": [
+              "player",
+              "captain"
+            ],
+            "title": "Play As",
+            "description": "Captains get the team, match and challenge tools; players only the player side",
+            "default": "player"
+          },
           "sport": {
             "type": "string",
             "enum": [

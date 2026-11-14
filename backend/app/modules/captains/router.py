@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app.api.dependencies import ContainerDep, UserDep
+from app.api.dependencies import CaptainDep, ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
 from app.common.types import parse_object_id
 from app.modules.captains.service import CaptainOut, CaptainProfileIn, CaptainService
@@ -23,7 +23,7 @@ async def get_me(user: UserDep, svc: Svc) -> Envelope[CaptainOut]:
 
 
 @router.put("/me", response_model=Envelope[CaptainOut], summary="Create or update my captain profile")
-async def put_me(data: CaptainProfileIn, user: UserDep, svc: Svc) -> Envelope[CaptainOut]:
+async def put_me(data: CaptainProfileIn, user: CaptainDep, svc: Svc) -> Envelope[CaptainOut]:
     return ok(await svc.upsert_me(user, data))
 
 

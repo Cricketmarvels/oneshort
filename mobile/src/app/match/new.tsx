@@ -12,6 +12,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-nat
 import { Stepper } from "@/components/identity";
 import { CalendarPicker, istToday, TimeField, timeLabel } from "@/components/pickers";
 import { Button, Card, Chip, EmptyState, Field, InlineNotice, LoadingSkeleton, SearchBar, Txt } from "@/components/ui";
+import { CaptainGate } from "@/components/captain-gate";
 import { api, errorText } from "@/lib/api";
 import { useManagedTeam } from "@/lib/hooks";
 import { useLocation } from "@/lib/location";
@@ -38,7 +39,7 @@ function Counter({ value, onChange, min, max }: { value: number; onChange: (n: n
   );
 }
 
-export default function CreateMatch() {
+function CreateMatch() {
   const params = useLocalSearchParams<{ team?: string }>();
   const managed = useManagedTeam();
   const teamId = params.team ?? managed;
@@ -175,4 +176,8 @@ export default function CreateMatch() {
       </View>
     </View>
   );
+}
+
+export default function CreateMatchScreen() {
+  return <CaptainGate><CreateMatch /></CaptainGate>;
 }

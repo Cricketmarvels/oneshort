@@ -11,6 +11,7 @@ import { useAppearance } from "@/lib/appearance";
 import { api, errorText } from "@/lib/api";
 import { googleAvailable, googleIdToken } from "@/lib/google";
 import { useAuth } from "@/lib/auth";
+import { isCaptainAccount } from "@/lib/roles";
 import { pickAndUpload, readLocation } from "@/lib/device";
 import { SP, T } from "@/theme";
 
@@ -114,7 +115,7 @@ export default function Profile() {
       </View>
 </View>
       <View style={{ padding: SP.page, gap: SP.xl }}>
-        <Section title="My teams" action="Create team" onAction={() => router.push("/team/new")}>
+        <Section title="My teams" action={isCaptainAccount(user) ? "Create team" : undefined} onAction={isCaptainAccount(user) ? () => router.push("/team/new") : undefined}>
           {(teams.data?.data ?? []).map((t) => (
             <Card key={t.id} onPress={() => router.push({ pathname: "/team/[id]", params: { id: t.id } })} label={t.team_name}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -124,7 +125,7 @@ export default function Profile() {
               </View>
             </Card>
           ))}
-          {!teams.isPending && !teams.data?.data.length ? <Button title="Create a team" variant="secondary" icon={<Plus size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => router.push("/team/new")} /> : null}
+          {!teams.isPending && !teams.data?.data.length && isCaptainAccount(user) ? <Button title="Create a team" variant="secondary" icon={<Plus size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => router.push("/team/new")} /> : null}
         </Section>
         <Card style={{ gap: 0 }}>
           <Row icon={CalendarDays} label="Availability" onPress={() => router.push("/availability")} />

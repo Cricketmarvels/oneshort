@@ -48,10 +48,9 @@ export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" 
         <View style={{ gap: 10 }}>
           {opt("player", "Player", "Find games, teams and playing partners")}
           {canCaptain ? opt("captain", "Captain", "Manage your team, matches and invitations") : (
-            <Pressable accessibilityRole="button" onPress={() => { sheet.current?.dismiss(); router.push("/team/new"); }}
-              style={{ padding: 16, borderRadius: 18, borderWidth: 1, borderColor: T.line, borderStyle: "dashed", gap: 3 }}>
-              <Txt v="h3" color={T.primaryDark}>Become a captain</Txt><Txt v="small" color={T.muted}>Create a team — same account, captain tools unlock.</Txt>
-            </Pressable>
+            <View style={{ padding: 16, borderRadius: 18, borderWidth: 1, borderColor: T.line, borderStyle: "dashed", gap: 3 }}>
+              <Txt v="h3" color={T.muted}>Captain</Txt><Txt v="small" color={T.muted}>{"This is a player account. Captain tools are set up when an account is created."}</Txt>
+            </View>
           )}
         </View>
       </FilterBottomSheet>

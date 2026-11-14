@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query
 
-from app.api.dependencies import AdminDep, ContainerDep, MatchmakerDep, UserDep
+from app.api.dependencies import AdminDep, CaptainDep, ContainerDep, MatchmakerDep, UserDep
 from app.common.enums import FixtureFormat
 from app.common.response import ERROR_RESPONSES, Envelope, PagedEnvelope, PageParams, ok, page_params, paged
 from app.common.types import GeoPointIn, parse_object_id
@@ -234,7 +234,7 @@ async def compare_teams(user: UserDep, svc: Lb, a: str, b: str) -> Envelope[Team
     tags=["Challenges"],
     summary="Challenge a team",
 )
-async def create_challenge(data: ChallengeIn, user: MatchmakerDep, svc: Ch) -> Envelope[ChallengeOut]:
+async def create_challenge(data: ChallengeIn, user: CaptainDep, svc: Ch) -> Envelope[ChallengeOut]:
     return ok(await svc.create(user, data))
 
 
