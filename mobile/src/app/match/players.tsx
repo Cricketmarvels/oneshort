@@ -18,6 +18,7 @@ import { shareText, useInviteLink } from "@/components/regulars";
 import { FillBar, KickerChip, RadarSearch, RoleStepper, SectionHeader } from "@/components/refined";
 import { Avatar, Badge, Button, Chip, EmptyState, ErrorBox, InlineNotice, LoadingSkeleton, Segmented, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
+import { openInMaps } from "@/lib/maps";
 import { roleLabel } from "@/lib/format";
 import { useLocation } from "@/lib/location";
 import { R, SP, T } from "@/theme";
@@ -147,6 +148,12 @@ export default function FindPlayersRequest() {
                           <Txt v="h3" color={on ? T.primaryDark : T.ink} numberOfLines={1}>{m.venue.name}</Txt>
                           <Txt v="small" color={T.muted} numberOfLines={1}>{formatDateTime(m.start_at, m.timezone)} · {m.composition.vacancies} open</Txt>
                         </View>
+                        {m.venue.lat != null && m.venue.lng != null ? (
+                          <Pressable accessibilityRole="link" accessibilityLabel={`Open ${m.venue.name ?? "the ground"} in Maps`} hitSlop={8} onPress={() => void openInMaps(m.venue.lat!, m.venue.lng!, m.venue.name)}
+                            style={({ pressed }) => ({ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? T.pressedSoft : on ? T.surface : T.surface2 })}>
+                            <MapPin size={18} color={T.primaryDark} strokeWidth={2} />
+                          </Pressable>
+                        ) : null}
                         {on ? <CheckCircle2 size={20} color={T.primary} /> : <Circle size={20} color={T.line} />}
                       </Pressable>
                     );

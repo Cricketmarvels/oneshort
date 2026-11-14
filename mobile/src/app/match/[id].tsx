@@ -13,6 +13,7 @@ import { InviteRegularsCard } from "@/components/regulars";
 import { Avatar, Badge, Button, Card, Chip, ErrorBox, InlineNotice, List, LoadingSkeleton, Section, Txt } from "@/components/ui";
 import { roleCount, roleLabel } from "@/lib/format";
 import { api, errorText } from "@/lib/api";
+import { openInMaps } from "@/lib/maps";
 import { useAuth } from "@/lib/auth";
 import { SP, T } from "@/theme";
 
@@ -101,7 +102,7 @@ export default function MatchDetail() {
             <Txt v="small" color={T.muted}>{m.venue.restricted ? "Exact venue is shared once you're in the squad" : `${m.venue.address ?? ""} ${m.venue.area}`}</Txt>
           </View>
         </View>
-        {!m.venue.restricted && m.venue.lat != null ? <Button variant="secondary" size="sm" title="Open in Maps" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${m.venue.lat},${m.venue.lng}`)} /> : null}
+        {!m.venue.restricted && m.venue.lat != null ? <Button variant="secondary" size="sm" title="Open in Maps" onPress={() => void openInMaps(m.venue.lat!, m.venue.lng!, m.venue.name)} /> : null}
       </Card>
       <View style={{ backgroundColor: T.surface, borderRadius: 20, padding: SP.lg, gap: SP.sm, borderWidth: 1, borderColor: T.line }}>
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><Wallet size={18} color={T.ink} strokeWidth={1.5} /><Txt v="h3">Match fee</Txt></View>
