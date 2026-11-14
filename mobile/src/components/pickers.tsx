@@ -73,15 +73,15 @@ export function DateChips({ value, onChange, days = 14 }: { value: string; onCha
 }
 
 /** Select-style field that expands into a list (time, venue, …). */
-export function SelectField<V extends string>({ value, options, onChange, icon = "time", placeholder = "Select" }: { value: V | null; options: { v: V; l: string; sub?: string }[]; onChange: (v: V) => void; icon?: "time" | "place"; placeholder?: string }) {
+export function SelectField<V extends string>({ value, options, onChange, icon = "time", placeholder = "Select" }: { value: V | null; options: { v: V; l: string; sub?: string }[]; onChange: (v: V) => void; icon?: "time" | "place" | "none"; placeholder?: string }) {
   const [open, setOpen] = useState(false);
   const cur = options.find((o) => o.v === value);
   const Icon = icon === "time" ? Clock : MapPin;
   return (
     <View style={[{ backgroundColor: T.surface, borderRadius: R.field, borderWidth: 1, borderColor: open ? T.primary : T.line, overflow: "hidden" }, shadow(1)]}>
       <Pressable accessibilityRole="button" accessibilityLabel={cur ? `${cur.l}. Change` : placeholder} accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)}
-        style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 16 }}>
-        <Icon size={20} color={T.ink} strokeWidth={1.8} />
+        style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: icon === "none" ? 12 : 16 }}>
+        {icon === "none" ? null : <Icon size={20} color={T.ink} strokeWidth={1.8} />}
         <Txt v="bodyMed" color={cur ? T.ink : T.faint} style={{ flex: 1 }} numberOfLines={1}>{cur?.l ?? placeholder}</Txt>
         <ChevronDown size={18} color={T.ink} strokeWidth={2} style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }} />
       </Pressable>

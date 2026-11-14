@@ -31,9 +31,9 @@ export function DobField({ value, onChange, error, label = "Date of birth" }: { 
     <View style={{ gap: 6 }}>
       <Txt v="smallSemi" color={T.ink}>{label}</Txt>
       <View style={{ flexDirection: "row", gap: 8 }}>
-        <View style={{ flex: 1 }}><SelectField value={d || null} onChange={(v) => set(y, m, v)} options={days.map((v) => ({ v, l: String(Number(v)) }))} placeholder="Day" icon="time" /></View>
-        <View style={{ flex: 1.3 }}><SelectField value={m || null} onChange={(v) => set(y, v, d)} options={MONTHS.map((l, i) => ({ v: pad(i + 1), l }))} placeholder="Month" icon="time" /></View>
-        <View style={{ flex: 1.1 }}><SelectField value={y || null} onChange={(v) => set(v, m, d)} options={years.map((v) => ({ v, l: v }))} placeholder="Year" icon="time" /></View>
+        <View style={{ flex: 1 }}><SelectField value={d || null} onChange={(v) => set(y, m, v)} options={days.map((v) => ({ v, l: String(Number(v)) }))} placeholder="Day" icon="none" /></View>
+        <View style={{ flex: 1.3 }}><SelectField value={m || null} onChange={(v) => set(y, v, d)} options={MONTHS.map((l, i) => ({ v: pad(i + 1), l }))} placeholder="Month" icon="none" /></View>
+        <View style={{ flex: 1.1 }}><SelectField value={y || null} onChange={(v) => set(v, m, d)} options={years.map((v) => ({ v, l: v }))} placeholder="Year" icon="none" /></View>
       </View>
       {error ? <Txt v="small" color={T.down} accessibilityRole="alert">{error}</Txt> : <Txt v="small" color={T.muted}>You must be 18 or older. Never shown to other players.</Txt>}
     </View>
