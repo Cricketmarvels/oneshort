@@ -85,7 +85,9 @@ async def test_invite_link_register_join_and_revoke(client: httpx.AsyncClient) -
     assert any(m["user"]["full_name"] == "Regular IL" and m["status"] == "active" for m in members)
     after = (await client.post(f"{API}/matches/{match_id}/invite-link", headers=cap.h)).json()["data"]
     assert after["uses"] == 1 and after["joined"] == ["Regular IL"]
-    assert "2) Regular IL\n" in after["message"]  # the group sees the whole squad: captain first, then joiners
+    assert (
+        "2) Regular IL\n\n──────────\n\nTap to join" in after["message"]
+    )  # the group sees the whole squad: captain first, then joiners
 
     assert (await client.delete(f"{API}/matches/{match_id}/invite-link", headers=cap.h)).status_code == 204
     assert (await client.get(f"{API}/join/{code}")).json()["data"]["status"] == "closed"

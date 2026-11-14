@@ -100,7 +100,7 @@ class JoinLinkService:
         message = (
             f"🏏 {team_name} — {match.get('title', 'Match')}\n"
             f"📅 {when}{f' · 📍 {venue}' if venue else ''}\n"
-            f"{'In so far:' + roster + chr(10) if squad else ''}"
+            f"{'In so far:' + roster + chr(10) + chr(10) + '──────────' + chr(10) + chr(10) if squad else ''}"
             "Tap to join the squad. First come, first served 👇"
         )  # the client appends the link (it knows the current public address)
         return InviteLinkOut(
