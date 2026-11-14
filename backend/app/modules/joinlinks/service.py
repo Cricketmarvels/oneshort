@@ -78,11 +78,29 @@ class JoinLinkService:
             .strftime("%a %d %b, %I:%M %p")
         )
         team_name = (team or {}).get("team_name", "our team")
-        roster = "".join(f"\n{i}) {n}" for i, n in enumerate(names, 1))
+        # The group sees the whole confirmed squad (captain first, then in the order people were confirmed),
+        # not only the people who came through this link.
+        rows = [
+            r
+            async for r in self.c.mongo["match_rosters"]
+            .find({"match_id": match["_id"], "is_active": True}, {"player_id": 1, "is_captain": 1})
+            .sort([("is_captain", -1), ("_id", 1)])
+        ]
+        squad_ids = [r["player_id"] for r in rows]
+        squad_names = {
+            u["_id"]: u["full_name"]
+            async for u in self.c.mongo["users"].find({"_id": {"$in": squad_ids}}, {"full_name": 1})
+        }
+        squad = [
+            f"{squad_names[r['player_id']]}{' (C)' if r.get('is_captain') else ''}"
+            for r in rows
+            if r["player_id"] in squad_names
+        ]
+        roster = "".join(f"\n{i}) {n}" for i, n in enumerate(squad, 1))
         message = (
             f"🏏 {team_name} — {match.get('title', 'Match')}\n"
             f"📅 {when}{f' · 📍 {venue}' if venue else ''}\n"
-            f"{'In so far:' + roster + chr(10) if names else ''}"
+            f"{'In so far:' + roster + chr(10) if squad else ''}"
             "Tap to join the squad. First come, first served 👇"
         )  # the client appends the link (it knows the current public address)
         return InviteLinkOut(
