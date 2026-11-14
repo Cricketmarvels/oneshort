@@ -16027,6 +16027,11 @@
         ],
         "summary": "Public preview of an invite link (no exact venue)",
         "operationId": "join_preview_api_v1_join__code__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "code",
@@ -29458,6 +29463,22 @@
               "closed"
             ],
             "title": "Status"
+          },
+          "match_id": {
+            "type": "string",
+            "title": "Match Id"
+          },
+          "viewer": {
+            "type": "string",
+            "enum": [
+              "guest",
+              "captain",
+              "in_squad",
+              "not_in"
+            ],
+            "title": "Viewer",
+            "description": "How the link relates to the signed-in caller: anonymous, this match's captain, already in the squad, or not in it yet",
+            "default": "guest"
           }
         },
         "type": "object",
@@ -29474,7 +29495,8 @@
           "capacity",
           "confirmed",
           "spots_left",
-          "status"
+          "status",
+          "match_id"
         ],
         "title": "JoinPreviewOut"
       },

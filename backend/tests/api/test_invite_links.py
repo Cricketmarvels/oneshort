@@ -34,6 +34,10 @@ async def test_invite_link_register_join_and_revoke(client: httpx.AsyncClient) -
     prev = (await client.get(f"{API}/join/{code}")).json()["data"]  # public, no auth
     assert prev["team_name"] == "Knights IL" and prev["status"] == "open" and prev["spots_left"] >= 1
     assert "name" not in prev and "lat" not in str(prev)
+    assert prev["viewer"] == "guest" and prev["match_id"] == match_id
+    assert (await client.get(f"{API}/join/{code}", headers=cap.h)).json()["data"]["viewer"] == "captain"
+    stale = {"Authorization": "Bearer not-a-real-token"}
+    assert (await client.get(f"{API}/join/{code}", headers=stale)).json()["data"]["viewer"] == "guest"
 
     reg = await client.post(
         f"{API}/auth/invite-register",
@@ -74,10 +78,13 @@ async def test_invite_link_register_join_and_revoke(client: httpx.AsyncClient) -
         json={"version": cur, "accepted": True, "age_confirmed": True, "privacy_acknowledged": True},
     )
     assert (await client.put(f"{API}/players/me", headers=h, json={"primary_role": "bowler"})).status_code == 200
+    assert (await client.get(f"{API}/join/{code}", headers=h)).json()["data"]["viewer"] == "not_in"
     j = await client.post(f"{API}/join/{code}", headers=h, json={})
     assert j.status_code == 200, j.text
     assert j.json()["data"]["status"] == "joined"
     assert (await client.post(f"{API}/join/{code}", headers=h, json={})).json()["data"]["status"] == "already_in"
+    # Tapping the link again: the preview says so before any button is shown
+    assert (await client.get(f"{API}/join/{code}", headers=h)).json()["data"]["viewer"] == "in_squad"
 
     roster = (await client.get(f"{API}/matches/{match_id}/roster", headers=cap.h)).json()["data"]
     assert any(e["player"]["full_name"] == "Regular IL" for e in roster["active"])

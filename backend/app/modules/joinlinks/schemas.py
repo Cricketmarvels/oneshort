@@ -34,6 +34,12 @@ class JoinPreviewOut(BaseModel):
     confirmed: int
     spots_left: int
     status: Literal["open", "full", "expired", "closed"]
+    match_id: str
+    viewer: Literal["guest", "captain", "in_squad", "not_in"] = Field(
+        default="guest",
+        description="How the link relates to the signed-in caller: anonymous, this match's captain, already in the "
+        "squad, or not in it yet",
+    )
 
 
 class JoinIn(StrictModel):

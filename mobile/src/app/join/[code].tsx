@@ -2,6 +2,8 @@
  * Captain invite link (/join/<code>): what a regular sees after tapping the link in the team's WhatsApp group.
  * Shows the match (area only, no exact venue), then: new here → create an account; have one → log in;
  * signed in → pick a role if needed → "Add me to the squad" (joins the team and the match squad).
+ * Tapping the link again while signed in and already in the squad (or as the captain) shows that instead of
+ * another join button, with "Open the match" / "Go to Home".
  */
 import type { S } from "@cm/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -30,7 +32,8 @@ export default function JoinScreen() {
   const pending = usePendingJoin();
   useEffect(() => { if (code && pending.code !== code) pending.set(code); }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pv = useQuery({ queryKey: ["join", code], queryFn: () => api<Preview>(`/join/${code}`), retry: false });
+  // Keyed on the user too: the preview says whether *this* account is already in the squad.
+  const pv = useQuery({ queryKey: ["join", code, user?.id ?? null], queryFn: () => api<Preview>(`/join/${code}`), retry: false });
   const profile = useQuery({ enabled: !!user, queryKey: ["player", "me"], queryFn: () => api<{ primary_role: string }>("/players/me").catch(() => null) });
   const [role, setRole] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -50,6 +53,8 @@ export default function JoinScreen() {
 
   const p = pv.data;
   const notFound = pv.isError && pv.error instanceof ApiError && pv.error.status === 404;
+  const alreadyIn = !!user && !done && (p?.viewer === "in_squad" || p?.viewer === "captain");
+  useEffect(() => { if (alreadyIn) pending.clear(); }, [alreadyIn]); // eslint-disable-line react-hooks/exhaustive-deps -- nothing left to resume after login
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: T.bg }}>
       <ScrollView contentContainerStyle={{ padding: SP.page, paddingTop: insets.top + 14, paddingBottom: 48, gap: 18 }} keyboardShouldPersistTaps="handled">
@@ -74,14 +79,14 @@ export default function JoinScreen() {
               <Row icon={Users} text={`${p.confirmed} of ${p.capacity} in the squad · ${p.spots_left} spot${p.spots_left === 1 ? "" : "s"} left${p.format ? ` · ${p.format === "OTHER" ? "Practice" : p.format}` : ""}`} />
             </View>
 
-            {done ? (
-              <View style={{ gap: 12, padding: 18, borderRadius: R.card, backgroundColor: T.successBackground, alignItems: "center" }}>
-                <CheckCircle2 size={40} color={T.successText} />
-                <Txt v="h2" color={T.successText} style={{ textAlign: "center" }}>{done.status === "joined" ? "You're in the squad!" : "You're already in the squad"}</Txt>
-                <Txt v="body" color={T.successText} style={{ textAlign: "center" }}>{done.team_name} · {done.match_title}. The captain can see you in the squad list.</Txt>
-                <Button title="Open the match" onPress={() => router.replace({ pathname: "/match/[id]", params: { id: done.match_id } })} style={{ alignSelf: "stretch" }} />
-                <Button title="Go to Home" variant="secondary" onPress={() => router.replace("/")} style={{ alignSelf: "stretch" }} />
-              </View>
+            {done || alreadyIn ? (
+              <InSquadCard
+                matchId={done ? done.match_id : p.match_id}
+                title={done?.status === "joined" ? "You're in the squad!" : p.viewer === "captain" && !done ? "This is your match" : "You're already in the squad"}
+                body={p.viewer === "captain" && !done
+                  ? `You're the captain of ${p.team_name} for ${p.match_title}. Share this link with your group to fill the squad.`
+                  : `${p.team_name} · ${p.match_title}. The captain can see you in the squad list.`}
+              />
             ) : p.status !== "open" ? (
               <InlineNotice tone="warning">{p.status === "full" ? "The squad is already full. Your captain may still add substitutes." : p.status === "expired" ? "This invite link has expired. Ask your captain for a new one." : "The captain has closed this invite link."}</InlineNotice>
             ) : user ? (
@@ -108,6 +113,18 @@ export default function JoinScreen() {
         )}
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function InSquadCard({ matchId, title, body }: { matchId: string; title: string; body: string }) {
+  return (
+    <View testID="join-in-squad" style={{ gap: 12, padding: 18, borderRadius: R.card, backgroundColor: T.successBackground, alignItems: "center" }}>
+      <CheckCircle2 size={40} color={T.successText} />
+      <Txt v="h2" color={T.successText} style={{ textAlign: "center" }}>{title}</Txt>
+      <Txt v="body" color={T.successText} style={{ textAlign: "center" }}>{body}</Txt>
+      <Button title="Open the match" onPress={() => router.replace({ pathname: "/match/[id]", params: { id: matchId } })} style={{ alignSelf: "stretch" }} />
+      <Button testID="join-go-home" title="Go to Home" variant="secondary" onPress={() => router.replace("/")} style={{ alignSelf: "stretch" }} />
+    </View>
   );
 }
 

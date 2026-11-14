@@ -89,6 +89,24 @@ async def get_current_user(
 UserDep = Annotated[CurrentUser, Depends(get_current_user)]
 
 
+async def get_optional_user(
+    request: Request,
+    c: ContainerDep,
+    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+) -> CurrentUser | None:
+    """Public endpoints that personalise their answer when a valid token is sent. No or stale credentials
+    simply mean "anonymous": a public page never fails because an old token is still on the device."""
+    if creds is None:
+        return None
+    try:
+        return await get_current_user(request, c, creds)
+    except (Unauthorized, Forbidden):
+        return None
+
+
+OptionalUserDep = Annotated[CurrentUser | None, Depends(get_optional_user)]
+
+
 async def require_admin(user: UserDep) -> CurrentUser:
     if not user.is_admin:
         raise Forbidden("Administrator access required")

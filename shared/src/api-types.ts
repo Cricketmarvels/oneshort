@@ -5155,6 +5155,15 @@ export interface components {
              * @enum {string}
              */
             status: "open" | "full" | "expired" | "closed";
+            /** Match Id */
+            match_id: string;
+            /**
+             * Viewer
+             * @description How the link relates to the signed-in caller: anonymous, this match's captain, already in the squad, or not in it yet
+             * @default guest
+             * @enum {string}
+             */
+            viewer: "guest" | "captain" | "in_squad" | "not_in";
         };
         /** JoinRequestIn */
         JoinRequestIn: {

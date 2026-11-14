@@ -166,12 +166,19 @@ class JoinLinkService:
             return "full"
         return "open"
 
-    async def preview(self, code: str) -> JoinPreviewOut:
+    async def preview(self, code: str, user: CurrentUser | None = None) -> JoinPreviewOut:
         link = await self._link(code)
         match = await self.c.mongo["matches"].find_one({"_id": link["match_id"]})
         team = await self.c.mongo["teams"].find_one({"_id": link["team_id"]})
         if not match or not team:
             raise NotFound("This invite link isn't valid", code="INVITE_NOT_FOUND")
+        viewer = "guest"
+        if user is not None:
+            # Someone who tapped the link again from the group: tell them they're already in instead of a join button.
+            in_squad = await self.c.mongo["match_rosters"].count_documents(
+                {"match_id": match["_id"], "player_id": user.id, "is_active": True}, limit=1
+            )
+            viewer = "captain" if match["captain_id"] == user.id else "in_squad" if in_squad else "not_in"
         captain = await self.c.mongo["users"].find_one({"_id": match["captain_id"]}, {"full_name": 1})
         venue = match.get("venue") or {}
         return JoinPreviewOut(
@@ -188,6 +195,8 @@ class JoinLinkService:
             confirmed=match.get("confirmed_count", 0),
             spots_left=max(0, match["squad_capacity"] - match.get("confirmed_count", 0)),
             status=self._state(link, match),
+            match_id=str(match["_id"]),
+            viewer=viewer,
         )
 
     async def join(self, user: CurrentUser, code: str, data: JoinIn) -> JoinResultOut:

@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 
-from app.api.dependencies import ContainerDep, MatchmakerDep, UserDep
+from app.api.dependencies import ContainerDep, MatchmakerDep, OptionalUserDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
 from app.common.types import parse_object_id
 from app.core.exceptions import AppError
@@ -39,8 +39,8 @@ async def revoke_invite_link(match_id: str, user: UserDep, svc: Svc) -> None:
 @router.get(
     "/join/{code}", response_model=Envelope[JoinPreviewOut], summary="Public preview of an invite link (no exact venue)"
 )
-async def join_preview(code: str, svc: Svc) -> Envelope[JoinPreviewOut]:
-    return ok(await svc.preview(code))
+async def join_preview(code: str, svc: Svc, user: OptionalUserDep) -> Envelope[JoinPreviewOut]:
+    return ok(await svc.preview(code, user))
 
 
 @router.post("/join/{code}", response_model=Envelope[JoinResultOut], summary="Add myself to the team and match squad")
