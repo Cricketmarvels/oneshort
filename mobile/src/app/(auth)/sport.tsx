@@ -33,7 +33,7 @@ export default function SelectSport() {
         {beta ? null : <Txt v="small" color={T.muted} style={{ marginTop: 6 }}>More sports coming soon.</Txt>}
       </ScrollView>
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: SP.page, paddingBottom: Math.max(insets.bottom, 20), backgroundColor: T.bg }}>
-        <Button testID="sport-continue" title="Continue" size="lg" onPress={() => { choose(picked); router.push(signupNext ? { pathname: "/login", params: { signup: "1" } } : "/login"); }} />
+        <Button testID="sport-continue" title="Continue" size="lg" onPress={() => { choose(picked); router.push(signupNext ? "/signup" : "/login"); }} />
       </View>
     </View>
   );

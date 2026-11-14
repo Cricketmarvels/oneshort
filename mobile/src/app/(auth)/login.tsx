@@ -19,7 +19,8 @@ import { SP, T } from "@/theme";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
- * Sign in and sign up are one flow: mobile number → 6-digit SMS code. Nothing else is asked before the number is
+ * Log in: mobile number → 6-digit code, or email + password. Creating an account lives on /signup (email form) or
+ * behind Continue with Google; the phone-code sign-up path below is kept only for existing numbers. Nothing else is asked before the number is
  * proven. A new number gets a phone-verified account and the app then opens registration (name and email,
  * Player/Captain, profile; see app/register.tsx). Email + password stays available for existing accounts that set
  * one; password reset always goes through the mobile number. The email-code sign-up form (name, email, mobile,
@@ -29,8 +30,9 @@ export default function Login() {
   const { signIn } = useAuth();
   const insets = useSafeAreaInsets();
   const { sport } = useSport();
-  const startSignup = useLocalSearchParams<{ signup?: string }>().signup === "1"; // e.g. from an invite link
-  const [mode, setMode] = useState<"phone" | "email">(startSignup || DEFAULT_LOGIN !== "email" ? "phone" : "email");
+  const startSignup = useLocalSearchParams<{ signup?: string }>().signup === "1"; // e.g. from an invite link: new people create an account
+  useEffect(() => { if (startSignup) router.replace("/signup"); }, [startSignup]);
+  const [mode, setMode] = useState<"phone" | "email">(DEFAULT_LOGIN !== "email" ? "phone" : "email");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [reset, setReset] = useState<null | "phone" | "code">(null);
   const [f, setF] = useState({ name: "", mobile: "", email: "", code: "", password: "", confirm: "" });
@@ -39,7 +41,7 @@ export default function Login() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [channel, setChannel] = useState<"sms" | "whatsapp" | "email">("sms");
-  const [signup, setSignup] = useState(startSignup); // same phone flow; only the wording changes for new players
+  const [signup, setSignup] = useState(false); // phone sign-up is retired: new accounts are created on /signup (email) or with Google
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
   const mobile = normaliseMobile(f.mobile);
@@ -214,7 +216,7 @@ export default function Login() {
                 <Button variant="ghost" size="sm" title="Forgot password?" onPress={() => { setReset("phone"); setErr(null); setNotice(null); }} />
                 <Button testID="login-use-mobile" variant="ghost" size="sm" title="Use mobile number" onPress={() => { setMode("phone"); setSignup(false); setErr(null); }} />
               </View>
-              <NewHere onPress={() => { setMode("phone"); setSignup(true); setErr(null); }} />
+              <NewHere onPress={() => router.push("/signup")} />
             </View>
           ) : step === "phone" ? (
             <View style={{ gap: 14 }}>
@@ -232,16 +234,13 @@ export default function Login() {
                   error={fieldErr.confirm} />
               ) : null}
               {signup && emailCodes && emailTest ? <EmailOffNotice prefix={testerPrefix} /> : null}
-              {testerPrefix ? (
-                <Txt v="small" color={T.primaryDark}>Testing? Use {testerPrefix.replace(/^\+(\d{2})(\d{4})(\d{3})/, "+$1 $2 $3")}123 and your code shows here.</Txt>
-              ) : null}
               <Button testID="login-send-code" title={signup ? "Continue" : "Send code"} size="lg" loading={busy && channel === "sms"} disabled={busy} onPress={() => void request("sms")} />
               {waReady && !(signup && emailCodes) ? <WhatsAppCodeButton loading={busy && channel === "whatsapp"} onPress={() => void request("whatsapp")} /> : null}
               {signup
                 ? <Button variant="ghost" size="sm" title="Already have an account? Log in" onPress={() => { setSignup(false); setMode(DEFAULT_LOGIN === "email" ? "email" : "phone"); setErr(null); }} />
                 : <>
                     <Button variant="ghost" size="sm" title="Log in with email & password" onPress={() => { setMode("email"); setErr(null); }} />
-                    <NewHere onPress={() => { setSignup(true); setErr(null); }} />
+                    <NewHere onPress={() => router.push("/signup")} />
                   </>}
               <Txt v="small" color={T.muted} style={{ textAlign: "center" }}>
                 By continuing you agree to the OneShort{" "}

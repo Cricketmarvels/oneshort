@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
 
 import { Stepper } from "@/components/identity";
-import { CalendarPicker, istToday, SelectField, TIMES, timeLabel } from "@/components/pickers";
+import { CalendarPicker, istToday, TimeField, timeLabel } from "@/components/pickers";
 import { Button, Card, Chip, EmptyState, Field, InlineNotice, LoadingSkeleton, SearchBar, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
 import { useManagedTeam } from "@/lib/hooks";
@@ -154,8 +154,7 @@ export default function CreateMatch() {
           <View style={{ gap: SP.lg }}>
             <Txt v="h1">Select date & time</Txt>
             <CalendarPicker value={date} onChange={setDate} />
-            <Txt v="h3">Select time</Txt>
-            <SelectField value={time} onChange={setTime} options={TIMES.map((t) => ({ v: t, l: timeLabel(t) }))} />
+            <TimeField label="Start time" value={time} onChange={setTime} />
           </View>
         ) : (
           <View style={{ gap: SP.lg }}>

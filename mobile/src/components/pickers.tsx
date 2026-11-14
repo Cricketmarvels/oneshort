@@ -1,10 +1,10 @@
 /** Date & time pickers used by the guided flows (Create a match, Challenge a team). Dates are IST "YYYY-MM-DD". */
 import { ChevronDown, ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, TextInput, View } from "react-native";
 
-import { Txt } from "@/components/ui";
-import { R, shadow, SP, T } from "@/theme";
+import { Segmented, Txt } from "@/components/ui";
+import { FW, R, shadow, SP, T } from "@/theme";
 
 export function istToday(offsetDays = 0): string {
   const now = new Date(Date.now() + 5.5 * 3600_000);
@@ -98,6 +98,41 @@ export function SelectField<V extends string>({ value, options, onChange, icon =
           </ScrollView>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+
+/** 12-hour time: hour 1–12, minutes typed (0–59), AM/PM. value/onChange use 24-hour "HH:MM" so callers don't change. */
+export function TimeField({ value, onChange, label = "Time" }: { value: string; onChange: (hhmm: string) => void; label?: string }) {
+  const [h24, m] = value.split(":").map(Number) as [number, number];
+  const pm = h24 >= 12;
+  const h12 = ((h24 + 11) % 12) + 1;
+  const [minText, setMinText] = useState(String(m).padStart(2, "0"));
+  const emit = (hour12: number, minutes: number, isPm: boolean) => {
+    const h = (hour12 % 12) + (isPm ? 12 : 0);
+    onChange(`${String(h).padStart(2, "0")}:${String(Math.min(59, Math.max(0, minutes))).padStart(2, "0")}`);
+  };
+  const hours = Array.from({ length: 12 }, (_, i) => String(i + 1));
+  return (
+    <View style={{ gap: 6 }}>
+      <Txt v="smallSemi" color={T.ink}>{label}</Txt>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flex: 1.1 }}>
+          <SelectField value={String(h12)} onChange={(v) => emit(Number(v), m, pm)} options={hours.map((v) => ({ v, l: v }))} placeholder="Hour" icon="none" />
+        </View>
+        <Txt v="h2" color={T.muted}>:</Txt>
+        <View style={{ flex: 1 }}>
+          <TextInput accessibilityLabel="Minutes" value={minText} keyboardType="number-pad" maxLength={2} placeholder="00" placeholderTextColor={T.placeholder}
+            onChangeText={(t) => { const d = t.replace(/\D/g, "").slice(0, 2); setMinText(d); if (d.length) emit(h12, Number(d), pm); }}
+            onBlur={() => { const n = Math.min(59, Number(minText || "0")); setMinText(String(n).padStart(2, "0")); emit(h12, n, pm); }}
+            style={{ height: 52, borderRadius: R.field, borderWidth: 1, borderColor: T.line, backgroundColor: T.surface, paddingHorizontal: 14, fontSize: 17, textAlign: "center", color: T.ink, ...FW.semibold }} />
+        </View>
+        <View style={{ flex: 1.5 }}>
+          <Segmented value={pm ? "PM" : "AM"} onChange={(v) => emit(h12, m, v === "PM")} options={[{ v: "AM", l: "AM" }, { v: "PM", l: "PM" }]} />
+        </View>
+      </View>
+      <Txt v="small" color={T.muted}>{timeLabel(value)} IST</Txt>
     </View>
   );
 }

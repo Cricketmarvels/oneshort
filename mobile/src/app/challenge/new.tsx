@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Alert, Pressable, ScrollView, View } from "react-native";
 
 import { ShieldCrest, Stepper } from "@/components/identity";
-import { DateChips, SelectField, TIMES, timeLabel } from "@/components/pickers";
+import { DateChips, SelectField, TimeField } from "@/components/pickers";
 import { initialProposal, toProposalIn } from "@/components/proposal";
 import { Button, Card, Chip, ChipRow, EmptyState, ErrorBox, Field, LoadingSkeleton, SearchBar, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
@@ -65,7 +65,7 @@ export default function NewChallenge() {
         </View>
         <View style={{ gap: SP.md }}>
           <Txt v="h2">Select time</Txt>
-          <SelectField value={proposal.time} onChange={(t) => set({ time: t })} options={TIMES.map((t) => ({ v: t, l: timeLabel(t) }))} />
+          <TimeField label="Start time" value={proposal.time} onChange={(t) => set({ time: t })} />
         </View>
         <View style={{ gap: SP.md }}>
           <Txt v="h2">Match format</Txt>

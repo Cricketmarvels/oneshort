@@ -60,10 +60,9 @@ export default function Welcome() {
       <View style={{ backgroundColor: T.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: SP.page, paddingTop: 18, paddingBottom: Math.max(insets.bottom, 20) + 4, gap: 12 }}>
         <Image source={PHOTO.stadium} accessibilityLabel="Cricket under floodlights" resizeMode="cover" style={{ height: 96, width: "100%", borderRadius: R.card }} />
         <GoogleButton onError={setErr} />
-        <Button testID="welcome-start" title="Continue with mobile number" size="lg" onPress={() => router.push({ pathname: "/sport", params: { next: "signup" } })} />
-        <Button testID="welcome-email" title="Create account with email" size="lg" variant="secondary" onPress={() => router.push("/signup")} />
+        <Button testID="welcome-start" title="Create account" size="lg" onPress={() => router.push({ pathname: "/sport", params: { next: "signup" } })} />
+        <Button testID="welcome-login" title="Log in" size="lg" variant="secondary" onPress={() => router.push("/login")} />
         {err ? <Txt v="small" color={T.dangerText} style={{ textAlign: "center" }} accessibilityRole="alert">{err}</Txt> : null}
-        <Txt v="small" color={T.muted} style={{ textAlign: "center" }} onPress={() => router.push("/login")}>Already have an account? <Txt v="smallSemi" color={T.primaryDark}>Log in</Txt></Txt>
         {SERVER_OVERRIDE_ALLOWED ? (
           <Txt v="small" color={T.muted} style={{ textAlign: "center", fontSize: 12 }} testID="welcome-server" onPress={() => router.push("/server")} accessibilityRole="button" accessibilityLabel="Change server">
             Beta · server {API_URL.replace(/^https?:\/\//, "").replace(/\/api\/v\d+$/, "")}
