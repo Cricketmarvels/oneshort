@@ -63,9 +63,11 @@ class JoinLinkService:
 
     async def _out(self, link: dict[str, Any], match: dict[str, Any], team: dict[str, Any] | None) -> InviteLinkOut:
         joined_ids = link.get("joined_ids") or []
-        names = [
-            u["full_name"] async for u in self.c.mongo["users"].find({"_id": {"$in": joined_ids}}, {"full_name": 1})
-        ]
+        by_id = {
+            u["_id"]: u["full_name"]
+            async for u in self.c.mongo["users"].find({"_id": {"$in": joined_ids}}, {"full_name": 1})
+        }
+        names = [by_id[i] for i in joined_ids if i in by_id]  # in the order they joined
         path = f"/join/{link['code']}"
         base = self._base()
         url = f"{base}{path}" if base else None
@@ -76,11 +78,12 @@ class JoinLinkService:
             .strftime("%a %d %b, %I:%M %p")
         )
         team_name = (team or {}).get("team_name", "our team")
+        roster = "".join(f"\n{i}) {n}" for i, n in enumerate(names, 1))
         message = (
             f"🏏 {team_name} — {match.get('title', 'Match')}\n"
             f"📅 {when}{f' · 📍 {venue}' if venue else ''}\n"
-            "Regulars: add yourself to the squad on OneShort — first come, first served. "
-            "New to OneShort? You'll create an account in a minute."
+            f"{'In so far:' + roster + chr(10) if names else ''}"
+            "Tap to join the squad. First come, first served 👇"
         )  # the client appends the link (it knows the current public address)
         return InviteLinkOut(
             code=link["code"],

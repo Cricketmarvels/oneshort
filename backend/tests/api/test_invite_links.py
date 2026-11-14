@@ -26,6 +26,7 @@ async def test_invite_link_register_join_and_revoke(client: httpx.AsyncClient) -
     link = r.json()["data"]
     code = link["code"]
     assert link["path"] == f"/join/{code}" and "Knights IL" in link["message"] and link["uses"] == 0
+    assert "First come, first served" in link["message"] and "In so far" not in link["message"]  # nobody yet
     again = (await client.post(f"{API}/matches/{match_id}/invite-link", headers=cap.h)).json()["data"]
     assert again["code"] == code  # reused, not regenerated
 
@@ -83,6 +84,7 @@ async def test_invite_link_register_join_and_revoke(client: httpx.AsyncClient) -
     assert any(m["user"]["full_name"] == "Regular IL" and m["status"] == "active" for m in members)
     after = (await client.post(f"{API}/matches/{match_id}/invite-link", headers=cap.h)).json()["data"]
     assert after["uses"] == 1 and after["joined"] == ["Regular IL"]
+    assert "In so far:\n1) Regular IL\n" in after["message"]  # the group sees who's already in
 
     assert (await client.delete(f"{API}/matches/{match_id}/invite-link", headers=cap.h)).status_code == 204
     assert (await client.get(f"{API}/join/{code}")).json()["data"]["status"] == "closed"
