@@ -1,4 +1,4 @@
-# OneShort on gofindr.in — getting the web app live on the domain
+# OneShort on its own domain — getting the web app live
 
 Date: 2026-11-10. Domain: **gofindr.in** (registered at GoDaddy).
 
@@ -16,7 +16,26 @@ OneShort is three parts: a static web app, a Python (FastAPI) API and a MongoDB 
 
 Do A now, B before inviting outside testers. Nothing about A is wasted: the same Cloudflare zone and DNS carry over to B.
 
-## Status (2026-11-10)
+## Status (2026-11-14) — oneshort.co
+
+The product is now **OneShort** and the launch domain is **oneshort.co** (bought at GoDaddy on 2026-11-14; .co activates
+instantly, unlike .in which sits on a NIXI verification hold — gofindr.in has been on one since 2026-11-10).
+
+Done through the owner's Cloudflare account (Free plan, US$0):
+- Zone `oneshort.co` created (id `ee02ff3d…`), nameservers **merlin.ns.cloudflare.com** / **sierra.ns.cloudflare.com**;
+  Full SSL, Always-HTTPS, TLS ≥ 1.2, automatic HTTPS rewrites.
+- Tunnel **`oneshort`** (`03a63027…`) created on the Mac; config `~/.cloudflared/oneshort.yml`; proxied CNAMEs for
+  `oneshort.co`, `www.oneshort.co`, `expo.oneshort.co` → the tunnel (created via the API, because the Mac's
+  `cert.pem` is scoped to the gofindr.in zone and `cloudflared tunnel route dns` would write into that zone).
+- `.data/named-tunnel.env` points `public-demo.sh` at oneshort.co.
+
+Waiting on: the nameserver change at GoDaddy (zone status `pending` until then). Then run `./public-demo.sh` to switch
+the demo from quick tunnels to `https://oneshort.co` and `exps://expo.oneshort.co`.
+
+The older gofindr.in zone and the `gofindr` tunnel still exist and cost nothing; keep them until the NIXI hold
+clears, then either redirect gofindr.in → oneshort.co or drop it.
+
+## Status (2026-11-10) — gofindr.in, superseded
 
 Done through the owner's Cloudflare account (free plan, US$0):
 - Zone `gofindr.in` created (id `6586c3f2…`), nameservers **merlin.ns.cloudflare.com** / **sierra.ns.cloudflare.com**; HTTPS enforced, Full SSL, TLS ≥ 1.2.
