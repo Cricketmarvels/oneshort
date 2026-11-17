@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, View } from "react-native";
 
 import { ChatButtons } from "@/components/invites";
-import { CancelMatch } from "@/components/match-admin";
+import { CancelMatch, MatchTimeTools } from "@/components/match-admin";
 import { shareText, useInviteLink } from "@/components/regulars";
 import { FillBar, KickerChip, RadarSearch, RoleStepper, SectionHeader } from "@/components/refined";
 import { Avatar, Badge, Button, Chip, EmptyState, ErrorBox, InlineNotice, LoadingSkeleton, Segmented, Txt } from "@/components/ui";
@@ -185,6 +185,8 @@ function FindPlayersRequest() {
 
           {mode === "match" && match ? (
             <>
+              {/* Rain or an overrunning game moves the slot while the captain is here filling the squad. */}
+              <MatchTimeTools m={match} onDone={() => { for (const k of [["my-matches"], ["match", match.id]]) void qc.invalidateQueries({ queryKey: k }); }} />
               <SquadSoFar match={match} />
               <View style={{ gap: SP.sm }}>
                 <SectionHeader title="Ask your regulars" />

@@ -55,6 +55,7 @@ class UserService:
             preferred_sport=self.c.settings.oneshort_beta_sport or doc.get("preferred_sport") or "cricket",
             date_of_birth=doc.get("date_of_birth"),
             playing_roles=list(doc.get("playing_roles") or []),
+            fee_upi_id=doc.get("fee_upi_id"),
             auth_providers=list(doc.get("auth_providers") or (["password"] if doc.get("password_hash") else [])),
             onboarding_completed=doc.get("registration_completed_at") is not None,
             created_at=doc["created_at"],

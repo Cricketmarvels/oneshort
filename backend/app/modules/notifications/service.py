@@ -30,6 +30,7 @@ WHATSAPP_TYPES = {
     NotificationType.INVITATION_CANCELLED,
     NotificationType.MATCH_CANCELLED,
     NotificationType.MATCH_RESCHEDULED,
+    NotificationType.MATCH_UPDATE,
     NotificationType.TEAM_CHALLENGE,
     NotificationType.CHALLENGE_ACCEPTED,
     NotificationType.CHALLENGE_COUNTER,

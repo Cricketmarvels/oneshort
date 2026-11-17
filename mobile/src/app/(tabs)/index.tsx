@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ago, LocationOptions } from "@/components/cricket";
 import { ShortChip, shortLabel } from "@/components/brand";
 import { ActionCardGrid } from "@/components/dashboard/ActionCardGrid";
+import { CollectFeesCard } from "@/components/dashboard/CollectFeesCard";
 import { captainActions, playerActions } from "@/components/dashboard/dashboardActions";
 import { CricHeroesEditor, HomeCricHeroesCard } from "@/components/cricheroes-link";
 import { PlayRIcon } from "@/components/icons";
@@ -200,6 +201,8 @@ function CricketHome() {
 
         {ctx === "captain" ? (
           <>
+            {/* Match over → settle the fee: split it, share the draft, or chase what's outstanding. */}
+            <CollectFeesCard />
             {requests.data?.data.length ? (
               <View style={{ gap: 12 }}>
                 <SectionHeader title="Join requests" />

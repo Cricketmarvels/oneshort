@@ -220,6 +220,7 @@ class NotificationType(StrEnum):
     MATCH_REMINDER = "match_reminder"
     MATCH_CANCELLED = "match_cancelled"
     MATCH_RESCHEDULED = "match_rescheduled"
+    MATCH_UPDATE = "match_update"
     PLAYER_REPLACED = "player_replaced"
     PLAYER_WITHDREW = "player_withdrew"
     SETTLEMENT_CREATED = "settlement_created"

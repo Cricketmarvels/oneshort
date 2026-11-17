@@ -29,6 +29,7 @@ from app.modules.settlements.schemas import (
     ExpenseIn,
     ExpenseOut,
     ExpenseSnapshot,
+    ExtraPlayerIn,
     SettlementDraftIn,
     SettlementLineOut,
     SettlementOut,
@@ -115,7 +116,7 @@ class SettlementService:
         seat = await self.c.mongo[self.access.squad_collection(match)].count_documents(
             {"match_id": match_id, "player_id": user.id}, limit=1
         )
-        if seat:
+        if seat or await self.records.count_documents({"match_id": match_id, "player_id": user.id}, limit=1):
             return "participant"
         raise Forbidden("Only match participants can view fees", code="FEES_PRIVATE")
 
@@ -137,26 +138,38 @@ class SettlementService:
                 {"match_id": match_id, "is_active": True}
             )
         ]
-        if not roster:
-            raise BusinessRuleViolation("The squad is empty", code="EMPTY_SQUAD")
+        if data.player_ids is not None:  # the captain ticked who shares the fee
+            ticked = {ObjectId(x) for x in data.player_ids}
+            if ticked - {r["player_id"] for r in roster}:
+                raise BusinessRuleViolation("Ticked players must be in the squad", code="NOT_ON_ROSTER")
+            roster = [r for r in roster if r["player_id"] in ticked]
+        extras = await self._extras(match_id, data.extra_players, {r["player_id"] for r in roster})
+        if not roster and not extras:
+            raise BusinessRuleViolation("Pick at least one player to share the fee", code="EMPTY_SQUAD")
         roster_ids = {r["player_id"] for r in roster}
+        everyone = roster_ids | {x["player_id"] for x in extras}
         for pid in [*data.exempt_player_ids, *(a.player_id for a in data.adjustments), *data.contribution_overrides]:
-            if ObjectId(pid) not in roster_ids:
-                raise BusinessRuleViolation("Adjustments can only reference squad players", code="NOT_ON_ROSTER")
+            if ObjectId(pid) not in everyone:
+                raise BusinessRuleViolation("Adjustments can only reference players in the split", code="NOT_ON_ROSTER")
         users = {u["_id"]: u async for u in self.c.mongo["users"].find({"_id": {"$in": list(roster_ids)}})}
+        people = [
+            {**r, "name": users.get(r["player_id"], {}).get("full_name", "Player"), "guest": False, "added": False}
+            for r in roster
+        ] + extras
+        flags = {str(x["player_id"]): x for x in people}
         fixed = {a.player_id: a.amount_paise for a in data.adjustments}
         exempt = set(data.exempt_player_ids)
         participants = [
             Participant(
                 player_id=str(r["player_id"]),
-                name=users.get(r["player_id"], {}).get("full_name", "Player"),
+                name=r["name"],
                 contribution_type=ContributionType(
                     data.contribution_overrides.get(str(r["player_id"])) or r["contribution_type"]
                 ),
                 exempt=str(r["player_id"]) in exempt,
                 fixed_amount_paise=fixed.get(str(r["player_id"])),
             )
-            for r in roster
+            for r in people
         ]
         total = sum(e["amount_paise"] for e in expenses)
         calc = calculate(total, participants, data.rounding_mode)
@@ -192,13 +205,18 @@ class SettlementService:
                     "adjusted": line.adjusted,
                     "amount_paise": line.amount_paise,
                     "credited_paise": min(credited.get(ObjectId(line.player_id), 0), line.amount_paise),
+                    "guest": flags[line.player_id]["guest"],
+                    "added": flags[line.player_id]["added"],
                 }
                 for line in calc.lines
             ],
             "payment_instructions": data.payment_instructions,
+            "upi_id": data.upi_id,
             "created_by": user.id,
             "updated_at": now,
         }
+        if data.upi_id and data.upi_id != user.doc.get("fee_upi_id"):
+            await self.c.mongo["users"].update_one({"_id": user.id}, {"$set": {"fee_upi_id": data.upi_id}})
         if draft:
             await self.col.update_one({"_id": draft["_id"]}, {"$set": doc})
             sid = draft["_id"]
@@ -216,6 +234,44 @@ class SettlementService:
             request_id=user.request_id,
         )
         return await self.get_out(sid)
+
+    async def _extras(
+        self, match_id: ObjectId, extras: list[ExtraPlayerIn], taken: set[ObjectId]
+    ) -> list[dict[str, Any]]:
+        """Resolve last-minute players: registered users by id, guests by name. A guest keeps the id they were
+        given in an earlier split of this match, so recalculating or revising never bills them twice."""
+        known_guests = {
+            line["player_id"]
+            async for st in self.col.find({"match_id": match_id}, {"lines": 1})
+            for line in st["lines"]
+            if line.get("guest")
+        }
+        out: list[dict[str, Any]] = []
+        seen = set(taken)
+        for x in extras:
+            if x.user_id:
+                u = await self.c.mongo["users"].find_one(
+                    {"_id": ObjectId(x.user_id), "account_status": {"$ne": "deleted"}}, {"full_name": 1}
+                )
+                if not u:
+                    raise NotFound("Player not found")
+                pid, name, guest = u["_id"], u.get("full_name") or x.name, False
+            else:
+                gid = ObjectId(x.guest_id) if x.guest_id else None
+                pid, name, guest = (gid if gid in known_guests else ObjectId()), x.name, True
+            if pid in seen:
+                raise BusinessRuleViolation(f"{name} is already in the split", code="DUPLICATE_PARTICIPANT")
+            seen.add(pid)
+            out.append(
+                {
+                    "player_id": pid,
+                    "name": name,
+                    "contribution_type": ContributionType.PAYEE.value,
+                    "guest": guest,
+                    "added": True,
+                }
+            )
+        return out
 
     async def _credits(self, settlement_id: ObjectId) -> dict[ObjectId, int]:
         out: dict[ObjectId, int] = {}
@@ -281,6 +337,8 @@ class SettlementService:
                         "match_id": st["match_id"],
                         "team_id": st["team_id"],
                         "player_id": line["player_id"],
+                        "player_name": line.get("name"),
+                        "is_guest": bool(line.get("guest")),
                         "captain_id": st["captain_id"],
                         "amount_paise": int(line["amount_paise"]),
                         "credited_paise": credited,
@@ -374,10 +432,13 @@ class SettlementService:
                     adjusted=line["adjusted"],
                     amount_paise=line["amount_paise"],
                     credited_paise=line.get("credited_paise", 0),
+                    guest=bool(line.get("guest")),
+                    added=bool(line.get("added")),
                 )
                 for line in st["lines"]
             ],
             payment_instructions=st.get("payment_instructions"),
+            upi_id=st.get("upi_id"),
             created_at=st["created_at"],
             published_at=st.get("published_at"),
         )

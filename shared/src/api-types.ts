@@ -2182,6 +2182,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/matches/{match_id}/notify-squad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send the squad a timing update (current start time + optional note) */
+        post: operations["notify_squad_api_v1_matches__match_id__notify_squad_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/matches/{match_id}/transition": {
         parameters: {
             query?: never;
@@ -2586,6 +2603,23 @@ export interface paths {
         };
         /** Player payment dashboard across all teams */
         get: operations["my_payments_api_v1_settlements_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settlements/collect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Captain: finished matches whose fee still needs splitting or collecting (last 30 days) */
+        get: operations["fees_to_collect_api_v1_settlements_collect_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4598,6 +4632,7 @@ export interface components {
         Envelope_MatchOut_: unknown;
         Envelope_MyAgreementsOut_: unknown;
         Envelope_NearbyRacketPlayerOut_: unknown;
+        Envelope_NotifySquadOut_: unknown;
         Envelope_OtpSentOut_: unknown;
         Envelope_PaymentRecordOut_: unknown;
         Envelope_PlayRequestOut_: unknown;
@@ -4638,6 +4673,7 @@ export interface components {
         Envelope_list_CourtOut__: unknown;
         Envelope_list_DiscussionOut__: unknown;
         Envelope_list_ExpenseOut__: unknown;
+        Envelope_list_FeeDueOut__: unknown;
         Envelope_list_FixtureOut__: unknown;
         Envelope_list_InvitationOut__: unknown;
         Envelope_list_InvitationResultItem__: unknown;
@@ -4716,6 +4752,57 @@ export interface components {
             category: string;
             /** Amount Paise */
             amount_paise: number;
+        };
+        /**
+         * ExtraPlayerIn
+         * @description Someone sharing the fee who isn't in the squad: a registered player (``user_id``) or a guest typed
+         *     in by name. A guest has no account; send back the ``guest_id`` from an earlier split to keep the
+         *     same person (and anything they already paid) across recalculations and revisions.
+         */
+        ExtraPlayerIn: {
+            /** Name */
+            name: string;
+            /** User Id */
+            user_id?: string | null;
+            /** Guest Id */
+            guest_id?: string | null;
+        };
+        /**
+         * FeeDueOut
+         * @description A finished match whose fee the captain still has to split or collect (home dashboard card).
+         */
+        FeeDueOut: {
+            /** Match Id */
+            match_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Start At
+             * Format: date-time
+             */
+            start_at: string;
+            /** Venue Name */
+            venue_name: string | null;
+            /** Squad Size */
+            squad_size: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "not_split" | "draft" | "collecting";
+            /**
+             * Total Paise
+             * @description Expenses added so far (or the published total)
+             */
+            total_paise: number;
+            /** Collected Paise */
+            collected_paise: number;
+            /** Outstanding Paise */
+            outstanding_paise: number;
+            /** Pending Count */
+            pending_count: number;
+            /** Paid Count */
+            paid_count: number;
         };
         /** FeeSideOut */
         FeeSideOut: {
@@ -5426,6 +5513,7 @@ export interface components {
             cancelled_reason: string | null;
             /** Reschedule Count */
             reschedule_count: number;
+            last_reschedule?: components["schemas"]["RescheduleOut"] | null;
             /**
              * Created At
              * Format: date-time
@@ -5464,6 +5552,12 @@ export interface components {
             cover_image?: string | null;
             /** Reschedule Reason */
             reschedule_reason?: string | null;
+            /**
+             * Notify Squad
+             * @description Tell the squad and pending invitees about a time change (default on)
+             * @default true
+             */
+            notify_squad: boolean;
         };
         /** MemberRoleIn */
         MemberRoleIn: {
@@ -5667,7 +5761,29 @@ export interface components {
          * NotificationType
          * @enum {string}
          */
-        NotificationType: "player_invitation" | "team_invitation" | "join_request" | "invitation_accepted" | "invitation_rejected" | "invitation_cancelled" | "match_confirmed" | "match_reminder" | "match_cancelled" | "match_rescheduled" | "player_replaced" | "player_withdrew" | "settlement_created" | "payment_marked_paid" | "payment_status_changed" | "payment_reminder" | "payment_dispute" | "fee_discussion" | "rating_received" | "rating_request" | "report_update" | "team_membership" | "moderation" | "team_challenge" | "challenge_accepted" | "challenge_counter" | "challenge_confirmed" | "challenge_rejected" | "challenge_cancelled" | "result_submitted" | "result_confirmed" | "result_disputed" | "rating_updated" | "chat_message" | "community_announcement" | "community_join_request" | "community_membership";
+        NotificationType: "player_invitation" | "team_invitation" | "join_request" | "invitation_accepted" | "invitation_rejected" | "invitation_cancelled" | "match_confirmed" | "match_reminder" | "match_cancelled" | "match_rescheduled" | "match_update" | "player_replaced" | "player_withdrew" | "settlement_created" | "payment_marked_paid" | "payment_status_changed" | "payment_reminder" | "payment_dispute" | "fee_discussion" | "rating_received" | "rating_request" | "report_update" | "team_membership" | "moderation" | "team_challenge" | "challenge_accepted" | "challenge_counter" | "challenge_confirmed" | "challenge_rejected" | "challenge_cancelled" | "result_submitted" | "result_confirmed" | "result_disputed" | "rating_updated" | "chat_message" | "community_announcement" | "community_join_request" | "community_membership";
+        /** NotifySquadIn */
+        NotifySquadIn: {
+            /**
+             * Message
+             * @description Optional note from the captain, e.g. 'Previous match running late'
+             */
+            message?: string | null;
+        };
+        /** NotifySquadOut */
+        NotifySquadOut: {
+            /**
+             * Notified
+             * @description Players and invitees the update was sent to
+             */
+            notified: number;
+            /**
+             * Next Allowed At
+             * Format: date-time
+             * @description When the captain can send another update
+             */
+            next_allowed_at: string;
+        };
         /** OpportunityOut */
         OpportunityOut: {
             /** Match Id */
@@ -5779,6 +5895,11 @@ export interface components {
             /** Team Name */
             team_name: string;
             player: components["schemas"]["PublicUserOut"];
+            /**
+             * Player Is Guest
+             * @default false
+             */
+            player_is_guest: boolean;
             captain: components["schemas"]["PublicUserOut"];
             /** Amount Paise */
             amount_paise: number;
@@ -6938,6 +7059,28 @@ export interface components {
              */
             all_rounder: number;
         };
+        /** RescheduleOut */
+        RescheduleOut: {
+            /**
+             * From Start
+             * Format: date-time
+             */
+            from_start: string;
+            /**
+             * From End
+             * Format: date-time
+             */
+            from_end: string;
+            /** Reason */
+            reason: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Notified */
+            notified: boolean;
+        };
         /** ResetPasswordIn */
         ResetPasswordIn: {
             /** Mobile Number */
@@ -7193,6 +7336,16 @@ export interface components {
         SettlementDraftIn: {
             /** @default exact_paise */
             rounding_mode: components["schemas"]["RoundingMode"];
+            /**
+             * Player Ids
+             * @description Squad players sharing the fee (ticked). Omit for the whole squad.
+             */
+            player_ids?: string[] | null;
+            /**
+             * Extra Players
+             * @description Last-minute players and guests outside the squad
+             */
+            extra_players?: components["schemas"]["ExtraPlayerIn"][];
             /** Exempt Player Ids */
             exempt_player_ids?: string[];
             /** Adjustments */
@@ -7211,6 +7364,11 @@ export interface components {
             payment_instructions?: string | null;
             /** Revision Reason */
             revision_reason?: string | null;
+            /**
+             * Upi Id
+             * @description Captain's UPI ID for this fee. Remembered on the account for the next split.
+             */
+            upi_id?: string | null;
         };
         /** SettlementLineOut */
         SettlementLineOut: {
@@ -7226,6 +7384,18 @@ export interface components {
             amount_paise: number;
             /** Credited Paise */
             credited_paise: number;
+            /**
+             * Guest
+             * @description Added by name only; has no OneShort account
+             * @default false
+             */
+            guest: boolean;
+            /**
+             * Added
+             * @description Not in the squad; added to this split by the captain
+             * @default false
+             */
+            added: boolean;
         };
         /** SettlementOut */
         SettlementOut: {
@@ -7259,6 +7429,8 @@ export interface components {
             lines: components["schemas"]["SettlementLineOut"][];
             /** Payment Instructions */
             payment_instructions: string | null;
+            /** Upi Id */
+            upi_id?: string | null;
             /**
              * Currency
              * @default INR
@@ -8036,6 +8208,11 @@ export interface components {
              * @default false
              */
             onboarding_completed: boolean;
+            /**
+             * Fee Upi Id
+             * @description UPI ID last used to collect match fees (prefills splits)
+             */
+            fee_upi_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -20793,6 +20970,95 @@ export interface operations {
             };
         };
     };
+    notify_squad_api_v1_matches__match_id__notify_squad_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotifySquadIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_NotifySquadOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     transition_api_v1_matches__match_id__transition_post: {
         parameters: {
             query?: never;
@@ -23181,6 +23447,89 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Envelope_PlayerDashboardOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    fees_to_collect_api_v1_settlements_collect_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_list_FeeDueOut__"];
                 };
             };
             /** @description Bad request */

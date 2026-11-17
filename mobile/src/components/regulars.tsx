@@ -24,7 +24,8 @@ export function shareText(link: Link) {
   return `${link.message}\n${joinUrl(link.path, link.url)}`;
 }
 
-async function copy(text: string): Promise<boolean> {
+/** Copy to the clipboard on web (true); on phones open the share sheet instead (false). */
+export async function copyText(text: string): Promise<boolean> {
   const nav = (globalThis as { navigator?: { clipboard?: { writeText: (t: string) => Promise<void> } } }).navigator;
   if (Platform.OS === "web" && nav?.clipboard) { await nav.clipboard.writeText(text); return true; }
   await Share.share({ message: text });
@@ -58,7 +59,7 @@ export function InviteRegularsCard({ matchId, confirmed, capacity, showFindPlaye
         <>
           <View style={{ flexDirection: "row", gap: 10 }}>
             <Button title="WhatsApp" icon={<PlayRIcon name="chat" size={18} color="#FFFFFF" />} onPress={() => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(shareText(l))}`)} style={{ flex: 1 }} />
-            <Button title="Copy link" variant="secondary" icon={<PlayRIcon name="copy" size={17} color={T.ink} />} onPress={() => void copy(shareText(l)).then((ok) => ok && flash("Copied. Paste it in your group."))} style={{ flex: 1 }} />
+            <Button title="Copy link" variant="secondary" icon={<PlayRIcon name="copy" size={17} color={T.ink} />} onPress={() => void copyText(shareText(l)).then((ok) => ok && flash("Copied. Paste it in your group."))} style={{ flex: 1 }} />
           </View>
           {note ? <Txt v="small" color={T.primaryDark}>{note}</Txt>
             : l.joined.length ? <Txt v="small" color={T.muted} numberOfLines={1}>Joined via link: {l.joined.join(", ")}</Txt> : null}

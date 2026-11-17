@@ -1,7 +1,8 @@
 import math
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 from bson import ObjectId
 from pymongo.asynchronous.client_session import AsyncClientSession
@@ -26,6 +27,8 @@ from app.modules.matches.schemas import (
     MatchIn,
     MatchOut,
     MatchUpdateIn,
+    NotifySquadOut,
+    RescheduleOut,
     VenueOut,
 )
 from app.modules.players.reliability import recompute_player_stats
@@ -34,6 +37,20 @@ from app.modules.users.schemas import public_user
 
 _CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 ROLES = ("batsman", "bowler", "wicketkeeper", "all_rounder")
+
+
+#: Minimum gap between two "notify squad" updates from the captain, so a delay doesn't become spam.
+NOTIFY_COOLDOWN = timedelta(minutes=10)
+
+
+def match_when(dt: datetime, tz: str, ref: datetime | None = None) -> str:
+    """'Sun 16 Nov, 4:30 PM' in the match's time zone; just '4:30 PM' when it's the same day as `ref`."""
+    zone = ZoneInfo(tz or "Asia/Kolkata")
+    local = ensure_utc(dt).astimezone(zone)
+    clock = local.strftime("%I:%M %p").lstrip("0")
+    if ref is not None and ensure_utc(ref).astimezone(zone).date() == local.date():
+        return clock
+    return f"{local.strftime('%a')} {local.day} {local.strftime('%b')}, {clock}"
 
 
 def new_match_code() -> str:
@@ -157,8 +174,23 @@ class MatchAccess:
             my_contribution_type=(seat or {}).get("contribution_type") or (inv or {}).get("contribution_type"),
             cancelled_reason=match.get("cancelled_reason"),
             reschedule_count=len(match.get("reschedule_history") or []),
+            last_reschedule=_last_reschedule(match),
             created_at=match["created_at"],
         )
+
+
+def _last_reschedule(match: dict[str, Any]) -> RescheduleOut | None:
+    hist = match.get("reschedule_history") or []
+    if not hist:
+        return None
+    h = hist[-1]
+    return RescheduleOut(
+        from_start=h["from_start"],
+        from_end=h["from_end"],
+        reason=h.get("reason"),
+        at=h["at"],
+        notified=h.get("notified", True),
+    )
 
 
 class MatchService:
@@ -378,6 +410,7 @@ class MatchService:
                         "by": user.id,
                         "at": utcnow(),
                         "reason": data.reschedule_reason,
+                        "notified": data.notify_squad,
                     }
                 }
         fields["updated_at"] = utcnow()
@@ -392,17 +425,67 @@ class MatchService:
             new_value=fields,
             request_id=user.request_id,
         )
-        if rescheduled:
-            people = [p for p in await self._participants(match_id) if p != user.id]
+        if rescheduled and data.notify_squad:
+            people = [p for p in await self._participants(match_id, include_pending=False) if p != user.id]
+            tz = match.get("timezone", "Asia/Kolkata")
+            new_when = match_when(fields["start_at"], tz)
+            old_when = match_when(match["start_at"], tz, ref=fields["start_at"])
+            why = f" Reason: {data.reschedule_reason}." if data.reschedule_reason else ""
             await self.c.notifications.notify(
                 people,
                 NotificationType.MATCH_RESCHEDULED,
-                f"{match.get('title', 'Match')} rescheduled",
-                f"New time: {fields['start_at'].isoformat()}. Please check your availability.",
+                f"New time: {match.get('title', 'Match')}",
+                f"Now {new_when} (was {old_when}).{why} Tap if you can't make it.",
                 {"match_id": match_id},
             )
         match, team = await self.access.load(match_id)
         return await self.access.to_out(match, team, user)
+
+    async def notify_squad(self, user: CurrentUser, match_id: ObjectId, message: str | None) -> NotifySquadOut:
+        """Captain-sent timing update to the confirmed squad: the current start time plus an optional
+        note. Rate-limited per match so a running-late day doesn't turn into a stream of pings."""
+        match, _team = await self.access.load_managed(match_id, user)
+        if MatchStatus(match["match_status"]) in lifecycle.TERMINAL:
+            raise BusinessRuleViolation("This match is over or cancelled", code="MATCH_NOT_EDITABLE")
+        now = utcnow()
+        last = match.get("squad_notified_at")
+        if last and now - ensure_utc(last) < NOTIFY_COOLDOWN:
+            wait = math.ceil((NOTIFY_COOLDOWN - (now - ensure_utc(last))).total_seconds() / 60)
+            raise BusinessRuleViolation(
+                f"You just updated the squad. You can send another update in {wait} min.",
+                code="NOTIFY_COOLDOWN",
+            )
+        claimed = await self.matches.update_one(
+            {"_id": match_id, "squad_notified_at": last}, {"$set": {"squad_notified_at": now}}
+        )
+        if not claimed.modified_count:  # a second tap raced this one
+            raise BusinessRuleViolation("An update was just sent to the squad", code="NOTIFY_COOLDOWN")
+        people = [p for p in await self._participants(match_id, include_pending=False) if p != user.id]
+        when = match_when(match["start_at"], match.get("timezone", "Asia/Kolkata"))
+        note = (message if message[-1] in ".!?" else f"{message}.") + " " if message else ""
+        await self.c.notifications.notify(
+            people,
+            NotificationType.MATCH_UPDATE,
+            f"Update from your captain: {match.get('title', 'Match')}",
+            f"{note}Start time: {when}.",
+            {"match_id": match_id},
+        )
+        # The latest unannounced time change counts as announced now.
+        hist = match.get("reschedule_history") or []
+        if hist and not hist[-1].get("notified", True):
+            await self.matches.update_one(
+                {"_id": match_id}, {"$set": {f"reschedule_history.{len(hist) - 1}.notified": True}}
+            )
+        await self.c.audit.log(
+            actor_id=user.id,
+            action="match.squad_notified",
+            entity_type="match",
+            entity_id=match_id,
+            previous_value=None,
+            new_value={"recipients": len(people), "message": message},
+            request_id=user.request_id,
+        )
+        return NotifySquadOut(notified=len(people), next_allowed_at=now + NOTIFY_COOLDOWN)
 
     # ------------------------------------------------------------- lifecycle
     async def transition(

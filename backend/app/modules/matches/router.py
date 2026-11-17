@@ -32,6 +32,8 @@ from app.modules.matches.schemas import (
     MatchIn,
     MatchOut,
     MatchUpdateIn,
+    NotifySquadIn,
+    NotifySquadOut,
     TransitionIn,
 )
 from app.modules.matches.service import MatchService
@@ -98,6 +100,17 @@ async def get_match(match_id: str, user: UserDep, svc: Matches) -> Envelope[Matc
 @router.put("/{match_id}", response_model=Envelope[MatchOut], summary="Update or reschedule a match")
 async def update_match(match_id: str, data: MatchUpdateIn, user: MatchmakerDep, svc: Matches) -> Envelope[MatchOut]:
     return ok(await svc.update(user, _mid(match_id), data))
+
+
+@router.post(
+    "/{match_id}/notify-squad",
+    response_model=Envelope[NotifySquadOut],
+    summary="Send the squad a timing update (current start time + optional note)",
+)
+async def notify_squad(
+    match_id: str, data: NotifySquadIn, user: MatchmakerDep, svc: Matches
+) -> Envelope[NotifySquadOut]:
+    return ok(await svc.notify_squad(user, _mid(match_id), data.message))
 
 
 @router.post("/{match_id}/transition", response_model=Envelope[MatchOut], summary="Advance the match lifecycle")

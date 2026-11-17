@@ -1,12 +1,12 @@
-import { formatDay, formatPaise, MATCH_STATUS_LABELS, timeRange, type S } from "@cm/shared";
+import { formatDateTime, formatDay, formatPaise, formatTime, MATCH_STATUS_LABELS, timeRange, type S } from "@cm/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { MapPin, Share2, Users, Wallet } from "lucide-react-native";
+import { Clock, MapPin, Share2, Users, Wallet } from "lucide-react-native";
 import { Alert, Linking, ScrollView, Share, View } from "react-native";
 
 import { CommitChoice, ManagedInvitationRow } from "@/components/invites";
-import { CancelMatch } from "@/components/match-admin";
+import { CancelMatch, MatchTimeTools } from "@/components/match-admin";
 import { KickerChip } from "@/components/refined";
 import { MatchCoverImage, MediaEditButton } from "@/components/media";
 import { InviteRegularsCard } from "@/components/regulars";
@@ -50,6 +50,7 @@ export default function MatchDetail() {
     text: "Withdraw", style: "destructive", onPress: async () => { try { await api(`/matches/${id}/withdraw`, { method: "POST", body: {} }); qc.removeQueries({ queryKey: ["roster", id] }); refreshAll(); } catch (e) { Alert.alert("Error", errorText(e)); } },
   }]);
   const manager = m.viewer_relation === "manager";
+  const moved = m.last_reschedule && !["completed", "cancelled"].includes(m.match_status) ? m.last_reschedule : null;
   const lookingFor = Object.entries(m.composition.required).map(([r, n]) => [r, n - ((m.composition.confirmed as Record<string, number>)[r] ?? 0)] as const).filter(([, n]) => n > 0);
   return (
     <ScrollView style={{ backgroundColor: T.bg }} contentContainerStyle={{ padding: SP.page, gap: SP.xl, paddingBottom: 60 }}>
@@ -66,7 +67,15 @@ export default function MatchDetail() {
         <Txt v="h1" style={{ fontSize: 25, lineHeight: 31, fontFamily: "Inter_800ExtraBold" }}>{m.title}</Txt>
         <Txt v="small" color={T.muted} style={{ marginTop: 8, fontSize: 14 }}>{formatDay(m.start_at, m.timezone)} · {timeRange(m.start_at, m.end_at, m.timezone)}</Txt>
         <Txt v="small" color={T.muted} style={{ marginTop: 2 }}>Hosted by {m.team_name} · {m.match_code}</Txt>
+        {moved ? (
+          <View style={{ marginTop: 12 }}>
+            <InlineNotice tone="warning" icon={<Clock size={16} color={T.warningText} strokeWidth={1.8} />}>
+              {`Time changed. Was ${formatDay(moved.from_start, m.timezone) === formatDay(m.start_at, m.timezone) ? formatTime(moved.from_start, m.timezone) : formatDateTime(moved.from_start, m.timezone)}${moved.reason ? ` · ${moved.reason}` : ""}`}
+            </InlineNotice>
+          </View>
+        ) : null}
       </View>
+      <MatchTimeTools m={m} onDone={refreshAll} />
       <View style={{ backgroundColor: T.surface, borderRadius: 20, borderWidth: 1, borderColor: T.line, padding: SP.lg, gap: SP.md }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <View>

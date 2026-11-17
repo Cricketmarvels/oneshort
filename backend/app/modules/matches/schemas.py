@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from app.common.enums import (
     Attendance,
@@ -89,6 +89,28 @@ class MatchUpdateIn(StrictModel):
     default_contribution_type: ContributionType | None = None
     cover_image: OwnMediaUrl | None = Field(default=None, description="Match photo (uploaded); null removes")
     reschedule_reason: ShortText | None = None
+    notify_squad: bool = Field(
+        default=True, description="Tell the squad and pending invitees about a time change (default on)"
+    )
+
+
+class NotifySquadIn(StrictModel):
+    message: Annotated[str, StringConstraints(max_length=140, strip_whitespace=True)] | None = Field(
+        default=None, description="Optional note from the captain, e.g. 'Previous match running late'"
+    )
+
+
+class NotifySquadOut(BaseModel):
+    notified: int = Field(description="Players and invitees the update was sent to")
+    next_allowed_at: datetime = Field(description="When the captain can send another update")
+
+
+class RescheduleOut(BaseModel):
+    from_start: datetime
+    from_end: datetime
+    reason: str | None
+    at: datetime
+    notified: bool
 
 
 class TransitionIn(StrictModel):
@@ -157,4 +179,5 @@ class MatchOut(BaseModel):
     my_contribution_type: str | None
     cancelled_reason: str | None
     reschedule_count: int
+    last_reschedule: RescheduleOut | None = None
     created_at: datetime

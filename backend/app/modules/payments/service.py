@@ -8,6 +8,7 @@ pushed in real time and notified to the player.
 ``PaymentProvider`` marks the seam for a future "App Pro" gateway integration.
 """
 
+from datetime import timedelta
 from typing import Any, Protocol
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -16,14 +17,17 @@ from bson import ObjectId
 from pymongo.asynchronous.client_session import AsyncClientSession
 
 from app.api.dependencies import CurrentUser
-from app.common.enums import NotificationType, PaymentStatus, SettlementStatus
+from app.common.enums import MatchStatus, NotificationType, PaymentStatus, SettlementStatus
 from app.common.types import ensure_utc, utcnow
 from app.core.container import Container
 from app.core.exceptions import BusinessRuleViolation, Conflict, Forbidden, NotFound
+from app.modules.matches.service import match_when
 from app.modules.settlements.context import FeeAccess
+from app.modules.settlements.message import FeeLine, FeeMessage, compose
 from app.modules.settlements.schemas import (
     CaptainDashboardOut,
     DiscussionOut,
+    FeeDueOut,
     MonthSpendOut,
     MonthTeamSpendOut,
     PaymentRecordOut,
@@ -387,7 +391,8 @@ class PaymentService:
             match_start_at=match.get("start_at", r["updated_at"]),
             team_id=str(r["team_id"]),
             team_name=team.get("team_name", "Team"),
-            player=public_user({"full_name": "Player", **player}),
+            player=public_user({"full_name": r.get("player_name") or "Player", **player}),
+            player_is_guest=bool(r.get("is_guest")),
             captain=public_user({"full_name": "Captain", **captain}),
             amount_paise=r["amount_paise"],
             credited_paise=credited,
@@ -461,26 +466,116 @@ class PaymentService:
             for d in rows
         ]
 
+    # ------------------------------------------------------------ captain home
+    async def fees_to_collect(self, user: CurrentUser, days: int = 30) -> list[FeeDueOut]:
+        """Matches the user manages that have finished in the last ``days`` days and whose fee is not settled:
+        not split yet, split but not shared, or shared with money still outstanding. Most recent first."""
+        now = utcnow()
+        teams = [
+            t["_id"]
+            async for t in self.c.mongo["teams"].find(
+                {"$or": [{"captain_id": user.id}, {"admin_ids": user.id}]}, {"_id": 1}
+            )
+        ]
+        q = {
+            "$or": [{"captain_id": user.id}, {"team_id": {"$in": teams}}],
+            "match_status": {"$nin": [MatchStatus.CANCELLED.value, MatchStatus.DRAFT.value]},
+            "start_at": {"$gte": now - timedelta(days=days)},
+            "$and": [{"$or": [{"end_at": {"$lt": now}}, {"match_status": MatchStatus.COMPLETED.value}]}],
+        }
+        out: list[FeeDueOut] = []
+        async for m in self.c.mongo["matches"].find(q).sort("start_at", -1).limit(20):
+            sts = self.c.mongo["settlements"]
+            pub = await sts.find_one({"match_id": m["_id"], "settlement_status": SettlementStatus.PUBLISHED.value})
+            draft = await sts.find_one({"match_id": m["_id"], "settlement_status": SettlementStatus.DRAFT.value})
+            squad = await self.c.mongo["match_rosters"].count_documents({"match_id": m["_id"], "is_active": True})
+            collected = outstanding = pending = paid = 0
+            if pub:
+                recs = [r async for r in self.records.find({"settlement_id": pub["_id"]})]
+                collected = sum(
+                    r["amount_paise"] if r["status"] == P.PAID else r.get("credited_paise", 0) for r in recs
+                )
+                owed = sum(r["amount_paise"] for r in recs if r["status"] != P.EXEMPTED)
+                outstanding = max(0, owed - collected)
+                pending = sum(1 for r in recs if r["status"] in (P.PENDING, P.DISPUTED))
+                paid = sum(1 for r in recs if r["status"] == P.PAID)
+                if not outstanding:
+                    continue  # all settled
+                stage, total = "collecting", int(pub["total_expenses_paise"])
+            else:
+                stage = "draft" if draft else "not_split"
+                total = sum(
+                    [
+                        e["amount_paise"]
+                        async for e in self.c.mongo["expenses"].find({"match_id": m["_id"], "deleted_at": None})
+                    ]
+                )
+            out.append(
+                FeeDueOut(
+                    match_id=str(m["_id"]),
+                    title=m.get("title", "Match"),
+                    start_at=m["start_at"],
+                    venue_name=(m.get("venue") or {}).get("name"),
+                    squad_size=squad,
+                    stage=stage,
+                    total_paise=total,
+                    collected_paise=collected,
+                    outstanding_paise=outstanding,
+                    pending_count=pending,
+                    paid_count=paid,
+                )
+            )
+            if len(out) == 5:
+                break
+        return out
+
     # ------------------------------------------------------------ sharing
     async def share_summary(self, user: CurrentUser, settlement_id: ObjectId) -> ShareOut:
-        dash = await self.captain_dashboard(user, settlement_id)
-        st = dash.settlement
-        match, team = await self.access.load(ObjectId(st.match_id))
-        lines = [
-            f"🏏 {match.get('title', 'Match')} · {(team or {}).get('team_name', '')}",
-            f"Total expenses: {rupees(st.total_expenses_paise)}",
-        ]
-        lines += [f"  • {e.label}: {rupees(e.amount_paise)}" for e in st.expenses]
-        lines.append(f"Per head ({st.eligible_players} players): {rupees(st.individual_contribution_paise)}")
-        if st.rounding_adjustment_paise:
-            lines.append(f"Rounding surplus: {rupees(st.rounding_adjustment_paise)}")
-        lines.append("")
-        for rec in dash.records:
-            mark = {"paid": "✅", "exempted": "➖", "disputed": "⚠️"}.get(rec.status, "⏳")
-            lines.append(f"{mark} {rec.player.full_name}: {rupees(rec.amount_paise)} ({rec.status})")
-        if st.payment_instructions:
-            lines += ["", f"Pay to: {st.payment_instructions}"]
-        text = "\n".join(lines)
+        """The split as one WhatsApp-ready message. Captains can share a draft too (to agree it in the group
+        before publishing); players only ever see a published split."""
+        doc = await self.c.mongo["settlements"].find_one({"_id": settlement_id})
+        if not doc:
+            raise NotFound("Settlement not found")
+        match, team = await self.access.load(doc["match_id"])
+        manager = can_manage_match(match, team, user.id)
+        if doc["settlement_status"] == SettlementStatus.DRAFT and not manager:
+            raise NotFound("Settlement not found")
+        statuses: dict[str, str] = {}
+        if doc["settlement_status"] != SettlementStatus.DRAFT:
+            dash = await self.captain_dashboard(user, settlement_id)  # also enforces who may see it
+            statuses = {r.player.id: r.status.value for r in dash.records}
+        st = await self.settlements.get_out(settlement_id)
+        venue = (match.get("venue") or {}).get("name")
+        when = match_when(match["start_at"], match.get("timezone", "Asia/Kolkata")) if match.get("start_at") else None
+        base = (self.c.settings.app_base_url or self.c.settings.web_base_url).rstrip("/")
+        text = compose(
+            FeeMessage(
+                title=match.get("title", "Match"),
+                team=(team or {}).get("team_name"),
+                when=when,
+                venue=venue,
+                expenses=[(e.label, e.amount_paise) for e in st.expenses],
+                total_paise=st.total_expenses_paise,
+                per_head_paise=st.individual_contribution_paise,
+                payers=st.eligible_players,
+                rounding_paise=st.rounding_adjustment_paise,
+                lines=[
+                    FeeLine(
+                        name=line.player.full_name,
+                        amount_paise=line.amount_paise,
+                        eligible=line.eligible,
+                        status=statuses.get(line.player.id),
+                        guest=line.guest,
+                    )
+                    for line in st.lines
+                ],
+                instructions=st.payment_instructions,
+                upi_id=st.upi_id,
+                revised=bool(st.revises_settlement_id),
+                revised_reason=st.revision_reason,
+                link=f"{base}/fee?ledger={st.match_id}",
+            )
+        )
         return ShareOut(text=text, whatsapp_url=f"https://wa.me/?text={quote(text)}")
 
     async def remind(self, user: CurrentUser, settlement_id: ObjectId, player_id: ObjectId) -> ShareOut:
@@ -494,9 +589,11 @@ class PaymentService:
         player = await self.c.mongo["users"].find_one({"_id": player_id}) or {}
         amount = rupees(rec["amount_paise"] - rec.get("credited_paise", 0))
         text = (
-            f"Hi {player.get('full_name', '')}, a friendly reminder: your contribution of {amount} for "
+            f"Hi {player.get('full_name') or rec.get('player_name') or ''}, a friendly reminder: "
+            f"your contribution of {amount} for "
             f"{match.get('title', 'our match')} is pending."
-            + (f" Pay to: {st.get('payment_instructions')}" if st.get("payment_instructions") else "")
+            + (f" UPI ID: {st.get('upi_id')}." if st.get("upi_id") else "")
+            + (f" {st.get('payment_instructions')}" if st.get("payment_instructions") else "")
         )
         await self.c.notifications.notify(
             [player_id],

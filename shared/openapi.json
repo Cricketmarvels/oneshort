@@ -16853,6 +16853,123 @@
         }
       }
     },
+    "/api/v1/matches/{match_id}/notify-squad": {
+      "post": {
+        "tags": [
+          "Matches"
+        ],
+        "summary": "Send the squad a timing update (current start time + optional note)",
+        "operationId": "notify_squad_api_v1_matches__match_id__notify_squad_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotifySquadIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_NotifySquadOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/matches/{match_id}/transition": {
       "post": {
         "tags": [
@@ -20205,6 +20322,102 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/settlements/collect": {
+      "get": {
+        "tags": [
+          "Split a Fee"
+        ],
+        "summary": "Captain: finished matches whose fee still needs splitting or collecting (last 30 days)",
+        "operationId": "fees_to_collect_api_v1_settlements_collect_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_FeeDueOut__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/settlements/me/spend": {
@@ -27943,6 +28156,7 @@
       "Envelope_MatchOut_": {},
       "Envelope_MyAgreementsOut_": {},
       "Envelope_NearbyRacketPlayerOut_": {},
+      "Envelope_NotifySquadOut_": {},
       "Envelope_OtpSentOut_": {},
       "Envelope_PaymentRecordOut_": {},
       "Envelope_PlayRequestOut_": {},
@@ -27983,6 +28197,7 @@
       "Envelope_list_CourtOut__": {},
       "Envelope_list_DiscussionOut__": {},
       "Envelope_list_ExpenseOut__": {},
+      "Envelope_list_FeeDueOut__": {},
       "Envelope_list_FixtureOut__": {},
       "Envelope_list_InvitationOut__": {},
       "Envelope_list_InvitationResultItem__": {},
@@ -28173,6 +28388,123 @@
           "amount_paise"
         ],
         "title": "ExpenseSnapshot"
+      },
+      "ExtraPlayerIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "guest_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guest Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ExtraPlayerIn",
+        "description": "Someone sharing the fee who isn't in the squad: a registered player (``user_id``) or a guest typed\nin by name. A guest has no account; send back the ``guest_id`` from an earlier split to keep the\nsame person (and anything they already paid) across recalculations and revisions."
+      },
+      "FeeDueOut": {
+        "properties": {
+          "match_id": {
+            "type": "string",
+            "title": "Match Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start At"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
+          },
+          "squad_size": {
+            "type": "integer",
+            "title": "Squad Size"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "not_split",
+              "draft",
+              "collecting"
+            ],
+            "title": "Stage"
+          },
+          "total_paise": {
+            "type": "integer",
+            "title": "Total Paise",
+            "description": "Expenses added so far (or the published total)"
+          },
+          "collected_paise": {
+            "type": "integer",
+            "title": "Collected Paise"
+          },
+          "outstanding_paise": {
+            "type": "integer",
+            "title": "Outstanding Paise"
+          },
+          "pending_count": {
+            "type": "integer",
+            "title": "Pending Count"
+          },
+          "paid_count": {
+            "type": "integer",
+            "title": "Paid Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "match_id",
+          "title",
+          "start_at",
+          "venue_name",
+          "squad_size",
+          "stage",
+          "total_paise",
+          "collected_paise",
+          "outstanding_paise",
+          "pending_count",
+          "paid_count"
+        ],
+        "title": "FeeDueOut",
+        "description": "A finished match whose fee the captain still has to split or collect (home dashboard card)."
       },
       "FeeSideOut": {
         "properties": {
@@ -30149,6 +30481,16 @@
             "type": "integer",
             "title": "Reschedule Count"
           },
+          "last_reschedule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RescheduleOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -30362,6 +30704,12 @@
               }
             ],
             "title": "Reschedule Reason"
+          },
+          "notify_squad": {
+            "type": "boolean",
+            "title": "Notify Squad",
+            "description": "Tell the squad and pending invitees about a time change (default on)",
+            "default": true
           }
         },
         "additionalProperties": false,
@@ -30903,6 +31251,7 @@
           "match_reminder",
           "match_cancelled",
           "match_rescheduled",
+          "match_update",
           "player_replaced",
           "player_withdrew",
           "settlement_created",
@@ -30932,6 +31281,47 @@
           "community_membership"
         ],
         "title": "NotificationType"
+      },
+      "NotifySquadIn": {
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 140
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Optional note from the captain, e.g. 'Previous match running late'"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NotifySquadIn"
+      },
+      "NotifySquadOut": {
+        "properties": {
+          "notified": {
+            "type": "integer",
+            "title": "Notified",
+            "description": "Players and invitees the update was sent to"
+          },
+          "next_allowed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Next Allowed At",
+            "description": "When the captain can send another update"
+          }
+        },
+        "type": "object",
+        "required": [
+          "notified",
+          "next_allowed_at"
+        ],
+        "title": "NotifySquadOut"
       },
       "OpportunityOut": {
         "properties": {
@@ -31201,6 +31591,11 @@
           },
           "player": {
             "$ref": "#/components/schemas/PublicUserOut"
+          },
+          "player_is_guest": {
+            "type": "boolean",
+            "title": "Player Is Guest",
+            "default": false
           },
           "captain": {
             "$ref": "#/components/schemas/PublicUserOut"
@@ -34803,6 +35198,49 @@
         "type": "object",
         "title": "RequiredRoles"
       },
+      "RescheduleOut": {
+        "properties": {
+          "from_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "From Start"
+          },
+          "from_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "From End"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "notified": {
+            "type": "boolean",
+            "title": "Notified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_start",
+          "from_end",
+          "reason",
+          "at",
+          "notified"
+        ],
+        "title": "RescheduleOut"
+      },
       "ResetPasswordIn": {
         "properties": {
           "mobile_number": {
@@ -35581,12 +36019,37 @@
             "$ref": "#/components/schemas/RoundingMode",
             "default": "exact_paise"
           },
+          "player_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Ids",
+            "description": "Squad players sharing the fee (ticked). Omit for the whole squad."
+          },
+          "extra_players": {
+            "items": {
+              "$ref": "#/components/schemas/ExtraPlayerIn"
+            },
+            "type": "array",
+            "maxItems": 15,
+            "title": "Extra Players",
+            "description": "Last-minute players and guests outside the squad"
+          },
           "exempt_player_ids": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "maxItems": 22,
+            "maxItems": 40,
             "title": "Exempt Player Ids"
           },
           "adjustments": {
@@ -35594,7 +36057,7 @@
               "$ref": "#/components/schemas/AdjustmentIn"
             },
             "type": "array",
-            "maxItems": 22,
+            "maxItems": 40,
             "title": "Adjustments"
           },
           "contribution_overrides": {
@@ -35629,6 +36092,20 @@
               }
             ],
             "title": "Revision Reason"
+          },
+          "upi_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9.\\-_]{1,99}@[A-Za-z][A-Za-z0-9.\\-]{1,49}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upi Id",
+            "description": "Captain's UPI ID for this fee. Remembered on the account for the next split."
           }
         },
         "additionalProperties": false,
@@ -35662,6 +36139,18 @@
           "credited_paise": {
             "type": "integer",
             "title": "Credited Paise"
+          },
+          "guest": {
+            "type": "boolean",
+            "title": "Guest",
+            "description": "Added by name only; has no OneShort account",
+            "default": false
+          },
+          "added": {
+            "type": "boolean",
+            "title": "Added",
+            "description": "Not in the squad; added to this split by the captain",
+            "default": false
           }
         },
         "type": "object",
@@ -35766,6 +36255,17 @@
               }
             ],
             "title": "Payment Instructions"
+          },
+          "upi_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upi Id"
           },
           "currency": {
             "type": "string",
@@ -38188,6 +38688,18 @@
             "title": "Onboarding Completed",
             "description": "True once registration is finished",
             "default": false
+          },
+          "fee_upi_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Upi Id",
+            "description": "UPI ID last used to collect match fees (prefills splits)"
           },
           "created_at": {
             "type": "string",

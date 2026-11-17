@@ -194,3 +194,74 @@ async def test_cancelling_one_of_this_weeks_matches_clears_it_from_the_dashboard
     # Cancelling is final: no second cancel, no way back to recruiting.
     again = await client.post(f"{API}/matches/{saturday}/cancel", headers=cap.h, json={"reason": "Changed my mind"})
     assert again.status_code == 422 and again.json()["error"]["code"] == "INVALID_MATCH_TRANSITION"
+
+
+async def test_time_change_tells_the_squad_in_plain_words(client: httpx.AsyncClient) -> None:
+    captain, match, players = await _confirmed_squad(client, 47, 2, capacity=4)
+    start = future(47)  # 08:00 IST (02:30 UTC)
+    later = start + timedelta(minutes=45)
+    r = await client.put(
+        f"{API}/matches/{match['id']}",
+        headers=captain.h,
+        json={
+            "start_at": iso(later),
+            "end_at": iso(later + timedelta(hours=3)),
+            "reschedule_reason": "Previous match running late",
+        },
+    )
+    data = r.json()["data"]
+    assert r.status_code == 200
+    assert data["last_reschedule"]["reason"] == "Previous match running late"
+    assert data["last_reschedule"]["notified"] is True
+    note = next(
+        n
+        for n in (await client.get(f"{API}/notifications", headers=players[0].h)).json()["data"]
+        if n["type"] == "match_rescheduled"
+    )
+    # Readable in IST, old time shown without repeating the date, no ISO timestamps.
+    assert "8:45 AM" in note["body"] and "(was 8:00 AM)" in note["body"]
+    assert "Previous match running late" in note["body"] and "T0" not in note["body"]
+    captain_notes = (await client.get(f"{API}/notifications", headers=captain.h)).json()["data"]
+    assert not any(n["type"] == "match_rescheduled" for n in captain_notes)
+
+
+async def test_time_change_can_skip_the_ping_and_captain_notifies_later(client: httpx.AsyncClient) -> None:
+    captain, match, players = await _confirmed_squad(client, 49, 2, capacity=4)
+    # Someone invited but not yet in the squad is not told about timing changes.
+    invitee = await make_player(client, "L49-pending", "batsman", HSR_LAYOUT)
+    await add_slot(client, invitee, future(49) - timedelta(hours=1), hours=5)
+    await client.post(
+        f"{API}/matches/{match['id']}/invitations", headers=captain.h, json={"invites": [{"player_id": invitee.id}]}
+    )
+    later = future(49) + timedelta(hours=1)
+    r = await client.put(
+        f"{API}/matches/{match['id']}",
+        headers=captain.h,
+        json={"start_at": iso(later), "end_at": iso(later + timedelta(hours=3)), "notify_squad": False},
+    )
+    assert r.json()["data"]["last_reschedule"]["notified"] is False
+    notes = (await client.get(f"{API}/notifications", headers=players[1].h)).json()["data"]
+    assert not any(n["type"] in ("match_rescheduled", "match_update") for n in notes)
+
+    # A player can't send squad updates.
+    r = await client.post(f"{API}/matches/{match['id']}/notify-squad", headers=players[0].h, json={})
+    assert r.status_code == 403
+
+    r = await client.post(
+        f"{API}/matches/{match['id']}/notify-squad", headers=captain.h, json={"message": "Rain delay"}
+    )
+    assert r.status_code == 200 and r.json()["data"]["notified"] == 2
+    note = next(
+        n
+        for n in (await client.get(f"{API}/notifications", headers=players[1].h)).json()["data"]
+        if n["type"] == "match_update"
+    )
+    assert note["body"].startswith("Rain delay. Start time:") and "9:00 AM" in note["body"]
+    pending_notes = (await client.get(f"{API}/notifications", headers=invitee.h)).json()["data"]
+    assert not any(n["type"] in ("match_rescheduled", "match_update") for n in pending_notes)
+    m = (await client.get(f"{API}/matches/{match['id']}", headers=captain.h)).json()["data"]
+    assert m["last_reschedule"]["notified"] is True
+
+    # Second update within the cooldown is refused, not silently sent.
+    r = await client.post(f"{API}/matches/{match['id']}/notify-squad", headers=captain.h, json={})
+    assert r.status_code == 422 and r.json()["error"]["code"] == "NOTIFY_COOLDOWN"

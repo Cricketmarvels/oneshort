@@ -21,7 +21,7 @@ const PREF_GROUPS: { label: string; types: S<"NotificationType">[] }[] = [
   { label: "Match results & disputes", types: ["result_submitted", "result_confirmed", "result_disputed"] },
   { label: "Rating & leaderboard changes", types: ["rating_updated"] },
   { label: "Community announcements", types: ["community_announcement", "community_join_request", "community_membership"] },
-  { label: "Match reminders", types: ["match_reminder", "match_rescheduled", "match_cancelled"] },
+  { label: "Match reminders", types: ["match_reminder", "match_rescheduled", "match_update", "match_cancelled"] },
   { label: "Invitations & join requests", types: ["player_invitation", "team_invitation", "join_request"] },
 ];
 

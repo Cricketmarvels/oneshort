@@ -7,10 +7,11 @@ import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { formatPaise, rupeesToPaise, type S } from "@cm/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { BadgeCheck, Ban, BellRing, Plus, Share2, Trash2, Wallet } from "lucide-react-native";
-import { useMemo, useRef, useState } from "react";
+import { BadgeCheck, Ban, BellRing, CheckSquare, Plus, Square, Trash2, UserPlus, Wallet, X } from "lucide-react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, View } from "react-native";
 
+import { ShareToGroup } from "@/components/match-admin";
 import { FilterBottomSheet, PromptModal } from "@/components/sheet";
 import { Avatar, Badge, Button, Card, Chip, EmptyState, ErrorBox, Field, LoadingSkeleton, Section, Segmented, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
@@ -32,6 +33,8 @@ const CATS: { v: S<"ExpenseCategory">; l: string }[] = [
 const METHODS: { v: S<"PaymentMethod">; l: string }[] = [
   { v: "upi", l: "UPI" }, { v: "cash", l: "Cash" }, { v: "gpay", l: "GPay" }, { v: "phonepe", l: "PhonePe" }, { v: "paytm", l: "Paytm" }, { v: "bank_transfer", l: "Bank" },
 ];
+/** Same shape the server accepts: name@bank (e.g. rahul@okaxis, 9876543210@ybl). */
+const UPI_RE = /^[A-Za-z0-9][A-Za-z0-9.\-_]{1,99}@[A-Za-z][A-Za-z0-9.\-]{1,49}$/;
 const STATUS: Record<string, [string, string]> = { pending: ["warning", "Pending"], paid: ["success", "Paid"], exempted: ["neutral", "Exempt"], disputed: ["danger", "Disputed"] };
 
 export default function SplitFee() {
@@ -54,7 +57,7 @@ export default function SplitFee() {
   const dash = useQuery({ queryKey: ["fee", published?.id, "dash"], enabled: !!published, queryFn: () => api<Dashboard>(`/settlements/${published!.id}/payments`) });
   const manager = isSide ? !!side.data?.can_manage : match.data?.viewer_relation === "manager";
   const title = p.title ?? side.data?.title ?? match.data?.title ?? "Match fee";
-  const reload = () => { for (const k of [["fee", ledger], ["fee-side", p.fixture], ["payments"], ["fee", published?.id]]) void qc.invalidateQueries({ queryKey: k }); };
+  const reload = () => { for (const k of [["fee", ledger], ["fee-side", p.fixture], ["payments"], ["fee", published?.id], ["fees-to-collect"]]) void qc.invalidateQueries({ queryKey: k }); };
 
   if (side.isError) return <Shell title={title}><ErrorBox error={side.error} /></Shell>;
   if (!ledger || (p.ledger && match.isPending) || (isSide && side.isPending) || expenses.isPending || versions.isPending) return <Shell title={title}><LoadingSkeleton rows={4} /></Shell>;
@@ -149,6 +152,18 @@ function Manager({ ledger, side, expenses, draft, published, dash, onChange }: {
   ledger: string; side?: Side; expenses: Expense[]; draft?: Settlement; published?: Settlement; dash?: Dashboard; onChange: () => void;
 }) {
   const [tab, setTab] = useState<"setup" | "collect">(published ? "collect" : "setup");
+  const base = draft ?? published;
+  // Pickup match: the squad comes from the roster and the captain ticks who shares the fee.
+  const roster = useQuery({ queryKey: ["roster", ledger], enabled: !side, queryFn: () => api<S<"RosterOut">>(`/matches/${ledger}/roster`) });
+  const squad = roster.data?.active ?? [];
+  const defaultTicked = squad.filter((e) => !base || base.lines.some((l) => l.player.id === e.player.id && !l.exempt)).map((e) => e.player.id);
+  const [ticked, setTicked] = useState<string[] | null>(null);
+  const [extras, setExtras] = useState<Extra[]>(() => (base?.lines ?? []).filter((l) => l.added).map((l) => (
+    l.guest ? { key: l.player.id, name: l.player.full_name, guest_id: l.player.id } : { key: l.player.id, name: l.player.full_name, user_id: l.player.id })));
+  const [changed, setChanged] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const picked = ticked ?? defaultTicked;
+  const who: WhoPays = { ticked: side ? undefined : picked, extras };
   return (
     <View style={{ gap: SP.xl }}>
       <Segmented value={tab} onChange={setTab} options={[{ v: "setup", l: published ? "Revise split" : "Set up split" }, { v: "collect", l: "Collect payments" }]} />
@@ -156,9 +171,17 @@ function Manager({ ledger, side, expenses, draft, published, dash, onChange }: {
         <>
           <Expenses ledger={ledger} expenses={expenses} onChange={onChange} />
           {side ? <Squad key={side.members.map((m) => `${m.user.id}${m.in_squad}${m.contribution_type}`).join()} side={side} onChange={onChange} /> : null}
-          <Split ledger={ledger} draft={draft} published={published} hasExpenses={expenses.length > 0} onChange={() => { onChange(); }} onPublished={() => setTab("collect")} />
+          <Players step={side ? 3 : 2} adding={adding} setAdding={setAdding} squad={side ? null : squad} loading={!side && roster.isPending} ticked={picked} extras={extras}
+            onTick={(id) => { setTicked(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]); setChanged(true); }}
+            onAll={(on) => { setTicked(on ? squad.map((e) => e.player.id) : []); setChanged(true); }}
+            onAdd={(x) => { setExtras([...extras, x]); setChanged(true); }}
+            onRemove={(key) => { setExtras(extras.filter((x) => x.key !== key)); setChanged(true); }} />
+          <Split step={side ? 4 : 3} ledger={ledger} draft={draft} published={published} hasExpenses={expenses.length > 0} who={who} changed={changed} onAddPlayer={() => setAdding(true)}
+            onCalculated={(st) => { setChanged(false); setTicked(null); setExtras(st.lines.filter((l) => l.added).map((l) => (
+              l.guest ? { key: l.player.id, name: l.player.full_name, guest_id: l.player.id } : { key: l.player.id, name: l.player.full_name, user_id: l.player.id }))); }}
+            onChange={() => { onChange(); }} onPublished={() => setTab("collect")} />
         </>
-      ) : dash ? <Collect dash={dash} onChange={onChange} /> : (
+      ) : dash ? <Collect dash={dash} ledger={ledger} onChange={onChange} /> : (
         <EmptyState icon={<Wallet size={22} color={T.ink} strokeWidth={1.5} />} title="Nothing to collect yet" body="Publish the split first. Every paying player is notified with their amount and your payment instructions." />
       )}
     </View>
@@ -237,66 +260,194 @@ function Squad({ side, onChange }: { side: Side; onChange: () => void }) {
   );
 }
 
-function Split({ ledger, draft, published, hasExpenses, onChange, onPublished }: { ledger: string; draft?: Settlement; published?: Settlement; hasExpenses: boolean; onChange: () => void; onPublished: () => void }) {
+function Split({ step, ledger, draft, published, hasExpenses, who, changed, onAddPlayer, onCalculated, onChange, onPublished }: {
+  step: number; ledger: string; draft?: Settlement; published?: Settlement; hasExpenses: boolean; who: WhoPays; changed: boolean; onAddPlayer: () => void;
+  onCalculated: (st: Settlement) => void; onChange: () => void; onPublished: () => void;
+}) {
   const base = draft ?? published;
-  const [exempt, setExempt] = useState<string[]>(base?.lines.filter((l) => l.exempt).map((l) => l.player.id) ?? []);
   const [rounding, setRounding] = useState<S<"RoundingMode">>(base?.rounding_mode ?? "exact_paise");
   const [instructions, setInstructions] = useState(base?.payment_instructions ?? "");
+  const { user } = useAuth();
+  const [upi, setUpi] = useState(base?.upi_id ?? user?.fee_upi_id ?? "");
+  const upiOk = !upi.trim() || UPI_RE.test(upi.trim());
   const [reason, setReason] = useState("");
+  const nobody = (who.ticked?.length ?? 1) + who.extras.length === 0;
   const calc = useMutation({
     mutationFn: () => api<Settlement>(`/matches/${ledger}/settlements`, { method: "POST", body: {
-      rounding_mode: rounding, exempt_player_ids: exempt, payment_instructions: instructions || null, revision_reason: published ? reason || "Updated split" : null,
+      rounding_mode: rounding, player_ids: who.ticked ?? null,
+      extra_players: who.extras.map(({ name, user_id, guest_id }) => ({ name, user_id: user_id ?? null, guest_id: guest_id ?? null })),
+      payment_instructions: instructions || null, upi_id: upi.trim() || null, revision_reason: published ? reason || "Updated split" : null,
     } }),
-    onSuccess: onChange,
+    onSuccess: (st) => { onCalculated(st); onChange(); },
     onError: (e) => Alert.alert("Couldn't calculate the split", errorText(e)),
   });
+  // Adding or unticking a player saves the split straight away, so the preview (and a page reload) always
+  // shows who is in it. Waits briefly so a run of ticks makes one request.
+  const { mutate, isPending, isError } = calc;
+  const auto = changed && hasExpenses && !nobody && upiOk && !isError; // after an error the captain retries by hand
+  useEffect(() => {
+    if (!auto || isPending) return;
+    const t = setTimeout(() => mutate(), 600);
+    return () => clearTimeout(t);
+  }, [auto, isPending, who, mutate]);
   const publish = useMutation({
     mutationFn: (id: string) => api<Settlement>(`/settlements/${id}/publish`, { method: "POST", body: {} }),
-    onSuccess: () => { onChange(); onPublished(); Alert.alert("Split shared", "Every paying player has been notified of their amount."); },
+    onSuccess: () => { onChange(); onPublished(); Alert.alert("Split shared", "Every paying player with the app has been notified of their amount. Send the group message for everyone else."); },
     onError: (e) => Alert.alert("Couldn't publish", errorText(e)),
   });
   return (
-    <Section title={published ? "3 · Revise the split" : "3 · Split & share"}>
+    <Section title={`${step} · ${published ? "Revise the split" : "Split & share"}`}>
       {!hasExpenses ? <Txt v="small" color={T.muted}>Add at least one expense first.</Txt> : null}
       <Card>
         <Txt v="smallSemi" color={T.text2}>Rounding</Txt>
         <Segmented value={rounding} onChange={setRounding} options={[{ v: "exact_paise", l: "Exact" }, { v: "round_up_rupee", l: "Round up to ₹1" }]} />
-        <Field label="How should players pay you?" value={instructions} onChangeText={setInstructions} placeholder="e.g. UPI to rahul@okaxis or cash at the ground" hint="Shown to players. Never enter a UPI PIN or password." maxLength={300} />
+        <Field label="Your UPI ID" value={upi} onChangeText={(v) => setUpi(v.replace(/\s/g, ""))} placeholder="e.g. rahul@okaxis or 9876543210@ybl" autoCapitalize="none" autoCorrect={false} keyboardType="email-address" maxLength={100}
+          error={upiOk ? null : "That doesn't look like a UPI ID. It should look like name@bank."} hint={upiOk ? "Shown in the WhatsApp message so players can pay you straight away. Remembered for next time. Never share your UPI PIN." : undefined} />
+        <Field label="Other payment note (optional)" value={instructions} onChangeText={setInstructions} placeholder="e.g. Cash at the ground is fine too" maxLength={300} />
         {published ? <Field label="Reason for revising" value={reason} onChangeText={setReason} placeholder="e.g. Umpire fee added" maxLength={120} /> : null}
-        <Button title={draft ? "Recalculate split" : "Calculate split"} variant="secondary" disabled={!hasExpenses} loading={calc.isPending} onPress={() => calc.mutate()} />
+        <Button title={draft ? "Recalculate split" : "Calculate split"} variant={changed || !draft ? "primary" : "secondary"} disabled={!hasExpenses || nobody || !upiOk} loading={calc.isPending} onPress={() => calc.mutate()} />
+        {nobody ? <Txt v="small" color={T.warnText}>Tick or add at least one player.</Txt> : null}
       </Card>
       {draft ? (
         <Card style={{ gap: 0 }}>
           <View style={{ flexDirection: "row", paddingBottom: 8 }}>
-            <Txt v="label" color={T.muted} style={{ flex: 1 }}>Preview · tap to exempt</Txt>
+            <Txt v="label" color={T.muted} style={{ flex: 1 }}>Preview · {draft.eligible_players} paying</Txt>
             <Txt v="label" color={T.muted}>{formatPaise(draft.total_assigned_paise)}</Txt>
           </View>
-          {draft.lines.map((l) => {
-            const ex = exempt.includes(l.player.id);
-            return (
-              <Pressable key={l.player.id} accessibilityRole="checkbox" accessibilityState={{ checked: !ex }} onPress={() => setExempt(ex ? exempt.filter((x) => x !== l.player.id) : [...exempt, l.player.id])}
-                style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: T.line }}>
-                <Avatar uri={l.player.profile_image} name={l.player.full_name} size={30} />
-                <Txt v="bodyMed" style={{ flex: 1 }} numberOfLines={1}>{l.player.full_name}</Txt>
-                {!l.eligible ? <Badge status="neutral" label={l.contribution_type === "non_payee" ? "Plays free" : "Exempt"} /> : null}
-                <Txt v="number" style={{ fontSize: 15 }} color={l.eligible ? T.text : T.muted}>{formatPaise(l.amount_paise)}</Txt>
-              </Pressable>
-            );
-          })}
+          {draft.lines.map((l) => (
+            <View key={l.player.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: T.line }}>
+              <Avatar uri={l.player.profile_image} name={l.player.full_name} size={30} />
+              <Txt v="bodyMed" style={{ flex: 1 }} numberOfLines={1}>{l.player.full_name}</Txt>
+              {l.guest ? <Badge status="info" label="Guest" /> : l.added ? <Badge status="info" label="Added" /> : null}
+              {!l.eligible ? <Badge status="neutral" label={l.contribution_type === "non_payee" ? "Plays free" : "Exempt"} /> : null}
+              <Txt v="number" style={{ fontSize: 15 }} color={l.eligible ? T.text : T.muted}>{formatPaise(l.amount_paise)}</Txt>
+            </View>
+          ))}
           {draft.rounding_adjustment_paise ? <Txt v="small" color={T.muted} style={{ paddingTop: 8 }}>Rounding adds {formatPaise(draft.rounding_adjustment_paise)} in total.</Txt> : null}
-          {JSON.stringify(exempt.slice().sort()) !== JSON.stringify(draft.lines.filter((l) => l.exempt).map((l) => l.player.id).sort()) ? (
-            <Txt v="small" color={T.warnText} style={{ paddingTop: 8 }}>Exemptions changed. Recalculate before sharing.</Txt>
-          ) : null}
+          <Button title="Someone missing? Add player" variant="ghost" size="sm" icon={<UserPlus size={16} color={T.primaryDark} strokeWidth={1.5} />} onPress={onAddPlayer} style={{ marginTop: 6 }} />
+          {changed ? <Txt v="small" color={T.muted} style={{ paddingTop: 8 }}>Updating the split…</Txt> : null}
           <Button title={published ? "Share revised split" : "Share with players"} style={{ marginTop: SP.md }} loading={publish.isPending}
-            disabled={JSON.stringify(exempt.slice().sort()) !== JSON.stringify(draft.lines.filter((l) => l.exempt).map((l) => l.player.id).sort())}
-            onPress={() => publish.mutate(draft.id)} />
+            disabled={changed} onPress={() => publish.mutate(draft.id)} />
         </Card>
       ) : null}
+      {draft && !changed ? <GroupMessage ledger={ledger} settlementId={draft.id} stamp={`${draft.total_assigned_paise}-${draft.lines.length}-${draft.payment_instructions ?? ""}`}
+        note="Ready to paste in your team group. Also tap “Share with players” so everyone on OneShort can track what they owe." /> : null}
     </Section>
   );
 }
 
-function Collect({ dash, onChange }: { dash: Dashboard; onChange: () => void }) {
+type Extra = { key: string; name: string; user_id?: string; guest_id?: string };
+type WhoPays = { ticked?: string[]; extras: Extra[] };
+type Hit = { id: string; name: string; area: string | null; city: string | null; image: string | null };
+
+/**
+ * Who shares the fee: tick squad players, and add anyone who turned up last minute — a OneShort player found by
+ * name, or just a typed name for someone without the app (a guest; the captain marks their payment by hand).
+ */
+function Players({ step, adding, setAdding, squad, loading, ticked, extras, onTick, onAll, onAdd, onRemove }: {
+  step: number; adding: boolean; setAdding: (v: boolean) => void; squad: S<"RosterEntryOut">[] | null; loading: boolean; ticked: string[]; extras: Extra[];
+  onTick: (id: string) => void; onAll: (on: boolean) => void; onAdd: (x: Extra) => void; onRemove: (key: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const typed = q.trim();
+  const taken = new Set([...(squad ?? []).map((e) => e.player.id), ...extras.map((x) => x.user_id ?? x.key)]);
+  const search = useQuery({
+    queryKey: ["fee-player-search", typed], enabled: adding && typed.length >= 2, staleTime: 30_000,
+    queryFn: () => api<{ players: Hit[] }>("/search", { query: { q: typed, types: "players", limit: 6 } }),
+  });
+  const hits = (search.data?.players ?? []).filter((h) => !taken.has(h.id));
+  const add = (x: Omit<Extra, "key">) => { onAdd({ ...x, key: x.user_id ?? `guest-${x.name.toLowerCase()}` }); setQ(""); };
+  const guestTaken = extras.some((x) => x.name.toLowerCase() === typed.toLowerCase());
+  const count = ticked.length + extras.length;
+  const allOn = !!squad?.length && squad.every((e) => ticked.includes(e.player.id));
+  return (
+    <Section title={`${step} · Who's paying (${count})`}>
+      <Txt v="small" color={T.muted}>{squad ? "Untick anyone who didn't play. Add last-minute players below." : "Add anyone outside the squad who should share the fee."}</Txt>
+      {squad ? (
+        <Card style={{ gap: 0 }}>
+          {loading ? <LoadingSkeleton rows={3} /> : !squad.length ? <Txt v="small" color={T.muted}>Nobody is in the squad yet. Add players below.</Txt> : (
+            <>
+              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: allOn }} onPress={() => onAll(!allOn)} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingBottom: 10 }}>
+                {allOn ? <CheckSquare size={22} color={T.primary} strokeWidth={2} /> : <Square size={22} color={T.muted} strokeWidth={1.5} />}
+                <Txt v="smallSemi" color={T.text2}>{allOn ? "Untick all" : "Tick all"} · {ticked.length}/{squad.length} from the squad</Txt>
+              </Pressable>
+              {squad.map((e) => {
+                const on = ticked.includes(e.player.id);
+                return (
+                  <Pressable key={e.player.id} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={e.player.full_name} onPress={() => onTick(e.player.id)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: T.line, opacity: on ? 1 : 0.55 }}>
+                    {on ? <CheckSquare size={22} color={T.primary} strokeWidth={2} /> : <Square size={22} color={T.muted} strokeWidth={1.5} />}
+                    <Avatar uri={e.player.profile_image} name={e.player.full_name} size={30} />
+                    <Txt v="bodyMed" style={{ flex: 1 }} numberOfLines={1}>{e.player.full_name}{e.is_captain ? " (C)" : ""}</Txt>
+                    {e.contribution_type === "non_payee" ? <Badge status="neutral" label="Plays free" /> : null}
+                  </Pressable>
+                );
+              })}
+            </>
+          )}
+        </Card>
+      ) : null}
+      {extras.length ? (
+        <Card style={{ gap: 0 }}>
+          <Txt v="label" color={T.muted} style={{ paddingBottom: 6 }}>Added for this match</Txt>
+          {extras.map((x) => (
+            <View key={x.key} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: T.line }}>
+              <CheckSquare size={22} color={T.primary} strokeWidth={2} />
+              <Avatar name={x.name} size={30} />
+              <Txt v="bodyMed" style={{ flex: 1 }} numberOfLines={1}>{x.name}</Txt>
+              <Badge status="info" label={x.user_id ? "On OneShort" : "Guest"} />
+              <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${x.name}`} hitSlop={10} onPress={() => onRemove(x.key)}><X size={18} color={T.muted} /></Pressable>
+            </View>
+          ))}
+        </Card>
+      ) : null}
+      {!adding ? (
+        <Button title="Add player" variant="secondary" size="sm" icon={<UserPlus size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => setAdding(true)} />
+      ) : (
+        <Card style={{ gap: SP.sm }}>
+          <Field label="Player name" value={q} onChangeText={setQ} placeholder="Type a name, e.g. Anshul" maxLength={80} autoFocus
+            returnKeyType="done" onSubmitEditing={() => { if (typed.length >= 2 && !guestTaken) add({ name: typed }); }} />
+          {typed.length >= 2 ? (
+            <View style={{ gap: SP.sm }}>
+              <Button title={guestTaken ? `${typed} is already added` : `Add “${typed}”`} size="sm" disabled={guestTaken}
+                icon={<UserPlus size={16} color="#FFFFFF" strokeWidth={1.8} />} onPress={() => add({ name: typed })} />
+              <Txt v="small" color={T.muted}>{"Not on OneShort? That's fine: they're added by name and you mark their payment yourself."}</Txt>
+              {hits.length ? <Txt v="label" color={T.muted} style={{ paddingTop: 4 }}>Or pick them on OneShort</Txt> : search.isFetching ? <Txt v="small" color={T.muted}>Checking OneShort…</Txt> : null}
+              <View>
+                {hits.map((h) => (
+                  <Pressable key={h.id} accessibilityRole="button" onPress={() => add({ name: h.name, user_id: h.id })}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: T.line }}>
+                    <Avatar uri={h.image} name={h.name} size={30} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Txt v="bodyMed" numberOfLines={1}>{h.name}</Txt>
+                      {h.area || h.city ? <Txt v="small" color={T.muted} numberOfLines={1}>{[h.area, h.city].filter(Boolean).join(", ")}</Txt> : null}
+                    </View>
+                    <Plus size={18} color={T.primaryDark} />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : <Txt v="small" color={T.muted}>Type at least 2 letters.</Txt>}
+          <Button title="Done" variant="ghost" size="sm" onPress={() => { setAdding(false); setQ(""); }} />
+        </Card>
+      )}
+    </Section>
+  );
+}
+
+/** The split as one tidy WhatsApp message (built by the server), with Copy and WhatsApp buttons. */
+function GroupMessage({ ledger, settlementId, stamp, note }: { ledger: string; settlementId: string; stamp: string; note?: string }) {
+  const msg = useQuery({ queryKey: ["fee", ledger, "share", settlementId, stamp], queryFn: () => api<S<"ShareOut">>(`/settlements/${settlementId}/share`) });
+  return (
+    <View style={{ gap: SP.sm }}>
+      <Txt v="h3">WhatsApp group message</Txt>
+      {note ? <Txt v="small" color={T.muted}>{note}</Txt> : null}
+      {msg.isPending ? <LoadingSkeleton rows={3} /> : msg.isError ? <ErrorBox error={msg.error} onRetry={() => void msg.refetch()} /> : <ShareToGroup text={msg.data.text} />}
+    </View>
+  );
+}
+
+function Collect({ dash, ledger, onChange }: { dash: Dashboard; ledger: string; onChange: () => void }) {
   const [focus, setFocus] = useState<Record_ | null>(null);
   const [method, setMethod] = useState<S<"PaymentMethod">>("upi");
   const sheet = useRef<BottomSheetModal>(null);
@@ -309,14 +460,15 @@ function Collect({ dash, onChange }: { dash: Dashboard; onChange: () => void }) 
   const order = { disputed: 0, pending: 1, paid: 2, exempted: 3 } as Record<string, number>;
   return (
     <View style={{ gap: SP.md }}>
-      <Button title="Share summary on WhatsApp" variant="secondary" icon={<Share2 size={16} color={T.ink} strokeWidth={1.5} />} onPress={() => void openWa(`/settlements/${sid}/share`)} />
+      <GroupMessage ledger={ledger} settlementId={sid} stamp={dash.records.map((r) => r.status).join()} note="Who has paid and who hasn't, ready to paste in your team group." />
+      {dash.settlement.upi_id ? <Txt v="small" color={T.text2}>Players pay to UPI ID <Txt v="smallSemi">{dash.settlement.upi_id}</Txt></Txt> : null}
       {dash.settlement.payment_instructions ? <Txt v="small" color={T.text2}>Players were told: “{dash.settlement.payment_instructions}”</Txt> : null}
       {dash.records.slice().sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9)).map((r) => (
         <Card key={r.id} onPress={() => { setFocus(r); sheet.current?.present(); }} label={`${r.player.full_name}, ${STATUS[r.status]?.[1]}`}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <Avatar uri={r.player.profile_image} name={r.player.full_name} size={40} />
             <View style={{ flex: 1 }}>
-              <Txt v="h3" numberOfLines={1}>{r.player.full_name}</Txt>
+              <Txt v="h3" numberOfLines={1}>{r.player.full_name}{r.player_is_guest ? " · Guest" : ""}</Txt>
               <Txt v="small" color={T.muted}>{r.status === "paid" && r.method ? `Paid by ${METHODS.find((m) => m.v === r.method)?.l ?? r.method}` : r.dispute_reason ? `“${r.dispute_reason}”` : r.balance_paise ? `${formatPaise(r.balance_paise)} to collect` : " "}</Txt>
             </View>
             <View style={{ alignItems: "flex-end", gap: 4 }}>
@@ -360,7 +512,8 @@ function PlayerView({ dash, me, onChange }: { dash: Dashboard; me?: string; onCh
             <Txt v="stat">{formatPaise(mine.amount_paise)}</Txt>
             <Badge status={STATUS[mine.status]?.[0] ?? "neutral"} label={STATUS[mine.status]?.[1] ?? mine.status} />
           </View>
-          {dash.settlement.payment_instructions ? <Txt v="body" color={T.text2}>Pay {mine.captain.full_name}: {dash.settlement.payment_instructions}</Txt> : <Txt v="small" color={T.muted}>Pay {mine.captain.full_name} directly by cash or UPI.</Txt>}
+          {dash.settlement.upi_id ? <Txt v="body" color={T.text2}>Pay {mine.captain.full_name} on UPI: <Txt v="bodyMed" selectable>{dash.settlement.upi_id}</Txt></Txt> : null}
+          {dash.settlement.payment_instructions ? <Txt v="body" color={T.text2}>{dash.settlement.upi_id ? "" : `Pay ${mine.captain.full_name}: `}{dash.settlement.payment_instructions}</Txt> : !dash.settlement.upi_id ? <Txt v="small" color={T.muted}>Pay {mine.captain.full_name} directly by cash or UPI.</Txt> : null}
           {["pending", "paid"].includes(mine.status) ? <Button title="Something's wrong? Raise a dispute" variant="ghost" size="sm" onPress={() => setDisputing(true)} /> : null}
         </Card>
       ) : null}

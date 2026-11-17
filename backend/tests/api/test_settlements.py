@@ -277,3 +277,114 @@ async def test_spend_by_team_and_month(client: httpx.AsyncClient) -> None:
     nobody = await make_player(client, "Fresh", "bowler", HSR_LAYOUT)
     empty = (await client.get(f"{API}/settlements/me/spend", headers=nobody.h)).json()["data"]
     assert empty["teams"] == [] and empty["years"] == [] and empty["owed_paise"] == 0
+
+
+async def test_split_ticked_players_plus_last_minute_app_player_and_guest(client: httpx.AsyncClient) -> None:
+    captain, match, players = await _squad(client, 61, 3)
+    late = await make_player(client, "Late Arrival", "bowler", HSR_LAYOUT)
+    mid = match["id"]
+    r = await client.post(
+        f"{API}/matches/{mid}/expenses",
+        headers=captain.h,
+        json={"label": "Ground booking", "category": "ground", "amount_paise": 100000},
+    )
+    assert r.status_code == 201
+    ticked = [captain.id, players[0].id, players[1].id]  # players[2] didn't turn up
+    body = {
+        "player_ids": ticked,
+        "extra_players": [{"name": "Ravi Guest"}, {"name": "Late Arrival", "user_id": late.id}],
+        "payment_instructions": "UPI to skipper@okaxis",
+        "upi_id": "skipper@okaxis",
+    }
+    r = await client.post(f"{API}/matches/{mid}/settlements", headers=captain.h, json=body)
+    assert r.status_code == 201, r.text
+    draft = r.json()["data"]
+    assert draft["eligible_players"] == 5 and draft["individual_contribution_paise"] == 20000
+    lines = {line["player"]["full_name"]: line for line in draft["lines"]}
+    assert players[2].id not in {line["player"]["id"] for line in draft["lines"]}
+    assert lines["Ravi Guest"]["guest"] and lines["Ravi Guest"]["added"]
+    assert lines["Late Arrival"]["added"] and not lines["Late Arrival"]["guest"]
+    guest_id = lines["Ravi Guest"]["player"]["id"]
+
+    # Recalculating keeps the guest's id; a guest id can't be used to pull in a real player.
+    body["extra_players"] = [
+        {"name": "Ravi Guest", "guest_id": guest_id},
+        {"name": "Spoof", "guest_id": players[2].id},
+        {"name": "Late Arrival", "user_id": late.id},
+    ]
+    draft = (await client.post(f"{API}/matches/{mid}/settlements", headers=captain.h, json=body)).json()["data"]
+    ids = {line["player"]["full_name"]: line["player"]["id"] for line in draft["lines"]}
+    assert ids["Ravi Guest"] == guest_id and ids["Spoof"] != players[2].id
+    body["extra_players"] = [{"name": "Dup", "user_id": players[0].id}]
+    r = await client.post(f"{API}/matches/{mid}/settlements", headers=captain.h, json=body)
+    assert r.status_code == 422 and r.json()["error"]["code"] == "DUPLICATE_PARTICIPANT"
+    body["extra_players"] = [{"name": "Ravi Guest", "guest_id": guest_id}, {"name": "Late Arrival", "user_id": late.id}]
+    draft = (await client.post(f"{API}/matches/{mid}/settlements", headers=captain.h, json=body)).json()["data"]
+
+    # The captain can share the draft in the group; players can't see a draft.
+    r = await client.get(f"{API}/settlements/{draft['id']}/share", headers=captain.h)
+    text = r.json()["data"]["text"]
+    assert "*MATCH FEE*" in text and "₹200 each" in text and "Ravi Guest" in text and "(guest)" not in text
+    assert "UPI ID: *skipper@okaxis*" in text
+    assert "UPI to skipper@okaxis" in text and "Total: ₹1,000" in text
+    assert (await client.get(f"{API}/settlements/{draft['id']}/share", headers=players[0].h)).status_code == 404
+
+    st = (await client.post(f"{API}/settlements/{draft['id']}/publish", headers=captain.h)).json()["data"]
+    r = await client.post(
+        f"{API}/settlements/{st['id']}/payments/{guest_id}/mark-paid", headers=captain.h, json={"method": "cash"}
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["data"]["player"]["full_name"] == "Ravi Guest" and r.json()["data"]["player_is_guest"]
+    text = (await client.get(f"{API}/settlements/{st['id']}/share", headers=players[0].h)).json()["data"]["text"]
+    assert "✅ *Paid* (1)" in text and "1. Ravi Guest: ₹200" in text and "⏳ *To pay* (4)" in text
+
+    # The last-minute app player wasn't in the squad but can see their bill.
+    assert (await client.get(f"{API}/matches/{mid}/settlements", headers=late.h)).status_code == 200
+    mine = (await client.get(f"{API}/settlements/me", headers=late.h)).json()["data"]
+    assert any(rec["amount_paise"] == 20000 for rec in mine["records"])
+
+
+async def test_captain_home_lists_finished_matches_with_fees_to_collect(client: httpx.AsyncClient, container) -> None:  # type: ignore[no-untyped-def]
+    from bson import ObjectId
+
+    from app.common.types import utcnow
+
+    captain, match, players = await _squad(client, 62, 2)
+    mid = match["id"]
+    collect = f"{API}/settlements/collect"
+    assert not [f for f in (await client.get(collect, headers=captain.h)).json()["data"] if f["match_id"] == mid]
+
+    # The match is over: the card asks the captain to split the fee.
+    ended = utcnow() - timedelta(hours=2)
+    await container.mongo["matches"].update_one(
+        {"_id": ObjectId(mid)}, {"$set": {"start_at": ended - timedelta(hours=3), "end_at": ended}}
+    )
+    due = {f["match_id"]: f for f in (await client.get(collect, headers=captain.h)).json()["data"]}
+    assert due[mid]["stage"] == "not_split" and due[mid]["squad_size"] == 3
+    assert (await client.get(collect, headers=players[0].h)).json()["data"] == []
+
+    st = await _publish(client, captain, match, [("Ground", 90000)])
+    due = {f["match_id"]: f for f in (await client.get(collect, headers=captain.h)).json()["data"]}
+    assert due[mid]["stage"] == "collecting" and due[mid]["outstanding_paise"] == 90000
+    assert due[mid]["pending_count"] == 3
+
+    for pid in [captain.id, *(p.id for p in players)]:
+        await client.post(f"{API}/settlements/{st['id']}/payments/{pid}/mark-paid", headers=captain.h, json={})
+    assert mid not in {f["match_id"] for f in (await client.get(collect, headers=captain.h)).json()["data"]}
+
+
+async def test_upi_id_is_validated_and_remembered_for_the_next_split(client: httpx.AsyncClient) -> None:
+    captain, match, _players = await _squad(client, 63, 1)
+    mid = match["id"]
+    await client.post(
+        f"{API}/matches/{mid}/expenses",
+        headers=captain.h,
+        json={"label": "Ground", "category": "ground", "amount_paise": 50000},
+    )
+    for bad in ("not-a-upi", "rahul@", "@okaxis", "rahul@ok axis"):
+        r = await client.post(f"{API}/matches/{mid}/settlements", headers=captain.h, json={"upi_id": bad})
+        assert r.status_code == 422, bad
+    r = await client.post(f"{API}/matches/{mid}/settlements", headers=captain.h, json={"upi_id": " 98765.43210@ybl "})
+    assert r.status_code == 201 and r.json()["data"]["upi_id"] == "98765.43210@ybl"
+    me = (await client.get(f"{API}/users/me", headers=captain.h)).json()["data"]
+    assert me["fee_upi_id"] == "98765.43210@ybl"

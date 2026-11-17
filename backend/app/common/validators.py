@@ -60,6 +60,15 @@ StrongPassword = Annotated[str, StringConstraints(max_length=128), AfterValidato
 DateOfBirth = Annotated[date, AfterValidator(_date_of_birth)]
 Name = Annotated[str, StringConstraints(min_length=2, max_length=80, strip_whitespace=True)]
 ShortText = Annotated[str, StringConstraints(max_length=200, strip_whitespace=True)]
+#: A UPI ID (VPA) such as ``rahul@okaxis`` or ``9876543210@ybl``: where players send a match fee.
+UpiId = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        max_length=100,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9.\-_]{1,99}@[A-Za-z][A-Za-z0-9.\-]{1,49}$",
+    ),
+]
 LongText = Annotated[str, StringConstraints(max_length=2000, strip_whitespace=True)]
 Url = Annotated[str, StringConstraints(max_length=500), AfterValidator(_https_url)]
 Otp = Annotated[str, StringConstraints(pattern=r"^\d{6}$")]

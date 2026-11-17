@@ -19,6 +19,7 @@ from app.modules.settlements.schemas import (
     DisputeIn,
     ExpenseIn,
     ExpenseOut,
+    FeeDueOut,
     MarkPaidIn,
     PaymentRecordOut,
     PlayerDashboardOut,
@@ -103,6 +104,15 @@ async def publish(settlement_id: str, user: MatchmakerDep, svc: St) -> Envelope[
 )
 async def my_payments(user: UserDep, svc: Pay, status: PaymentStatus | None = None) -> Envelope[PlayerDashboardOut]:
     return ok(await svc.player_dashboard(user, status))
+
+
+@router.get(
+    "/settlements/collect",
+    response_model=Envelope[list[FeeDueOut]],
+    summary="Captain: finished matches whose fee still needs splitting or collecting (last 30 days)",
+)
+async def fees_to_collect(user: UserDep, svc: Pay) -> Envelope[list[FeeDueOut]]:
+    return ok(await svc.fees_to_collect(user))
 
 
 @router.get(

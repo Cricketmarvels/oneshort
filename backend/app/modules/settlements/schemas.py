@@ -12,7 +12,7 @@ from app.common.enums import (
     SettlementStatus,
 )
 from app.common.types import ObjectIdStr, StrictModel
-from app.common.validators import LongText, ShortText
+from app.common.validators import LongText, Name, ShortText, UpiId
 from app.modules.users.schemas import PublicUserOut
 
 
@@ -38,10 +38,26 @@ class AdjustmentIn(StrictModel):
     amount_paise: int = Field(ge=0, le=10_000_000)
 
 
+class ExtraPlayerIn(StrictModel):
+    """Someone sharing the fee who isn't in the squad: a registered player (``user_id``) or a guest typed
+    in by name. A guest has no account; send back the ``guest_id`` from an earlier split to keep the
+    same person (and anything they already paid) across recalculations and revisions."""
+
+    name: Name
+    user_id: ObjectIdStr | None = None
+    guest_id: ObjectIdStr | None = None
+
+
 class SettlementDraftIn(StrictModel):
     rounding_mode: RoundingMode = RoundingMode.EXACT_PAISE
-    exempt_player_ids: list[ObjectIdStr] = Field(default_factory=list, max_length=22)
-    adjustments: list[AdjustmentIn] = Field(default_factory=list, max_length=22)
+    player_ids: list[ObjectIdStr] | None = Field(
+        default=None, max_length=40, description="Squad players sharing the fee (ticked). Omit for the whole squad."
+    )
+    extra_players: list[ExtraPlayerIn] = Field(
+        default_factory=list, max_length=15, description="Last-minute players and guests outside the squad"
+    )
+    exempt_player_ids: list[ObjectIdStr] = Field(default_factory=list, max_length=40)
+    adjustments: list[AdjustmentIn] = Field(default_factory=list, max_length=40)
     contribution_overrides: dict[str, ContributionType] = Field(
         default_factory=dict, description="player_id → payee/non_payee override for this settlement"
     )
@@ -49,6 +65,9 @@ class SettlementDraftIn(StrictModel):
         default=None, description="e.g. 'UPI to rahul@okaxis or cash at the ground'. Never a PIN."
     )
     revision_reason: ShortText | None = None
+    upi_id: UpiId | None = Field(
+        default=None, description="Captain's UPI ID for this fee. Remembered on the account for the next split."
+    )
 
 
 class SettlementLineOut(BaseModel):
@@ -59,6 +78,8 @@ class SettlementLineOut(BaseModel):
     adjusted: bool
     amount_paise: int
     credited_paise: int
+    guest: bool = Field(default=False, description="Added by name only; has no OneShort account")
+    added: bool = Field(default=False, description="Not in the squad; added to this split by the captain")
 
 
 class ExpenseSnapshot(BaseModel):
@@ -84,6 +105,7 @@ class SettlementOut(BaseModel):
     total_assigned_paise: int
     lines: list[SettlementLineOut]
     payment_instructions: str | None
+    upi_id: str | None = None
     currency: Literal["INR"] = "INR"
     created_at: datetime
     published_at: datetime | None
@@ -128,6 +150,7 @@ class PaymentRecordOut(BaseModel):
     team_id: str
     team_name: str
     player: PublicUserOut
+    player_is_guest: bool = False
     captain: PublicUserOut
     amount_paise: int
     credited_paise: int
@@ -215,3 +238,19 @@ class ShareOut(BaseModel):
     text: str
     whatsapp_url: str
     note: str = "Opens WhatsApp with the message pre-filled. Delivery is not tracked by the app."
+
+
+class FeeDueOut(BaseModel):
+    """A finished match whose fee the captain still has to split or collect (home dashboard card)."""
+
+    match_id: str
+    title: str
+    start_at: datetime
+    venue_name: str | None
+    squad_size: int
+    stage: Literal["not_split", "draft", "collecting"]
+    total_paise: int = Field(description="Expenses added so far (or the published total)")
+    collected_paise: int
+    outstanding_paise: int
+    pending_count: int
+    paid_count: int

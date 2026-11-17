@@ -56,6 +56,7 @@ class UserOut(BaseModel):
     playing_roles: list[str] = Field(default_factory=list, description="Cricket roles the player can fill, in order")
     auth_providers: list[str] = Field(default_factory=list, description="How this account signs in: password, google")
     onboarding_completed: bool = Field(default=False, description="True once registration is finished")
+    fee_upi_id: str | None = Field(default=None, description="UPI ID last used to collect match fees (prefills splits)")
     created_at: datetime
 
 
