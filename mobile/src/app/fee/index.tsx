@@ -461,7 +461,7 @@ function Collect({ dash, ledger, onChange }: { dash: Dashboard; ledger: string; 
   return (
     <View style={{ gap: SP.md }}>
       <GroupMessage ledger={ledger} settlementId={sid} stamp={dash.records.map((r) => r.status).join()} note="Who has paid and who hasn't, ready to paste in your team group." />
-      {dash.settlement.upi_id ? <Txt v="small" color={T.text2}>Players pay to UPI ID <Txt v="smallSemi">{dash.settlement.upi_id}</Txt></Txt> : null}
+      <UpiCard current={dash.settlement.upi_id} onSaved={onChange} />
       {dash.settlement.payment_instructions ? <Txt v="small" color={T.text2}>Players were told: “{dash.settlement.payment_instructions}”</Txt> : null}
       {dash.records.slice().sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9)).map((r) => (
         <Card key={r.id} onPress={() => { setFocus(r); sheet.current?.present(); }} label={`${r.player.full_name}, ${STATUS[r.status]?.[1]}`}>
@@ -496,6 +496,46 @@ function Collect({ dash, ledger, onChange }: { dash: Dashboard; ledger: string; 
         ) : null}
       </FilterBottomSheet>
     </View>
+  );
+}
+
+/**
+ * Where players pay the captain. Saved on the captain's account, so it shows in the group message and in
+ * reminders straight away — even for a split that was shared before the captain added it — and is prefilled
+ * on the next split.
+ */
+function UpiCard({ current, onSaved }: { current?: string | null; onSaved: () => void }) {
+  const [editing, setEditing] = useState(!current);
+  const [upi, setUpi] = useState(current ?? "");
+  const ok = UPI_RE.test(upi.trim());
+  const save = useMutation({
+    mutationFn: () => api("/users/me", { method: "PUT", body: { fee_upi_id: upi.trim() } }),
+    onSuccess: () => { setEditing(false); onSaved(); },
+    onError: (e) => Alert.alert("Couldn't save your UPI ID", errorText(e)),
+  });
+  if (!editing && current) {
+    return (
+      <Card style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt v="small" color={T.muted}>Players pay you on UPI</Txt>
+          <Txt v="h3" selectable numberOfLines={1}>{current}</Txt>
+        </View>
+        <Button title="Change" size="sm" variant="secondary" onPress={() => { setUpi(current); setEditing(true); }} />
+      </Card>
+    );
+  }
+  return (
+    <Card style={{ gap: SP.sm, backgroundColor: current ? T.surface : T.warningBackground }}>
+      <Txt v="h3">{current ? "Change your UPI ID" : "Add your UPI ID"}</Txt>
+      {!current ? <Txt v="small" color={T.text2}>So the WhatsApp message and reminders tell players exactly where to pay.</Txt> : null}
+      <Field label="Your UPI ID" value={upi} onChangeText={(v) => setUpi(v.replace(/\s/g, ""))} placeholder="e.g. rahul@okaxis or 9876543210@ybl"
+        autoCapitalize="none" autoCorrect={false} keyboardType="email-address" maxLength={100}
+        error={upi.trim() && !ok ? "That doesn't look like a UPI ID. It should look like name@bank." : null} hint="Never share your UPI PIN." />
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <Button title="Save UPI ID" size="sm" disabled={!ok} loading={save.isPending} onPress={() => save.mutate()} style={{ flex: 1 }} />
+        {current ? <Button title="Cancel" size="sm" variant="ghost" onPress={() => setEditing(false)} /> : null}
+      </View>
+    </Card>
   );
 }
 

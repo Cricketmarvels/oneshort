@@ -6,7 +6,7 @@ from pydantic import AfterValidator, BaseModel, EmailStr, Field
 from app.common.enums import NotificationType, PlayingRole
 from app.common.media import OwnMediaUrl
 from app.common.types import StrictModel
-from app.common.validators import DateOfBirth, Name, Password, ShortText, Timezone
+from app.common.validators import DateOfBirth, Name, Password, ShortText, Timezone, UpiId
 
 
 class NotificationPrefs(BaseModel):
@@ -77,6 +77,7 @@ class UpdateMeIn(StrictModel):
     timezone: Timezone | None = None
     notification_prefs: NotificationPrefs | None = None
     preferred_sport: Literal["cricket", "badminton", "pickleball"] | None = None
+    fee_upi_id: UpiId | None = Field(default=None, description="Where players pay my match fees")
 
 
 def _unique_roles(v: list[PlayingRole]) -> list[PlayingRole]:

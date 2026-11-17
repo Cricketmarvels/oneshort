@@ -273,6 +273,12 @@ class SettlementService:
             )
         return out
 
+    async def captain_upi(self, captain_id: ObjectId) -> str | None:
+        """The captain's saved UPI ID: used when a split was shared before they added one, so the group
+        message and reminders still tell players where to pay without revising the split."""
+        u = await self.c.mongo["users"].find_one({"_id": captain_id}, {"fee_upi_id": 1}) or {}
+        return u.get("fee_upi_id")
+
     async def _credits(self, settlement_id: ObjectId) -> dict[ObjectId, int]:
         out: dict[ObjectId, int] = {}
         async for r in self.records.find({"settlement_id": settlement_id}):
@@ -438,7 +444,7 @@ class SettlementService:
                 for line in st["lines"]
             ],
             payment_instructions=st.get("payment_instructions"),
-            upi_id=st.get("upi_id"),
+            upi_id=st.get("upi_id") or await self.captain_upi(st["captain_id"]),
             created_at=st["created_at"],
             published_at=st.get("published_at"),
         )

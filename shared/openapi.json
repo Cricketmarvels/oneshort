@@ -38471,6 +38471,20 @@
               }
             ],
             "title": "Preferred Sport"
+          },
+          "fee_upi_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9.\\-_]{1,99}@[A-Za-z][A-Za-z0-9.\\-]{1,49}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Upi Id",
+            "description": "Where players pay my match fees"
           }
         },
         "additionalProperties": false,

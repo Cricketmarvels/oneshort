@@ -388,3 +388,21 @@ async def test_upi_id_is_validated_and_remembered_for_the_next_split(client: htt
     assert r.status_code == 201 and r.json()["data"]["upi_id"] == "98765.43210@ybl"
     me = (await client.get(f"{API}/users/me", headers=captain.h)).json()["data"]
     assert me["fee_upi_id"] == "98765.43210@ybl"
+
+
+async def test_upi_added_after_sharing_shows_in_group_message_and_reminders(client: httpx.AsyncClient) -> None:
+    captain, match, players = await _squad(client, 64, 2)
+    st = await _publish(client, captain, match, [("Ground", 60000)])  # shared before any UPI ID existed
+    share = f"{API}/settlements/{st['id']}/share"
+    assert "UPI ID" not in (await client.get(share, headers=captain.h)).json()["data"]["text"]
+
+    r = await client.put(f"{API}/users/me", headers=captain.h, json={"fee_upi_id": "skip@okhdfc"})
+    assert r.status_code == 200 and r.json()["data"]["fee_upi_id"] == "skip@okhdfc"
+    assert (await client.put(f"{API}/users/me", headers=captain.h, json={"fee_upi_id": "nope"})).status_code == 422
+
+    assert "UPI ID: *skip@okhdfc*" in (await client.get(share, headers=players[0].h)).json()["data"]["text"]
+    r = await client.post(f"{API}/settlements/{st['id']}/payments/{players[0].id}/remind", headers=captain.h)
+    text = r.json()["data"]["text"]
+    assert "UPI ID: *skip@okhdfc*" in text and "₹200" in text and f"/fee?ledger={match['id']}" in text
+    notes = (await client.get(f"{API}/notifications", headers=players[0].h)).json()["data"]
+    assert any(n["type"] == "payment_reminder" and "skip@okhdfc" in n["body"] for n in notes)

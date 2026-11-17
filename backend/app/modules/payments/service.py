@@ -588,18 +588,24 @@ class PaymentService:
         match, _ = await self.access.load(rec["match_id"])
         player = await self.c.mongo["users"].find_one({"_id": player_id}) or {}
         amount = rupees(rec["amount_paise"] - rec.get("credited_paise", 0))
-        text = (
-            f"Hi {player.get('full_name') or rec.get('player_name') or ''}, a friendly reminder: "
-            f"your contribution of {amount} for "
-            f"{match.get('title', 'our match')} is pending."
-            + (f" UPI ID: {st.get('upi_id')}." if st.get("upi_id") else "")
-            + (f" {st.get('payment_instructions')}" if st.get("payment_instructions") else "")
-        )
+        upi = st.get("upi_id") or await self.settlements.captain_upi(st.get("captain_id") or rec["captain_id"])
+        name = (player.get("full_name") or rec.get("player_name") or "").split(" ")[0]
+        base = (self.c.settings.app_base_url or self.c.settings.web_base_url).rstrip("/")
+        lines = [
+            f"Hi {name} 👋" if name else "Hi 👋",
+            f"Friendly reminder: your match fee of *{amount}* for *{match.get('title', 'our match')}* is pending.",
+        ]
+        if upi:
+            lines += ["", f"💳 UPI ID: *{upi}*"]
+        if st.get("payment_instructions"):
+            lines.append(st["payment_instructions"])
+        lines += ["", "Reply *paid* once done. Thanks! 🏏", f"{base}/fee?ledger={rec['match_id']}"]
+        text = "\n".join(lines)
         await self.c.notifications.notify(
             [player_id],
             NotificationType.PAYMENT_REMINDER,
             "Payment reminder",
-            f"{amount} pending for {match.get('title', 'the match')}.",
+            f"{amount} pending for {match.get('title', 'the match')}." + (f" UPI ID: {upi}" if upi else ""),
             {"settlement_id": settlement_id, "match_id": rec["match_id"]},
         )
         phone = (player.get("mobile_number") or "").lstrip("+")

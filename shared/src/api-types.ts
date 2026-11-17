@@ -8114,6 +8114,11 @@ export interface components {
             notification_prefs?: components["schemas"]["NotificationPrefs"] | null;
             /** Preferred Sport */
             preferred_sport?: ("cricket" | "badminton" | "pickleball") | null;
+            /**
+             * Fee Upi Id
+             * @description Where players pay my match fees
+             */
+            fee_upi_id?: string | null;
         };
         /** UpdateMemberIn */
         UpdateMemberIn: {
