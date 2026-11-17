@@ -21165,6 +21165,113 @@
         }
       }
     },
+    "/api/v1/settlements/{settlement_id}/remind-all": {
+      "post": {
+        "tags": [
+          "Split a Fee"
+        ],
+        "summary": "Remind every unpaid player personally (in-app, push, WhatsApp); at most once an hour",
+        "operationId": "remind_all_api_v1_settlements__settlement_id__remind_all_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "settlement_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Settlement Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RemindAllOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/settlements/{settlement_id}/payments/{player_id}/remind": {
       "post": {
         "tags": [
@@ -28169,6 +28276,7 @@
       "Envelope_RacketProfileOut_": {},
       "Envelope_RatingOut_": {},
       "Envelope_RegisterOut_": {},
+      "Envelope_RemindAllOut_": {},
       "Envelope_ReportOut_": {},
       "Envelope_ReputationOut_": {},
       "Envelope_RosterOut_": {},
@@ -31221,10 +31329,16 @@
             "default": false
           },
           "whatsapp": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Whatsapp",
-            "description": "Opt-in: match invitations on WhatsApp; lets accepted teammates open a WhatsApp chat",
-            "default": false
+            "description": "WhatsApp updates (invites, match changes, fee reminders). null = not chosen: updates are ON by default. false = switched off. Only an explicit true also lets accepted teammates open a WhatsApp chat with you."
           },
           "muted_types": {
             "items": {
@@ -34872,6 +34986,35 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RemarksIn"
+      },
+      "RemindAllOut": {
+        "properties": {
+          "reminded": {
+            "type": "integer",
+            "title": "Reminded",
+            "description": "Players on OneShort who got a personal reminder (in-app, push, WhatsApp)"
+          },
+          "guests": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Guests",
+            "description": "Unpaid guests with no account: send them the group message yourself"
+          },
+          "next_allowed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Next Allowed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reminded",
+          "guests",
+          "next_allowed_at"
+        ],
+        "title": "RemindAllOut"
       },
       "ReplaceIn": {
         "properties": {

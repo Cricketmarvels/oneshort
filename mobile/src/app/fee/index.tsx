@@ -462,6 +462,7 @@ function Collect({ dash, ledger, onChange }: { dash: Dashboard; ledger: string; 
     <View style={{ gap: SP.md }}>
       <GroupMessage ledger={ledger} settlementId={sid} stamp={dash.records.map((r) => r.status).join()} note="Who has paid and who hasn't, ready to paste in your team group." />
       <UpiCard current={dash.settlement.upi_id} onSaved={onChange} />
+      <RemindAll settlementId={sid} unpaid={dash.records.filter((r) => r.status === "pending").length} />
       {dash.settlement.payment_instructions ? <Txt v="small" color={T.text2}>Players were told: “{dash.settlement.payment_instructions}”</Txt> : null}
       {dash.records.slice().sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9)).map((r) => (
         <Card key={r.id} onPress={() => { setFocus(r); sheet.current?.present(); }} label={`${r.player.full_name}, ${STATUS[r.status]?.[1]}`}>
@@ -495,6 +496,30 @@ function Collect({ dash, ledger, onChange }: { dash: Dashboard; ledger: string; 
           </View>
         ) : null}
       </FilterBottomSheet>
+    </View>
+  );
+}
+
+/**
+ * One tap: every unpaid player on OneShort gets a personal reminder (their amount + the UPI ID) in the app, as a
+ * push and on WhatsApp. Guests have no account, so they're named for the captain to message. Once an hour at most.
+ */
+function RemindAll({ settlementId, unpaid }: { settlementId: string; unpaid: number }) {
+  const [note, setNote] = useState<string | null>(null);
+  const send = useMutation({
+    mutationFn: () => api<S<"RemindAllOut">>(`/settlements/${settlementId}/remind-all`, { method: "POST", body: {} }),
+    onSuccess: (r) => {
+      const who = r.reminded === 1 ? "1 player" : `${r.reminded} players`;
+      const guests = r.guests.length ? ` ${r.guests.join(", ")} ${r.guests.length === 1 ? "isn't" : "aren't"} on OneShort, so send them the group message.` : "";
+      setNote(`Reminder sent to ${who} on WhatsApp and in the app, each with their own amount and your UPI ID.${guests}`);
+    },
+    onError: (e) => setNote(errorText(e)),
+  });
+  if (!unpaid) return null;
+  return (
+    <View style={{ gap: SP.sm }}>
+      <Button title={`Remind everyone who hasn't paid (${unpaid})`} icon={<BellRing size={16} color="#FFFFFF" strokeWidth={1.8} />} loading={send.isPending} onPress={() => send.mutate()} />
+      {note ? <Txt v="small" color={T.text2}>{note}</Txt> : null}
     </View>
   );
 }

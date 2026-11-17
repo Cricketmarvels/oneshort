@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.api.dependencies import ContainerDep, UserDep
 from app.common.response import ERROR_RESPONSES, Envelope, ok
+from app.modules.notifications.service import whatsapp_updates_on
 from app.modules.users.profile import patch_profile
 from app.modules.users.registration import complete_registration
 from app.modules.users.schemas import (
@@ -62,7 +63,7 @@ class WhatsAppTestOut(BaseModel):
 )
 async def whatsapp_test(user: UserDep, c: ContainerDep) -> Envelope[WhatsAppTestOut]:
     doc = user.doc
-    if not (doc.get("notification_prefs") or {}).get("whatsapp"):
+    if not whatsapp_updates_on(doc.get("notification_prefs")):
         return ok(WhatsAppTestOut(status="opted_out"))
     if not doc.get("mobile_number"):
         return ok(WhatsAppTestOut(status="no_number"))

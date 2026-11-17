@@ -2730,6 +2730,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settlements/{settlement_id}/remind-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remind every unpaid player personally (in-app, push, WhatsApp); at most once an hour */
+        post: operations["remind_all_api_v1_settlements__settlement_id__remind_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/settlements/{settlement_id}/payments/{player_id}/remind": {
         parameters: {
             query?: never;
@@ -4645,6 +4662,7 @@ export interface components {
         Envelope_RacketProfileOut_: unknown;
         Envelope_RatingOut_: unknown;
         Envelope_RegisterOut_: unknown;
+        Envelope_RemindAllOut_: unknown;
         Envelope_ReportOut_: unknown;
         Envelope_ReputationOut_: unknown;
         Envelope_RosterOut_: unknown;
@@ -5750,10 +5768,9 @@ export interface components {
             email: boolean;
             /**
              * Whatsapp
-             * @description Opt-in: match invitations on WhatsApp; lets accepted teammates open a WhatsApp chat
-             * @default false
+             * @description WhatsApp updates (invites, match changes, fee reminders). null = not chosen: updates are ON by default. false = switched off. Only an explicit true also lets accepted teammates open a WhatsApp chat with you.
              */
-            whatsapp: boolean;
+            whatsapp?: boolean | null;
             /** Muted Types */
             muted_types?: components["schemas"]["NotificationType"][];
         };
@@ -6949,6 +6966,24 @@ export interface components {
         RemarksIn: {
             /** Remarks */
             remarks?: string | null;
+        };
+        /** RemindAllOut */
+        RemindAllOut: {
+            /**
+             * Reminded
+             * @description Players on OneShort who got a personal reminder (in-app, push, WhatsApp)
+             */
+            reminded: number;
+            /**
+             * Guests
+             * @description Unpaid guests with no account: send them the group message yourself
+             */
+            guests: string[];
+            /**
+             * Next Allowed At
+             * Format: date-time
+             */
+            next_allowed_at: string;
         };
         /** ReplaceIn */
         ReplaceIn: {
@@ -24066,6 +24101,91 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Envelope_PaymentRecordOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    remind_all_api_v1_settlements__settlement_id__remind_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                settlement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_RemindAllOut_"];
                 };
             };
             /** @description Bad request */

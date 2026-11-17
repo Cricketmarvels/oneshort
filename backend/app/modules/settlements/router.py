@@ -24,6 +24,7 @@ from app.modules.settlements.schemas import (
     PaymentRecordOut,
     PlayerDashboardOut,
     RemarksIn,
+    RemindAllOut,
     SettlementDraftIn,
     SettlementOut,
     ShareOut,
@@ -196,6 +197,15 @@ async def dispute(
     settlement_id: str, player_id: str, data: DisputeIn, user: UserDep, svc: Pay
 ) -> Envelope[PaymentRecordOut]:
     return ok(await svc.dispute(user, _id(settlement_id, "settlement"), _id(player_id, "player"), data.reason))
+
+
+@router.post(
+    "/settlements/{settlement_id}/remind-all",
+    response_model=Envelope[RemindAllOut],
+    summary="Remind every unpaid player personally (in-app, push, WhatsApp); at most once an hour",
+)
+async def remind_all(settlement_id: str, user: MatchmakerDep, svc: Pay) -> Envelope[RemindAllOut]:
+    return ok(await svc.remind_all(user, _id(settlement_id, "settlement")))
 
 
 @router.post(

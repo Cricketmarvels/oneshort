@@ -254,3 +254,9 @@ class FeeDueOut(BaseModel):
     outstanding_paise: int
     pending_count: int
     paid_count: int
+
+
+class RemindAllOut(BaseModel):
+    reminded: int = Field(description="Players on OneShort who got a personal reminder (in-app, push, WhatsApp)")
+    guests: list[str] = Field(description="Unpaid guests with no account: send them the group message yourself")
+    next_allowed_at: datetime

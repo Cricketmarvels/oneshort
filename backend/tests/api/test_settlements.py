@@ -406,3 +406,35 @@ async def test_upi_added_after_sharing_shows_in_group_message_and_reminders(clie
     assert "UPI ID: *skip@okhdfc*" in text and "₹200" in text and f"/fee?ledger={match['id']}" in text
     notes = (await client.get(f"{API}/notifications", headers=players[0].h)).json()["data"]
     assert any(n["type"] == "payment_reminder" and "skip@okhdfc" in n["body"] for n in notes)
+
+
+async def test_remind_everyone_unpaid_in_one_tap(client: httpx.AsyncClient) -> None:
+    captain, match, players = await _squad(client, 65, 3)
+    mid = match["id"]
+    await client.post(
+        f"{API}/matches/{mid}/expenses",
+        headers=captain.h,
+        json={"label": "Ground", "category": "ground", "amount_paise": 100000},
+    )
+    r = await client.post(
+        f"{API}/matches/{mid}/settlements",
+        headers=captain.h,
+        json={"extra_players": [{"name": "Anshul"}], "upi_id": "skip@okicici"},
+    )
+    st = (await client.post(f"{API}/settlements/{r.json()['data']['id']}/publish", headers=captain.h)).json()["data"]
+    await client.post(f"{API}/settlements/{st['id']}/payments/{players[0].id}/mark-paid", headers=captain.h, json={})
+
+    # Players can't send it.
+    assert (await client.post(f"{API}/settlements/{st['id']}/remind-all", headers=players[1].h)).status_code == 403
+    r = await client.post(f"{API}/settlements/{st['id']}/remind-all", headers=captain.h)
+    assert r.status_code == 200, r.text
+    out = r.json()["data"]
+    assert out["reminded"] == 2 and out["guests"] == ["Anshul"]  # not the payer who paid, not the captain
+    for p, expect in ((players[1], True), (players[2], True), (players[0], False)):
+        notes = (await client.get(f"{API}/notifications", headers=p.h)).json()["data"]
+        got = [n for n in notes if n["type"] == "payment_reminder"]
+        assert bool(got) == expect
+        if expect:
+            assert "₹200" in got[0]["body"] and "skip@okicici" in got[0]["body"]
+    r = await client.post(f"{API}/settlements/{st['id']}/remind-all", headers=captain.h)
+    assert r.status_code == 422 and r.json()["error"]["code"] == "REMIND_COOLDOWN"

@@ -43,6 +43,7 @@ from app.modules.invitations.schemas import (
 )
 from app.modules.matches import lifecycle
 from app.modules.matches.service import MatchAccess
+from app.modules.notifications.service import whatsapp_updates_on
 from app.modules.teams.policy import can_manage_match, ensure_match_manager
 from app.modules.users.schemas import public_user
 
@@ -585,11 +586,11 @@ class InvitationService:
         ctype: ContributionType,
         note: str | None,
     ) -> str:
-        """WhatsApp copy of a match invitation — only to players who opted in, and only via a configured provider."""
+        """WhatsApp copy of a match invitation, unless the player switched WhatsApp off (configured provider only)."""
         player = await self.c.mongo["users"].find_one(
             {"_id": pid}, {"mobile_number": 1, "notification_prefs": 1, "mobile_verified": 1, "verified_via": 1}
         )
-        if not player or not (player.get("notification_prefs") or {}).get("whatsapp"):
+        if not player or not whatsapp_updates_on(player.get("notification_prefs")):
             return "opted_out"
         if not player.get("mobile_number") or (
             player.get("verified_via") in ("email", "captain_invite") and not player.get("mobile_verified")

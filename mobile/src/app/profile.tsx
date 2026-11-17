@@ -185,11 +185,11 @@ export default function Profile() {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 }}>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Txt v="bodyMed">WhatsApp updates</Txt>
-                  <Txt v="small" color={T.muted}>Get match invitations on WhatsApp, and let captains and players you've agreed to play with message you there.</Txt>
+                  <Txt v="small" color={T.muted}>On by default: match invitations, time changes and fee reminders on WhatsApp. Players you&apos;ve agreed to play with can message you there once you switch this on yourself.</Txt>
                 </View>
-                <Switch value={!!meQ.data.notification_prefs.whatsapp} onValueChange={(v) => { setWaTest(null); void setWhatsApp(v); }} trackColor={{ true: T.accent, false: T.switchOff }} thumbColor={T.surface} {...({ activeThumbColor: T.surface, activeTrackColor: T.accent } as object)} accessibilityLabel="WhatsApp updates" />
+                <Switch value={meQ.data.notification_prefs.whatsapp !== false} onValueChange={(v) => { setWaTest(null); void setWhatsApp(v); }} trackColor={{ true: T.accent, false: T.switchOff }} thumbColor={T.surface} {...({ activeThumbColor: T.surface, activeTrackColor: T.accent } as object)} accessibilityLabel="WhatsApp updates" />
               </View>
-              {meQ.data.notification_prefs.whatsapp ? (
+              {meQ.data.notification_prefs.whatsapp !== false ? (
                 <View style={{ gap: 6, paddingBottom: 10 }}>
                   <Txt v="small" color={T.muted}>Messages go to {meQ.data.mobile_number}.</Txt>
                   <Button title="Send a test message" variant="secondary" size="sm" loading={waTesting} onPress={() => void testWhatsApp()} style={{ alignSelf: "flex-start" }} />

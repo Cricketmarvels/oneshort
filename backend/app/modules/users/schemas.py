@@ -13,9 +13,12 @@ class NotificationPrefs(BaseModel):
     in_app: bool = True
     push: bool = True
     email: bool = False
-    whatsapp: bool = Field(
-        default=False,
-        description="Opt-in: match invitations on WhatsApp; lets accepted teammates open a WhatsApp chat",
+    whatsapp: bool | None = Field(
+        default=None,
+        description=(
+            "WhatsApp updates (invites, match changes, fee reminders). null = not chosen: updates are ON by default. "
+            "false = switched off. Only an explicit true also lets accepted teammates open a WhatsApp chat with you."
+        ),
     )
     muted_types: list[NotificationType] = Field(default_factory=list, max_length=50)
 

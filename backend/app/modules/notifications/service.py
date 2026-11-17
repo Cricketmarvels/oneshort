@@ -94,7 +94,7 @@ class NotificationService:
             )
             if prefs.get("push", True):
                 push_targets.append(uid)
-            if prefs.get("whatsapp") and _whatsapp_number_ok(users[uid]) and ntype in WHATSAPP_TYPES:
+            if whatsapp_updates_on(prefs) and _whatsapp_number_ok(users[uid]) and ntype in WHATSAPP_TYPES:
                 wa_targets.append(users[uid]["mobile_number"])
         if not docs:
             return
@@ -191,6 +191,11 @@ async def check_push_receipts(c: Any) -> int:
     if done_ids:
         await c.mongo["push_receipts"].delete_many({"receipt_id": {"$in": done_ids}})
     return len(done_ids)
+
+
+def whatsapp_updates_on(prefs: dict[str, Any] | None) -> bool:
+    """WhatsApp updates are on unless the player switched them off (not choosing counts as on)."""
+    return (prefs or {}).get("whatsapp") is not False
 
 
 UNPROVEN_SIGNUPS = ("email", "captain_invite")  # self-typed numbers, not yet proven by SMS

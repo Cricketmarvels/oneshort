@@ -40,9 +40,14 @@ async def _invite(client: httpx.AsyncClient, cap, match_id: str, pid: str, messa
     return item
 
 
-async def test_invite_whatsapp_is_opt_in_and_reports_status(client: httpx.AsyncClient, container: Container) -> None:
+async def test_invite_whatsapp_is_on_by_default_and_reports_status(
+    client: httpx.AsyncClient, container: Container
+) -> None:
     cap, p, match_id = await _setup(client, "WA1")
+    await client.put(f"{API}/users/me", headers=p.h, json={"notification_prefs": {"whatsapp": False}})
     assert (await _invite(client, cap, match_id, p.id))["whatsapp_status"] == "opted_out"
+    cap0, p0, match0 = await _setup(client, "WA0")  # never chose: on by default
+    assert (await _invite(client, cap0, match0, p0.id))["whatsapp_status"] == "not_configured"
 
     cap2, p2, match2 = await _setup(client, "WA2")
     await client.put(f"{API}/users/me", headers=p2.h, json={"notification_prefs": {"whatsapp": True}})

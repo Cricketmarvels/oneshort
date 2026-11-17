@@ -52,33 +52,34 @@ async def test_whatsapp_otp_login_end_to_end(client: httpx.AsyncClient, containe
         container.whatsapp = original
 
 
-async def test_notifications_forward_to_whatsapp_only_when_opted_in(
+async def test_notifications_forward_to_whatsapp_unless_switched_off(
     client: httpx.AsyncClient, container: Container
 ) -> None:
     yes = await register(client, "Wa Yes")
     no = await register(client, "Wa No")
-    await client.put(f"{API}/users/me", headers=yes.h, json={"notification_prefs": {"whatsapp": True}})
+    default = await register(client, "Wa Default")  # never chose: updates are on by default
+    await client.put(f"{API}/users/me", headers=no.h, json={"notification_prefs": {"whatsapp": False}})
     fake, original = FakeWhatsApp(), container.whatsapp
     container.whatsapp = fake  # type: ignore[assignment]
     try:
         svc = container.notifications
         await svc.notify(
-            [ObjectId(yes.id), ObjectId(no.id)],
+            [ObjectId(yes.id), ObjectId(no.id), ObjectId(default.id)],
             NotificationType.MATCH_CANCELLED,
             "Match cancelled",
             "Sunday T20 is off",
         )
         assert (
-            [s[0] for s in fake.sent] == [yes.mobile]
+            sorted(s[0] for s in fake.sent) == sorted([yes.mobile, default.mobile])
             and fake.sent[0][3] == "notify"
             and "Sunday T20 is off" in fake.sent[0][1]
         )
         await svc.notify(
             [ObjectId(yes.id)], NotificationType.RATING_UPDATED, "Rating +5", "Nice"
         )  # not a WhatsApp type
-        assert len(fake.sent) == 1
+        assert len(fake.sent) == 2
         t = (await client.post(f"{API}/users/me/whatsapp-test", headers=yes.h)).json()["data"]
-        assert t["status"] == "sent" and len(fake.sent) == 2
+        assert t["status"] == "sent" and len(fake.sent) == 3
         assert (await client.post(f"{API}/users/me/whatsapp-test", headers=no.h)).json()["data"][
             "status"
         ] == "opted_out"

@@ -8,6 +8,7 @@ pushed in real time and notified to the player.
 ``PaymentProvider`` marks the seam for a future "App Pro" gateway integration.
 """
 
+import math
 from datetime import timedelta
 from typing import Any, Protocol
 from urllib.parse import quote
@@ -32,6 +33,7 @@ from app.modules.settlements.schemas import (
     MonthTeamSpendOut,
     PaymentRecordOut,
     PlayerDashboardOut,
+    RemindAllOut,
     ShareOut,
     SpendOut,
     StatusChange,
@@ -43,6 +45,7 @@ from app.modules.users.schemas import public_user
 
 P = PaymentStatus
 IST = ZoneInfo("Asia/Kolkata")
+REMIND_ALL_COOLDOWN = timedelta(hours=1)
 
 
 class PaymentProvider(Protocol):
@@ -578,6 +581,84 @@ class PaymentService:
         )
         return ShareOut(text=text, whatsapp_url=f"https://wa.me/?text={quote(text)}")
 
+    async def _reminder_text(
+        self, st: dict[str, Any], rec: dict[str, Any], match: dict[str, Any], name: str
+    ) -> tuple[str, str, str | None]:
+        """Personal reminder: (WhatsApp text, amount, UPI ID)."""
+        amount = rupees(rec["amount_paise"] - rec.get("credited_paise", 0))
+        upi = st.get("upi_id") or await self.settlements.captain_upi(st.get("captain_id") or rec["captain_id"])
+        first = name.split(" ")[0] if name else ""
+        base = (self.c.settings.app_base_url or self.c.settings.web_base_url).rstrip("/")
+        lines = [
+            f"Hi {first} 👋" if first else "Hi 👋",
+            f"Friendly reminder: your match fee of *{amount}* for *{match.get('title', 'our match')}* is pending.",
+        ]
+        if upi:
+            lines += ["", f"💳 UPI ID: *{upi}*"]
+        if st.get("payment_instructions"):
+            lines.append(st["payment_instructions"])
+        lines += ["", "Reply *paid* once done. Thanks! 🏏", f"{base}/fee?ledger={rec['match_id']}"]
+        return "\n".join(lines), amount, upi
+
+    async def remind_all(self, user: CurrentUser, settlement_id: ObjectId) -> RemindAllOut:
+        """One tap: every unpaid player on OneShort gets their own reminder (amount + UPI ID) in the app, as a push
+        and on WhatsApp. Guests have no account, so they're listed for the captain to message. At most once an hour
+        per split, so nobody gets spammed."""
+        st = await self._ensure_current(settlement_id)
+        match, team = await self.access.load(st["match_id"])
+        if not can_manage_match(match, team, user.id):
+            raise Forbidden("Only the captain or a team admin can send reminders", code="NOT_MATCH_MANAGER")
+        now = utcnow()
+        last = st.get("reminded_all_at")
+        if last and now - ensure_utc(last) < REMIND_ALL_COOLDOWN:
+            wait = math.ceil((REMIND_ALL_COOLDOWN - (now - ensure_utc(last))).total_seconds() / 60)
+            raise BusinessRuleViolation(
+                f"Everyone was just reminded. You can remind them again in {wait} min.", code="REMIND_COOLDOWN"
+            )
+        claimed = await self.c.mongo["settlements"].update_one(
+            {"_id": settlement_id, "reminded_all_at": last}, {"$set": {"reminded_all_at": now}}
+        )
+        if not claimed.modified_count:
+            raise BusinessRuleViolation("Reminders were just sent", code="REMIND_COOLDOWN")
+        unpaid = [r async for r in self.records.find({"settlement_id": settlement_id, "status": P.PENDING.value})]
+        people = {
+            u["_id"]: u
+            async for u in self.c.mongo["users"].find(
+                {"_id": {"$in": [r["player_id"] for r in unpaid]}, "account_status": {"$ne": "deleted"}},
+                {"full_name": 1},
+            )
+        }
+        reminded, guests = 0, []
+        for rec in unpaid:
+            u = people.get(rec["player_id"])
+            if not u:
+                guests.append(rec.get("player_name") or "Guest")
+                continue
+            if rec["player_id"] == user.id:
+                continue  # the captain doesn't remind themselves
+            _text, amount, upi = await self._reminder_text(st, rec, match, u.get("full_name", ""))
+            first = (u.get("full_name") or "").split(" ")[0]
+            await self.c.notifications.notify(
+                [rec["player_id"]],
+                NotificationType.PAYMENT_REMINDER,
+                f"Match fee pending: {match.get('title', 'Match')}",
+                f"Hi {first}, your {amount} is pending."
+                + (f" Pay to UPI ID {upi}." if upi else "")
+                + " Reply paid once done.",
+                {"settlement_id": settlement_id, "match_id": rec["match_id"]},
+            )
+            reminded += 1
+        await self.c.audit.log(
+            actor_id=user.id,
+            action="payment.reminded_all",
+            entity_type="settlement",
+            entity_id=settlement_id,
+            previous_value=None,
+            new_value={"reminded": reminded, "guests": len(guests)},
+            request_id=user.request_id,
+        )
+        return RemindAllOut(reminded=reminded, guests=guests, next_allowed_at=now + REMIND_ALL_COOLDOWN)
+
     async def remind(self, user: CurrentUser, settlement_id: ObjectId, player_id: ObjectId) -> ShareOut:
         rec = await self._record(settlement_id, player_id)
         if not await self._is_manager(rec, user):
@@ -587,20 +668,9 @@ class PaymentService:
         st = await self.c.mongo["settlements"].find_one({"_id": settlement_id}) or {}
         match, _ = await self.access.load(rec["match_id"])
         player = await self.c.mongo["users"].find_one({"_id": player_id}) or {}
-        amount = rupees(rec["amount_paise"] - rec.get("credited_paise", 0))
-        upi = st.get("upi_id") or await self.settlements.captain_upi(st.get("captain_id") or rec["captain_id"])
-        name = (player.get("full_name") or rec.get("player_name") or "").split(" ")[0]
-        base = (self.c.settings.app_base_url or self.c.settings.web_base_url).rstrip("/")
-        lines = [
-            f"Hi {name} 👋" if name else "Hi 👋",
-            f"Friendly reminder: your match fee of *{amount}* for *{match.get('title', 'our match')}* is pending.",
-        ]
-        if upi:
-            lines += ["", f"💳 UPI ID: *{upi}*"]
-        if st.get("payment_instructions"):
-            lines.append(st["payment_instructions"])
-        lines += ["", "Reply *paid* once done. Thanks! 🏏", f"{base}/fee?ledger={rec['match_id']}"]
-        text = "\n".join(lines)
+        text, amount, upi = await self._reminder_text(
+            st, rec, match, player.get("full_name") or rec.get("player_name") or ""
+        )
         await self.c.notifications.notify(
             [player_id],
             NotificationType.PAYMENT_REMINDER,

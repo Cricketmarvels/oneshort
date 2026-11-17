@@ -99,7 +99,8 @@ async def thread(invitation_id: str, user: UserDep, c: ContainerDep) -> Envelope
     ) or {"_id": other_id, "full_name": "OneShort player"}
     is_open = inv["invitation_status"] in OPEN
     wa = None
-    if is_open and (other.get("notification_prefs") or {}).get("whatsapp") and other.get("mobile_number"):
+    # Only a player who switched WhatsApp on themselves shares their number (the default-on updates don't).
+    if is_open and (other.get("notification_prefs") or {}).get("whatsapp") is True and other.get("mobile_number"):
         wa = _wa_link(
             other["mobile_number"],
             _wa_text(other["full_name"], user.full_name, match, c.settings.app_base_url or c.settings.web_base_url),
