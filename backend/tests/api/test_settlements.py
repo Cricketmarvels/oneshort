@@ -361,12 +361,16 @@ async def test_captain_home_lists_finished_matches_with_fees_to_collect(client: 
     )
     due = {f["match_id"]: f for f in (await client.get(collect, headers=captain.h)).json()["data"]}
     assert due[mid]["stage"] == "not_split" and due[mid]["squad_size"] == 3
+    assert due[mid]["settlement_id"] is None
     assert (await client.get(collect, headers=players[0].h)).json()["data"] == []
 
     st = await _publish(client, captain, match, [("Ground", 90000)])
     due = {f["match_id"]: f for f in (await client.get(collect, headers=captain.h)).json()["data"]}
     assert due[mid]["stage"] == "collecting" and due[mid]["outstanding_paise"] == 90000
     assert due[mid]["pending_count"] == 3
+    assert due[mid]["settlement_id"] == st["id"]  # the home card reminds everyone through this
+    r = await client.post(f"{API}/settlements/{due[mid]['settlement_id']}/remind-all", headers=captain.h)
+    assert r.status_code == 200 and r.json()["data"]["reminded"] == 2  # both players; never the captain
 
     for pid in [captain.id, *(p.id for p in players)]:
         await client.post(f"{API}/settlements/{st['id']}/payments/{pid}/mark-paid", headers=captain.h, json={})

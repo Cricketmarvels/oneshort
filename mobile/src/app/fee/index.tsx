@@ -7,7 +7,7 @@ import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { formatPaise, rupeesToPaise, type S } from "@cm/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { BadgeCheck, Ban, BellRing, CheckSquare, Plus, Square, Trash2, UserPlus, Wallet, X } from "lucide-react-native";
+import { BadgeCheck, Ban, BellRing, CheckSquare, ClipboardPaste, Plus, Square, Trash2, UserPlus, Wallet, X } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, View } from "react-native";
 
@@ -16,6 +16,7 @@ import { FilterBottomSheet, PromptModal } from "@/components/sheet";
 import { Avatar, Badge, Button, Card, Chip, EmptyState, ErrorBox, Field, LoadingSkeleton, Section, Segmented, Txt } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { matchPerson, parseDuesList, type Person } from "@/lib/duesList";
 import { when } from "@/lib/format";
 import { R, SP, T } from "@/theme";
 import { ShieldCrest } from "@/components/identity";
@@ -35,7 +36,10 @@ const METHODS: { v: S<"PaymentMethod">; l: string }[] = [
 ];
 /** Same shape the server accepts: name@bank (e.g. rahul@okaxis, 9876543210@ybl). */
 const UPI_RE = /^[A-Za-z0-9][A-Za-z0-9.\-_]{1,99}@[A-Za-z][A-Za-z0-9.\-]{1,49}$/;
-const STATUS: Record<string, [string, string]> = { pending: ["warning", "Pending"], paid: ["success", "Paid"], exempted: ["neutral", "Exempt"], disputed: ["danger", "Disputed"] };
+const STATUS: Record<string, [string, string]> = { pending: ["warning", "Pending"], paid: ["success", "Paid"], exempted: ["neutral", "Exempt"], disputed: ["danger", "Disputed"], carried_forward: ["neutral", "Moved"] };
+type Due = S<"PreviousDueOut">;
+const norm = (n: string) => n.toLowerCase().split(/\s+/).filter(Boolean).join(" ");
+const shortDay = (iso?: string | null) => (iso ? when(iso, { day: "numeric", month: "short" }) : "");
 
 export default function SplitFee() {
   const p = useLocalSearchParams<{ ledger?: string; fixture?: string; team?: string; title?: string }>();
@@ -163,7 +167,38 @@ function Manager({ ledger, side, expenses, draft, published, dash, onChange }: {
   const [changed, setChanged] = useState(false);
   const [adding, setAdding] = useState(false);
   const picked = ticked ?? defaultTicked;
-  const who: WhoPays = { ticked: side ? undefined : picked, extras };
+  // Earlier unpaid fees of this team, for players in this split. The captain ticks which to add here.
+  const dues = useQuery({ queryKey: ["fee", ledger, "dues"], queryFn: () => api<Due[]>(`/matches/${ledger}/previous-dues`) });
+  const [carry, setCarry] = useState<string[] | null>(null);
+  const inSplit = new Set([...(side ? side.members.filter((m) => m.in_squad).map((m) => m.user.id) : picked), ...extras.flatMap((x) => (x.user_id ? [x.user_id] : []))]);
+  const guestNames = new Set(extras.filter((x) => !x.user_id).map((x) => norm(x.name)));
+  const isHere = (d: Due) => (d.guest ? guestNames.has(norm(d.name)) : inSplit.has(d.player_id));
+  const allDues = dues.data ?? [];
+  const chosen = carry ?? (base?.lines ?? []).flatMap((l) => (l.carried ?? []).map((c) => c.record_id));
+  const carryIds = allDues.filter(isHere).flatMap((d) => d.items.map((i) => i.record_id)).filter((id) => chosen.includes(id));
+  // Dues kept outside OneShort (a pasted WhatsApp list): matched to people in this split, advances negative.
+  const people: Person[] = [
+    ...(side ? side.members.filter((m) => m.in_squad).map((m) => ({ key: m.user.id, name: m.user.full_name }))
+      : squad.filter((e) => picked.includes(e.player.id)).map((e) => ({ key: e.player.id, name: e.player.full_name }))),
+    ...extras.map((x) => ({ key: x.user_id ?? x.guest_id ?? `name:${x.name}`, name: x.name })),
+  ];
+  const [outside, setOutside] = useState<Outside[] | null>(null);
+  // A fresh match starts from the people still owing after the team's last split, so the list is never lost.
+  const rolled = useQuery({ queryKey: ["fee", ledger, "outside-dues"], enabled: !base, queryFn: () => api<Other[]>(`/matches/${ledger}/outside-dues`) });
+  const outsideRows: Outside[] = outside ?? (base
+    ? [...base.lines.filter((l) => l.prior_paise).map((l) => ({ id: l.player.id, name: l.player.full_name, key: l.player.id, amountPaise: l.prior_paise ?? 0, note: l.prior_note ?? "", check: false, raw: "" })),
+      ...(base.other_dues ?? []).map((o, i) => ({ id: `other-${i}`, name: o.name, key: null, amountPaise: o.amount_paise, note: o.note ?? "", check: false, raw: "" }))]
+    : (rolled.data ?? []).map((o, i) => ({ id: `rolled-${i}`, name: o.name, key: null, amountPaise: o.amount_paise, note: o.note ?? "", check: false, raw: "" })));
+  const editOutside = (rows: Outside[]) => { setOutside(rows); setChanged(true); };
+  const [upiFromList, setUpiFromList] = useState<string | null>(null);
+  const live = new Set(people.map((x) => x.key));
+  const playing = outsideRows.filter((r) => r.key && live.has(r.key) && r.amountPaise);
+  const manual = playing.map((r) => (
+    r.key!.startsWith("name:") ? { name: r.key!.slice(5), amount_paise: r.amountPaise, note: r.note || null } : { player_id: r.key!, amount_paise: r.amountPaise, note: r.note || null }));
+  // Everyone else on the list (not in this match, or unticked since) is kept: listed in the message, charged nowhere.
+  const others: Other[] = outsideRows.filter((r) => !playing.includes(r) && r.amountPaise).map((r) => ({ name: r.name, amount_paise: r.amountPaise, note: r.note || null }));
+  const who: WhoPays = { ticked: side ? undefined : picked, extras, carry: carryIds, manual, others };
+  const toggleCarry = (ids: string[], on: boolean) => { setCarry(on ? [...new Set([...chosen, ...ids])] : chosen.filter((id) => !ids.includes(id))); setChanged(true); };
   return (
     <View style={{ gap: SP.xl }}>
       <Segmented value={tab} onChange={setTab} options={[{ v: "setup", l: published ? "Revise split" : "Set up split" }, { v: "collect", l: "Collect payments" }]} />
@@ -176,8 +211,11 @@ function Manager({ ledger, side, expenses, draft, published, dash, onChange }: {
             onAll={(on) => { setTicked(on ? squad.map((e) => e.player.id) : []); setChanged(true); }}
             onAdd={(x) => { setExtras([...extras, x]); setChanged(true); }}
             onRemove={(key) => { setExtras(extras.filter((x) => x.key !== key)); setChanged(true); }} />
-          <Split step={side ? 4 : 3} ledger={ledger} draft={draft} published={published} hasExpenses={expenses.length > 0} who={who} changed={changed} onAddPlayer={() => setAdding(true)}
-            onCalculated={(st) => { setChanged(false); setTicked(null); setExtras(st.lines.filter((l) => l.added).map((l) => (
+          {allDues.length ? <PreviousDues step={side ? 4 : 3} here={allDues.filter(isHere)} away={allDues.filter((d) => !isHere(d))} chosen={carryIds} onToggle={toggleCarry} /> : null}
+          <OutsideDues step={(side ? 4 : 3) + (allDues.length ? 1 : 0)} people={people} rows={outsideRows} onRows={editOutside} onUpi={setUpiFromList}
+            onAddGuest={(name) => { setExtras([...extras, { key: `guest-${name.toLowerCase()}`, name }]); setChanged(true); return `name:${name}`; }} />
+          <Split step={(side ? 5 : 4) + (allDues.length ? 1 : 0)} upiFromList={upiFromList} ledger={ledger} draft={draft} published={published} hasExpenses={expenses.length > 0} who={who} changed={changed} onAddPlayer={() => setAdding(true)}
+            onCalculated={(st) => { setChanged(false); setTicked(null); setCarry(null); setOutside(null); setExtras(st.lines.filter((l) => l.added).map((l) => (
               l.guest ? { key: l.player.id, name: l.player.full_name, guest_id: l.player.id } : { key: l.player.id, name: l.player.full_name, user_id: l.player.id }))); }}
             onChange={() => { onChange(); }} onPublished={() => setTab("collect")} />
         </>
@@ -260,8 +298,8 @@ function Squad({ side, onChange }: { side: Side; onChange: () => void }) {
   );
 }
 
-function Split({ step, ledger, draft, published, hasExpenses, who, changed, onAddPlayer, onCalculated, onChange, onPublished }: {
-  step: number; ledger: string; draft?: Settlement; published?: Settlement; hasExpenses: boolean; who: WhoPays; changed: boolean; onAddPlayer: () => void;
+function Split({ step, upiFromList, ledger, draft, published, hasExpenses, who, changed, onAddPlayer, onCalculated, onChange, onPublished }: {
+  step: number; upiFromList?: string | null; ledger: string; draft?: Settlement; published?: Settlement; hasExpenses: boolean; who: WhoPays; changed: boolean; onAddPlayer: () => void;
   onCalculated: (st: Settlement) => void; onChange: () => void; onPublished: () => void;
 }) {
   const base = draft ?? published;
@@ -270,12 +308,16 @@ function Split({ step, ledger, draft, published, hasExpenses, who, changed, onAd
   const { user } = useAuth();
   const [upi, setUpi] = useState(base?.upi_id ?? user?.fee_upi_id ?? "");
   const upiOk = !upi.trim() || UPI_RE.test(upi.trim());
+  // "Use UPI ID from the list": take it once, when the captain asks (adjusted during render, not in an effect).
+  const [usedUpi, setUsedUpi] = useState(upiFromList);
+  if (upiFromList && upiFromList !== usedUpi) { setUsedUpi(upiFromList); setUpi(upiFromList); }
   const [reason, setReason] = useState("");
   const nobody = (who.ticked?.length ?? 1) + who.extras.length === 0;
   const calc = useMutation({
     mutationFn: () => api<Settlement>(`/matches/${ledger}/settlements`, { method: "POST", body: {
       rounding_mode: rounding, player_ids: who.ticked ?? null,
       extra_players: who.extras.map(({ name, user_id, guest_id }) => ({ name, user_id: user_id ?? null, guest_id: guest_id ?? null })),
+      carry_record_ids: who.carry, manual_dues: who.manual, other_dues: who.others,
       payment_instructions: instructions || null, upi_id: upi.trim() || null, revision_reason: published ? reason || "Updated split" : null,
     } }),
     onSuccess: (st) => { onCalculated(st); onChange(); },
@@ -312,32 +354,151 @@ function Split({ step, ledger, draft, published, hasExpenses, who, changed, onAd
         <Card style={{ gap: 0 }}>
           <View style={{ flexDirection: "row", paddingBottom: 8 }}>
             <Txt v="label" color={T.muted} style={{ flex: 1 }}>Preview · {draft.eligible_players} paying</Txt>
-            <Txt v="label" color={T.muted}>{formatPaise(draft.total_assigned_paise)}</Txt>
+            <Txt v="label" color={T.muted}>{formatPaise(draft.lines.reduce((a, l) => a + l.amount_paise, 0))}</Txt>
           </View>
           {draft.lines.map((l) => (
             <View key={l.player.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: T.line }}>
               <Avatar uri={l.player.profile_image} name={l.player.full_name} size={30} />
-              <Txt v="bodyMed" style={{ flex: 1 }} numberOfLines={1}>{l.player.full_name}</Txt>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Txt v="bodyMed" numberOfLines={1}>{l.player.full_name}</Txt>
+                {l.carried_paise || l.prior_paise ? <Txt v="small" color={T.warningText} numberOfLines={2}>{breakdown(l)}</Txt> : null}
+              </View>
               {l.guest ? <Badge status="info" label="Guest" /> : l.added ? <Badge status="info" label="Added" /> : null}
               {!l.eligible ? <Badge status="neutral" label={l.contribution_type === "non_payee" ? "Plays free" : "Exempt"} /> : null}
-              <Txt v="number" style={{ fontSize: 15 }} color={l.eligible ? T.text : T.muted}>{formatPaise(l.amount_paise)}</Txt>
+              <Txt v="number" style={{ fontSize: 15 }} color={l.eligible || l.amount_paise ? T.text : T.muted}>{formatPaise(l.amount_paise)}</Txt>
             </View>
           ))}
           {draft.rounding_adjustment_paise ? <Txt v="small" color={T.muted} style={{ paddingTop: 8 }}>Rounding adds {formatPaise(draft.rounding_adjustment_paise)} in total.</Txt> : null}
+          {draft.carried_paise ? <Txt v="small" color={T.muted} style={{ paddingTop: 8 }}>Includes {formatPaise(draft.carried_paise)} unpaid from earlier matches. Once you share, those old fees show as moved here.</Txt> : null}
           <Button title="Someone missing? Add player" variant="ghost" size="sm" icon={<UserPlus size={16} color={T.primaryDark} strokeWidth={1.5} />} onPress={onAddPlayer} style={{ marginTop: 6 }} />
           {changed ? <Txt v="small" color={T.muted} style={{ paddingTop: 8 }}>Updating the split…</Txt> : null}
           <Button title={published ? "Share revised split" : "Share with players"} style={{ marginTop: SP.md }} loading={publish.isPending}
             disabled={changed} onPress={() => publish.mutate(draft.id)} />
         </Card>
       ) : null}
-      {draft && !changed ? <GroupMessage ledger={ledger} settlementId={draft.id} stamp={`${draft.total_assigned_paise}-${draft.lines.length}-${draft.payment_instructions ?? ""}`}
+      {draft && !changed ? <GroupMessage ledger={ledger} settlementId={draft.id} stamp={`${draft.total_assigned_paise}-${draft.carried_paise}-${draft.prior_paise}-${draft.lines.length}-${draft.payment_instructions ?? ""}-${draft.upi_id ?? ""}`}
         note="Ready to paste in your team group. Also tap “Share with players” so everyone on OneShort can track what they owe." /> : null}
     </Section>
   );
 }
 
 type Extra = { key: string; name: string; user_id?: string; guest_id?: string };
-type WhoPays = { ticked?: string[]; extras: Extra[] };
+type Manual = { player_id?: string; name?: string; amount_paise: number; note: string | null };
+type Other = { name: string; amount_paise: number; note: string | null };
+type WhoPays = { ticked?: string[]; extras: Extra[]; carry: string[]; manual: Manual[]; others: Other[] };
+/** One earlier balance from the pasted list. key = who in this split it lands on; null = not playing this match (kept, listed, carried on). */
+type Outside = { id: string; name: string; key: string | null; amountPaise: number; note: string; check: boolean; raw: string };
+
+/** "₹500 + ₹600 previous dues − ₹577 advance": what makes up a player's amount. */
+function breakdown(l: { share_paise?: number; carried_paise?: number; prior_paise?: number; prior_note?: string | null }) {
+  const parts = [formatPaise(l.share_paise ?? 0)];
+  if (l.carried_paise) parts.push(`+ ${formatPaise(l.carried_paise)} earlier`);
+  if ((l.prior_paise ?? 0) > 0) parts.push(`+ ${formatPaise(l.prior_paise!)} ${(l.prior_note || "previous dues").toLowerCase()}`);
+  if ((l.prior_paise ?? 0) < 0) parts.push(`− ${formatPaise(-l.prior_paise!)} advance`);
+  return parts.join(" ");
+}
+
+/**
+ * Dues kept outside OneShort: paste the WhatsApp list of pending fees. Each line is matched to a player in this
+ * split; what they owe is added to their fee here, and an advance is taken off. Everyone else on the list is kept
+ * as "not playing this match": shown in the group message under their own heading, charged nowhere, and carried to
+ * the team's next split. The captain can still point any row at a player here or add them as a guest.
+ */
+function OutsideDues({ step, people, rows, onRows, onUpi, onAddGuest }: {
+  step: number; people: Person[]; rows: Outside[]; onRows: (r: Outside[]) => void; onUpi: (u: string) => void; onAddGuest: (name: string) => string;
+}) {
+  const [text, setText] = useState("");
+  const [read, setRead] = useState<string | null>(null);
+  const [upi, setUpi] = useState<string | null>(null);
+  const live = new Set(people.map((p) => p.key));
+  const nameOf = (key: string | null) => people.find((p) => p.key === key)?.name;
+  const taken = new Set(rows.map((r) => r.key).filter(Boolean));
+  const same = (a: string, b: string) => norm(a) === norm(b);
+  const parse = () => {
+    const out = parseDuesList(text);
+    const next = [...rows];
+    let matched = 0;
+    out.rows.forEach((r, i) => {
+      const key = matchPerson(r.name, people);
+      if (key) matched++;
+      const row: Outside = { id: `${Date.now()}-${i}`, name: r.name, key, amountPaise: r.amountPaise, note: r.note, check: r.check, raw: r.raw };
+      // Pasting the list again updates people already on it instead of adding them twice.
+      const at = key ? next.findIndex((x) => x.key === key) : next.findIndex((x) => !x.key && same(x.name, r.name));
+      if (at >= 0) next[at] = row; else next.push(row);
+    });
+    onRows(next);
+    setUpi(out.upi);
+    const rest = out.rows.length - matched;
+    setRead(out.rows.length ? `Read ${out.rows.length} line${out.rows.length === 1 ? "" : "s"}: ${matched} playing this match${rest ? `, ${rest} not playing (kept on the list)` : ""}.` : "No names with amounts found. Each line needs a name and an amount, e.g. “Ajay Sinha - 600”.");
+    setText("");
+  };
+  const set = (id: string, patch: Partial<Outside>) => onRows(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const here = rows.filter((r) => r.key && live.has(r.key));
+  const away = rows.filter((r) => !here.includes(r));
+  const sum = (xs: Outside[]) => xs.reduce((a, r) => a + r.amountPaise, 0);
+  const signed = (n: number) => (n >= 0 ? `+${formatPaise(n)}` : `−${formatPaise(-n)}`);
+  const row = (r: Outside) => {
+    const ok = !!r.key && live.has(r.key);
+    const advance = r.amountPaise < 0;
+    return (
+      <View key={r.id} style={{ gap: 8, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Avatar name={nameOf(r.key) ?? r.name} size={30} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Txt v="bodyMed" numberOfLines={1}>{nameOf(r.key) ?? r.name}</Txt>
+            {ok && r.raw && nameOf(r.key) !== r.name ? <Txt v="small" color={T.muted} numberOfLines={1}>From “{r.name}”</Txt> : null}
+            {!ok ? <Txt v="small" color={T.muted} numberOfLines={2}>{advance ? "Advance held. Taken off when they next play." : "Listed in the group message and carried to your next match."}</Txt> : null}
+            {r.check ? <Txt v="small" color={T.warnText} numberOfLines={2}>Check this amount: the list said “{r.raw}”.</Txt> : null}
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${r.name}`} hitSlop={10} onPress={() => onRows(rows.filter((x) => x.id !== r.id))}><X size={18} color={T.muted} /></Pressable>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
+          <View style={{ flexDirection: "row", gap: 6 }}>
+            <Chip label="Owes" active={!advance} onPress={() => set(r.id, { amountPaise: Math.abs(r.amountPaise), note: r.note === "Advance" ? "Previous dues" : r.note, check: false })} />
+            <Chip label="Advance" active={advance} onPress={() => set(r.id, { amountPaise: -Math.abs(r.amountPaise), note: "Advance", check: false })} />
+          </View>
+          <View style={{ flex: 1 }}><Field label="Amount (₹)" value={r.amountPaise ? String(Math.abs(r.amountPaise) / 100) : ""} keyboardType="decimal-pad"
+            onChangeText={(v) => { const n = rupeesToPaise(v.replace(/[^\d.]/g, "")); set(r.id, { amountPaise: advance ? -n : n, check: false }); }} /></View>
+        </View>
+        {!ok ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} keyboardShouldPersistTaps="handled">
+            <Chip label={`Add “${r.name}” as guest`} onPress={() => set(r.id, { key: onAddGuest(r.name) })} />
+            {people.filter((p) => !taken.has(p.key)).map((p) => <Chip key={p.key} label={`It's ${p.name}`} onPress={() => set(r.id, { key: p.key })} />)}
+          </ScrollView>
+        ) : null}
+      </View>
+    );
+  };
+  return (
+    <Section title={`${step} · Dues from outside OneShort`}>
+      <Txt v="small" color={T.muted}>{"Paste your WhatsApp list of pending fees. Anyone playing this match gets their dues added to their fee here, and advances are taken off. Everyone else stays on the list: the group message shows them under “still pending”, and they carry to your next match."}</Txt>
+      <Card style={{ gap: SP.sm }}>
+        <Field label="Paste list" value={text} onChangeText={setText} multiline placeholder={"2. Ajay Sinha - 600\n5. Mohit - 588 + 500 = 1088\n10. Abhishek Tyagi - 577 (advance)"} style={{ minHeight: 96, textAlignVertical: "top" }} />
+        <Button title="Read list" size="sm" icon={<ClipboardPaste size={16} color="#FFFFFF" strokeWidth={1.8} />} disabled={!text.trim()} onPress={parse} />
+        {read ? <Txt v="small" color={T.text2}>{read}</Txt> : null}
+        {upi ? <Button title={`Use UPI ID ${upi} for this split`} variant="secondary" size="sm" onPress={() => { onUpi(upi); setUpi(null); }} /> : null}
+      </Card>
+      {here.length ? (
+        <Card style={{ gap: 0 }}>
+          <View style={{ flexDirection: "row", gap: 12, paddingBottom: 6 }}>
+            <Txt v="label" color={T.muted} style={{ flex: 1 }}>Playing this match ({here.length}) · added to their fee</Txt>
+            <Txt v="label" color={T.muted}>{signed(sum(here))}</Txt>
+          </View>
+          {here.map(row)}
+        </Card>
+      ) : null}
+      {away.length ? (
+        <Card style={{ gap: 0 }}>
+          <View style={{ flexDirection: "row", gap: 12, paddingBottom: 6 }}>
+            <Txt v="label" color={T.muted} style={{ flex: 1 }}>Not playing this match ({away.length}) · kept on the list</Txt>
+            <Txt v="label" color={T.muted}>{signed(sum(away))}</Txt>
+          </View>
+          {away.map(row)}
+        </Card>
+      ) : null}
+    </Section>
+  );
+}
 type Hit = { id: string; name: string; area: string | null; city: string | null; image: string | null };
 
 /**
@@ -435,6 +596,52 @@ function Players({ step, adding, setAdding, squad, loading, ticked, extras, onTi
   );
 }
 
+/**
+ * Earlier unpaid fees: players in this split who still owe from the team's previous matches. Ticking adds the old
+ * amount to what they pay now (one payment, one reminder); once shared, the old fee is marked as moved here so it
+ * is never collected twice. Guests are matched by name.
+ */
+function PreviousDues({ step, here, away, chosen, onToggle }: { step: number; here: Due[]; away: Due[]; chosen: string[]; onToggle: (ids: string[], on: boolean) => void }) {
+  const ids = (d: Due) => d.items.map((i) => i.record_id);
+  const allIds = here.flatMap(ids);
+  const allOn = allIds.length > 0 && allIds.every((id) => chosen.includes(id));
+  const added = here.filter((d) => ids(d).every((id) => chosen.includes(id))).reduce((a, d) => a + d.total_paise, 0);
+  return (
+    <Section title={`${step} · Earlier unpaid fees`}>
+      <Txt v="small" color={T.muted}>{here.length ? "These players still owe from earlier matches. Tick to add it to what they pay for this match." : "Nobody in this split owes from earlier matches."}</Txt>
+      {here.length ? (
+        <Card style={{ gap: 0 }}>
+          <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: allOn }} onPress={() => onToggle(allIds, !allOn)} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingBottom: 10 }}>
+            {allOn ? <CheckSquare size={22} color={T.primary} strokeWidth={2} /> : <Square size={22} color={T.muted} strokeWidth={1.5} />}
+            <Txt v="smallSemi" color={T.text2} style={{ flex: 1 }}>{allOn ? "Remove all" : "Add all to this match fee"}</Txt>
+            {added ? <Txt v="smallSemi" color={T.warningText}>+{formatPaise(added)}</Txt> : null}
+          </Pressable>
+          {here.map((d) => {
+            const on = ids(d).every((id) => chosen.includes(id));
+            return (
+              <Pressable key={d.player_id} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={`${d.name} owes ${formatPaise(d.total_paise)}`} onPress={() => onToggle(ids(d), !on)}
+                style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: T.line }}>
+                {on ? <CheckSquare size={22} color={T.primary} strokeWidth={2} /> : <Square size={22} color={T.muted} strokeWidth={1.5} />}
+                <Avatar name={d.name} size={30} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Txt v="bodyMed" numberOfLines={1}>{d.name}{d.guest ? " · Guest" : ""}</Txt>
+                  {d.items.map((i) => <Txt key={i.record_id} v="small" color={T.muted} numberOfLines={2}>{formatPaise(i.amount_paise)} · {i.match_title}{i.match_start_at ? ` (${shortDay(i.match_start_at)})` : ""}</Txt>)}
+                </View>
+                <Txt v="number" style={{ fontSize: 15 }}>{formatPaise(d.total_paise)}</Txt>
+              </Pressable>
+            );
+          })}
+        </Card>
+      ) : null}
+      {away.length ? (
+        <Txt v="small" color={T.muted}>
+          Also unpaid, not in this split: {away.slice(0, 6).map((d) => `${d.name} ${formatPaise(d.total_paise)}`).join(", ")}{away.length > 6 ? ` and ${away.length - 6} more` : ""}. Remind them from their old match.
+        </Txt>
+      ) : null}
+    </Section>
+  );
+}
+
 /** The split as one tidy WhatsApp message (built by the server), with Copy and WhatsApp buttons. */
 function GroupMessage({ ledger, settlementId, stamp, note }: { ledger: string; settlementId: string; stamp: string; note?: string }) {
   const msg = useQuery({ queryKey: ["fee", ledger, "share", settlementId, stamp], queryFn: () => api<S<"ShareOut">>(`/settlements/${settlementId}/share`) });
@@ -457,7 +664,7 @@ function Collect({ dash, ledger, onChange }: { dash: Dashboard; ledger: string; 
     try { const s = await api<S<"ShareOut">>(path, path.endsWith("/remind") ? { method: "POST", body: {} } : {}); await Linking.openURL(s.whatsapp_url); }
     catch (e) { Alert.alert("Couldn't open WhatsApp", errorText(e)); }
   };
-  const order = { disputed: 0, pending: 1, paid: 2, exempted: 3 } as Record<string, number>;
+  const order = { disputed: 0, pending: 1, paid: 2, exempted: 3, carried_forward: 4 } as Record<string, number>;
   return (
     <View style={{ gap: SP.md }}>
       <GroupMessage ledger={ledger} settlementId={sid} stamp={dash.records.map((r) => r.status).join()} note="Who has paid and who hasn't, ready to paste in your team group." />
@@ -470,7 +677,8 @@ function Collect({ dash, ledger, onChange }: { dash: Dashboard; ledger: string; 
             <Avatar uri={r.player.profile_image} name={r.player.full_name} size={40} />
             <View style={{ flex: 1 }}>
               <Txt v="h3" numberOfLines={1}>{r.player.full_name}{r.player_is_guest ? " · Guest" : ""}</Txt>
-              <Txt v="small" color={T.muted}>{r.status === "paid" && r.method ? `Paid by ${METHODS.find((m) => m.v === r.method)?.l ?? r.method}` : r.dispute_reason ? `“${r.dispute_reason}”` : r.balance_paise ? `${formatPaise(r.balance_paise)} to collect` : " "}</Txt>
+              <Txt v="small" color={T.muted} numberOfLines={2}>{r.carried_to_match_title ? `Added to the ${r.carried_to_match_title} fee` : r.status === "paid" && r.method ? `Paid by ${METHODS.find((m) => m.v === r.method)?.l ?? r.method}` : r.dispute_reason ? `“${r.dispute_reason}”` : r.balance_paise ? `${formatPaise(r.balance_paise)} to collect` : " "}</Txt>
+              {r.carried_paise || r.prior_paise ? <Txt v="small" color={T.warningText} numberOfLines={2}>{breakdown({ share_paise: r.amount_paise - (r.carried_paise ?? 0) - (r.prior_paise ?? 0), carried_paise: r.carried_paise, prior_paise: r.prior_paise, prior_note: r.prior_note })}</Txt> : null}
             </View>
             <View style={{ alignItems: "flex-end", gap: 4 }}>
               <Txt v="number" style={{ fontSize: 16 }}>{formatPaise(r.amount_paise)}</Txt>
@@ -480,7 +688,9 @@ function Collect({ dash, ledger, onChange }: { dash: Dashboard; ledger: string; 
         </Card>
       ))}
       <FilterBottomSheet ref={sheet} title={focus ? `${focus.player.full_name} · ${formatPaise(focus.amount_paise)}` : ""} snap={["58%"]}>
-        {focus ? (
+        {focus?.status === "carried_forward" ? (
+          <Txt v="body" color={T.text2}>This fee was added to the {focus.carried_to_match_title ?? "next match"} fee. Mark it paid there, or revise that split to bring it back here.</Txt>
+        ) : focus ? (
           <View style={{ gap: SP.sm }}>
             {focus.status !== "paid" ? (
               <>
@@ -577,6 +787,8 @@ function PlayerView({ dash, me, onChange }: { dash: Dashboard; me?: string; onCh
             <Txt v="stat">{formatPaise(mine.amount_paise)}</Txt>
             <Badge status={STATUS[mine.status]?.[0] ?? "neutral"} label={STATUS[mine.status]?.[1] ?? mine.status} />
           </View>
+          {mine.carried_paise || mine.prior_paise ? <Txt v="small" color={T.text2}>{breakdown({ share_paise: Math.max(0, mine.amount_paise - (mine.carried_paise ?? 0) - (mine.prior_paise ?? 0)), carried_paise: mine.carried_paise, prior_paise: mine.prior_paise, prior_note: mine.prior_note })}</Txt> : null}
+          {mine.carried_to_match_title ? <Txt v="small" color={T.text2}>Your captain added this to the {mine.carried_to_match_title} fee. Pay it there.</Txt> : null}
           {dash.settlement.upi_id ? <Txt v="body" color={T.text2}>Pay {mine.captain.full_name} on UPI: <Txt v="bodyMed" selectable>{dash.settlement.upi_id}</Txt></Txt> : null}
           {dash.settlement.payment_instructions ? <Txt v="body" color={T.text2}>{dash.settlement.upi_id ? "" : `Pay ${mine.captain.full_name}: `}{dash.settlement.payment_instructions}</Txt> : !dash.settlement.upi_id ? <Txt v="small" color={T.muted}>Pay {mine.captain.full_name} directly by cash or UPI.</Txt> : null}
           {["pending", "paid"].includes(mine.status) ? <Button title="Something's wrong? Raise a dispute" variant="ghost" size="sm" onPress={() => setDisputing(true)} /> : null}

@@ -2559,6 +2559,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/matches/{match_id}/previous-dues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unpaid fees from this team's earlier matches, to add to this match's split (captain only) */
+        get: operations["previous_dues_api_v1_matches__match_id__previous_dues_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matches/{match_id}/outside-dues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Earlier balances of people not playing, carried from the team's last split (captain only) */
+        get: operations["outside_dues_api_v1_matches__match_id__outside_dues_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/matches/{match_id}/settlements": {
         parameters: {
             query?: never;
@@ -3746,6 +3780,22 @@ export interface components {
             /** Bio */
             bio?: string | null;
         };
+        /**
+         * CarriedDueOut
+         * @description An unpaid fee from an earlier match of the same team, added to a player's amount in this split.
+         */
+        CarriedDueOut: {
+            /** Record Id */
+            record_id: string;
+            /** Match Id */
+            match_id: string;
+            /** Match Title */
+            match_title: string;
+            /** Match Start At */
+            match_start_at: string | null;
+            /** Amount Paise */
+            amount_paise: number;
+        };
         /** ChallengeIn */
         ChallengeIn: {
             /** From Team Id */
@@ -4697,7 +4747,9 @@ export interface components {
         Envelope_list_InvitationResultItem__: unknown;
         Envelope_list_NearbyPlayerOut__: unknown;
         Envelope_list_NearbyRacketPlayerOut__: unknown;
+        Envelope_list_OtherDueOut__: unknown;
         Envelope_list_PlayRequestOut__: unknown;
+        Envelope_list_PreviousDueOut__: unknown;
         Envelope_list_PrivacyRequestOut__: unknown;
         Envelope_list_RateableOut__: unknown;
         Envelope_list_ReportOut__: unknown;
@@ -4792,6 +4844,11 @@ export interface components {
         FeeDueOut: {
             /** Match Id */
             match_id: string;
+            /**
+             * Settlement Id
+             * @description The shared split (collecting) or the unshared draft; used for one-tap reminders
+             */
+            settlement_id?: string | null;
             /** Title */
             title: string;
             /**
@@ -5354,6 +5411,25 @@ export interface components {
             /** Sections */
             sections: components["schemas"]["AgreementSection"][];
         };
+        /**
+         * ManualDueIn
+         * @description An earlier balance kept outside OneShort (e.g. a WhatsApp list): positive = still owes, negative = paid in
+         *     advance. Lands on a player in this split: ``player_id`` for a squad player, app player or known guest;
+         *     ``name`` for a guest added by name in this same request.
+         */
+        ManualDueIn: {
+            /** Player Id */
+            player_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Amount Paise */
+            amount_paise: number;
+            /**
+             * Note
+             * @description e.g. 'Previous match dues' or 'Advance'
+             */
+            note?: string | null;
+        };
         /** MarkPaidIn */
         MarkPaidIn: {
             /** @default upi */
@@ -5847,6 +5923,32 @@ export interface components {
             /** My Status */
             my_status: string | null;
         };
+        /**
+         * OtherDueIn
+         * @description An earlier balance of someone who is NOT playing this match (kept from a WhatsApp list so nobody is
+         *     forgotten): positive = still owes, negative = holds an advance. Listed in the group message, never added
+         *     to anyone's fee here, and carried to the team's next split.
+         */
+        OtherDueIn: {
+            /** Name */
+            name: string;
+            /** Amount Paise */
+            amount_paise: number;
+            /** Note */
+            note?: string | null;
+        };
+        /** OtherDueOut */
+        OtherDueOut: {
+            /** Name */
+            name: string;
+            /**
+             * Amount Paise
+             * @description + still owes, - holds an advance
+             */
+            amount_paise: number;
+            /** Note */
+            note?: string | null;
+        };
         /** OtpSentOut */
         OtpSentOut: {
             /** Sent */
@@ -5943,6 +6045,25 @@ export interface components {
             remarks: string | null;
             /** Dispute Reason */
             dispute_reason: string | null;
+            /**
+             * Carried Paise
+             * @description Part of amount_paise that is earlier matches' unpaid fees
+             * @default 0
+             */
+            carried_paise: number;
+            /**
+             * Prior Paise
+             * @description Earlier balance from outside OneShort: + owes, - advance
+             * @default 0
+             */
+            prior_paise: number;
+            /** Prior Note */
+            prior_note?: string | null;
+            /**
+             * Carried To Match Title
+             * @description For a carried_forward record: the match fee it was moved to
+             */
+            carried_to_match_title?: string | null;
             /** Updated By */
             updated_by: string | null;
             /**
@@ -5957,7 +6078,7 @@ export interface components {
          * PaymentStatus
          * @enum {string}
          */
-        PaymentStatus: "pending" | "paid" | "exempted" | "disputed";
+        PaymentStatus: "pending" | "paid" | "exempted" | "disputed" | "carried_forward";
         /**
          * PlaceIn
          * @description A suggestion the captain picked, echoed back from a search result.
@@ -6611,6 +6732,25 @@ export interface components {
              * @description Community distance, rounded; never a member's location
              */
             approx_distance_km?: number | null;
+        };
+        /**
+         * PreviousDueOut
+         * @description What one player still owes from this team's earlier matches (unpaid, not yet moved to another fee).
+         */
+        PreviousDueOut: {
+            /**
+             * Player Id
+             * @description User id; for a guest, the id from their most recent match
+             */
+            player_id: string;
+            /** Name */
+            name: string;
+            /** Guest */
+            guest: boolean;
+            /** Total Paise */
+            total_paise: number;
+            /** Items */
+            items: components["schemas"]["CarriedDueOut"][];
         };
         /** PrivacyRequestIn */
         PrivacyRequestIn: {
@@ -7404,6 +7544,21 @@ export interface components {
              * @description Captain's UPI ID for this fee. Remembered on the account for the next split.
              */
             upi_id?: string | null;
+            /**
+             * Carry Record Ids
+             * @description Unpaid fee records from this team's earlier matches to add to the players' amounts here
+             */
+            carry_record_ids?: string[];
+            /**
+             * Manual Dues
+             * @description Earlier dues or advances tracked outside OneShort
+             */
+            manual_dues?: components["schemas"]["ManualDueIn"][];
+            /**
+             * Other Dues
+             * @description Earlier balances of people not playing this match; listed in the message, not charged here
+             */
+            other_dues?: components["schemas"]["OtherDueIn"][];
         };
         /** SettlementLineOut */
         SettlementLineOut: {
@@ -7431,6 +7586,28 @@ export interface components {
              * @default false
              */
             added: boolean;
+            /**
+             * Share Paise
+             * @description This match's share; amount_paise = share + carried
+             * @default 0
+             */
+            share_paise: number;
+            /**
+             * Carried Paise
+             * @description Unpaid fees from earlier matches added to this line
+             * @default 0
+             */
+            carried_paise: number;
+            /** Carried */
+            carried?: components["schemas"]["CarriedDueOut"][];
+            /**
+             * Prior Paise
+             * @description Earlier balance from outside OneShort: + owes, - advance
+             * @default 0
+             */
+            prior_paise: number;
+            /** Prior Note */
+            prior_note?: string | null;
         };
         /** SettlementOut */
         SettlementOut: {
@@ -7466,6 +7643,23 @@ export interface components {
             payment_instructions: string | null;
             /** Upi Id */
             upi_id?: string | null;
+            /**
+             * Carried Paise
+             * @description Earlier unpaid fees added across all lines
+             * @default 0
+             */
+            carried_paise: number;
+            /**
+             * Prior Paise
+             * @description Net earlier balances from outside OneShort across all lines
+             * @default 0
+             */
+            prior_paise: number;
+            /**
+             * Other Dues
+             * @description Earlier balances of people not playing this match (from outside OneShort)
+             */
+            other_dues?: components["schemas"]["OtherDueOut"][];
             /**
              * Currency
              * @default INR
@@ -23144,6 +23338,176 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    previous_dues_api_v1_matches__match_id__previous_dues_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_list_PreviousDueOut__"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden / agreement required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation or business rule error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    outside_dues_api_v1_matches__match_id__outside_dues_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope_list_OtherDueOut__"];
+                };
             };
             /** @description Bad request */
             400: {

@@ -19881,6 +19881,220 @@
         }
       }
     },
+    "/api/v1/matches/{match_id}/previous-dues": {
+      "get": {
+        "tags": [
+          "Split a Fee"
+        ],
+        "summary": "Unpaid fees from this team's earlier matches, to add to this match's split (captain only)",
+        "operationId": "previous_dues_api_v1_matches__match_id__previous_dues_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_PreviousDueOut__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matches/{match_id}/outside-dues": {
+      "get": {
+        "tags": [
+          "Split a Fee"
+        ],
+        "summary": "Earlier balances of people not playing, carried from the team's last split (captain only)",
+        "operationId": "outside_dues_api_v1_matches__match_id__outside_dues_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_OtherDueOut__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden / agreement required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or business rule error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/matches/{match_id}/settlements": {
       "post": {
         "tags": [
@@ -25574,6 +25788,48 @@
         "type": "object",
         "title": "CaptainProfileIn"
       },
+      "CarriedDueOut": {
+        "properties": {
+          "record_id": {
+            "type": "string",
+            "title": "Record Id"
+          },
+          "match_id": {
+            "type": "string",
+            "title": "Match Id"
+          },
+          "match_title": {
+            "type": "string",
+            "title": "Match Title"
+          },
+          "match_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Start At"
+          },
+          "amount_paise": {
+            "type": "integer",
+            "title": "Amount Paise"
+          }
+        },
+        "type": "object",
+        "required": [
+          "record_id",
+          "match_id",
+          "match_title",
+          "match_start_at",
+          "amount_paise"
+        ],
+        "title": "CarriedDueOut",
+        "description": "An unpaid fee from an earlier match of the same team, added to a player's amount in this split."
+      },
       "ChallengeIn": {
         "properties": {
           "from_team_id": {
@@ -28311,7 +28567,9 @@
       "Envelope_list_InvitationResultItem__": {},
       "Envelope_list_NearbyPlayerOut__": {},
       "Envelope_list_NearbyRacketPlayerOut__": {},
+      "Envelope_list_OtherDueOut__": {},
       "Envelope_list_PlayRequestOut__": {},
+      "Envelope_list_PreviousDueOut__": {},
       "Envelope_list_PrivacyRequestOut__": {},
       "Envelope_list_RateableOut__": {},
       "Envelope_list_ReportOut__": {},
@@ -28541,6 +28799,18 @@
           "match_id": {
             "type": "string",
             "title": "Match Id"
+          },
+          "settlement_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settlement Id",
+            "description": "The shared split (collecting) or the unshared draft; used for one-tap reminders"
           },
           "title": {
             "type": "string",
@@ -30154,6 +30424,60 @@
         ],
         "title": "LegalDocOut"
       },
+      "ManualDueIn": {
+        "properties": {
+          "player_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "amount_paise": {
+            "type": "integer",
+            "maximum": 10000000.0,
+            "minimum": -10000000.0,
+            "title": "Amount Paise"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "e.g. 'Previous match dues' or 'Advance'"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "amount_paise"
+        ],
+        "title": "ManualDueIn",
+        "description": "An earlier balance kept outside OneShort (e.g. a WhatsApp list): positive = still owes, negative = paid in\nadvance. Lands on a player in this split: ``player_id`` for a squad player, app player or known guest;\n``name`` for a guest added by name in this same request."
+      },
       "MarkPaidIn": {
         "properties": {
           "method": {
@@ -31569,6 +31893,72 @@
         ],
         "title": "OpportunityOut"
       },
+      "OtherDueIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "amount_paise": {
+            "type": "integer",
+            "maximum": 10000000.0,
+            "minimum": -10000000.0,
+            "title": "Amount Paise"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "amount_paise"
+        ],
+        "title": "OtherDueIn",
+        "description": "An earlier balance of someone who is NOT playing this match (kept from a WhatsApp list so nobody is\nforgotten): positive = still owes, negative = holds an advance. Listed in the group message, never added\nto anyone's fee here, and carried to the team's next split."
+      },
+      "OtherDueOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "amount_paise": {
+            "type": "integer",
+            "title": "Amount Paise",
+            "description": "+ still owes, - holds an advance"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "amount_paise"
+        ],
+        "title": "OtherDueOut"
+      },
       "OtpSentOut": {
         "properties": {
           "sent": {
@@ -31774,6 +32164,41 @@
             ],
             "title": "Dispute Reason"
           },
+          "carried_paise": {
+            "type": "integer",
+            "title": "Carried Paise",
+            "description": "Part of amount_paise that is earlier matches' unpaid fees",
+            "default": 0
+          },
+          "prior_paise": {
+            "type": "integer",
+            "title": "Prior Paise",
+            "description": "Earlier balance from outside OneShort: + owes, - advance",
+            "default": 0
+          },
+          "prior_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prior Note"
+          },
+          "carried_to_match_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carried To Match Title",
+            "description": "For a carried_forward record: the match fee it was moved to"
+          },
           "updated_by": {
             "anyOf": [
               {
@@ -31828,7 +32253,8 @@
           "pending",
           "paid",
           "exempted",
-          "disputed"
+          "disputed",
+          "carried_forward"
         ],
         "title": "PaymentStatus"
       },
@@ -33963,6 +34389,44 @@
           "created_at"
         ],
         "title": "PostOut"
+      },
+      "PreviousDueOut": {
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "title": "Player Id",
+            "description": "User id; for a guest, the id from their most recent match"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "guest": {
+            "type": "boolean",
+            "title": "Guest"
+          },
+          "total_paise": {
+            "type": "integer",
+            "title": "Total Paise"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CarriedDueOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "player_id",
+          "name",
+          "guest",
+          "total_paise",
+          "items"
+        ],
+        "title": "PreviousDueOut",
+        "description": "What one player still owes from this team's earlier matches (unpaid, not yet moved to another fee)."
       },
       "PrivacyRequestIn": {
         "properties": {
@@ -36249,6 +36713,33 @@
             ],
             "title": "Upi Id",
             "description": "Captain's UPI ID for this fee. Remembered on the account for the next split."
+          },
+          "carry_record_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Carry Record Ids",
+            "description": "Unpaid fee records from this team's earlier matches to add to the players' amounts here"
+          },
+          "manual_dues": {
+            "items": {
+              "$ref": "#/components/schemas/ManualDueIn"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Manual Dues",
+            "description": "Earlier dues or advances tracked outside OneShort"
+          },
+          "other_dues": {
+            "items": {
+              "$ref": "#/components/schemas/OtherDueIn"
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Other Dues",
+            "description": "Earlier balances of people not playing this match; listed in the message, not charged here"
           }
         },
         "additionalProperties": false,
@@ -36294,6 +36785,42 @@
             "title": "Added",
             "description": "Not in the squad; added to this split by the captain",
             "default": false
+          },
+          "share_paise": {
+            "type": "integer",
+            "title": "Share Paise",
+            "description": "This match's share; amount_paise = share + carried",
+            "default": 0
+          },
+          "carried_paise": {
+            "type": "integer",
+            "title": "Carried Paise",
+            "description": "Unpaid fees from earlier matches added to this line",
+            "default": 0
+          },
+          "carried": {
+            "items": {
+              "$ref": "#/components/schemas/CarriedDueOut"
+            },
+            "type": "array",
+            "title": "Carried"
+          },
+          "prior_paise": {
+            "type": "integer",
+            "title": "Prior Paise",
+            "description": "Earlier balance from outside OneShort: + owes, - advance",
+            "default": 0
+          },
+          "prior_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prior Note"
           }
         },
         "type": "object",
@@ -36409,6 +36936,26 @@
               }
             ],
             "title": "Upi Id"
+          },
+          "carried_paise": {
+            "type": "integer",
+            "title": "Carried Paise",
+            "description": "Earlier unpaid fees added across all lines",
+            "default": 0
+          },
+          "prior_paise": {
+            "type": "integer",
+            "title": "Prior Paise",
+            "description": "Net earlier balances from outside OneShort across all lines",
+            "default": 0
+          },
+          "other_dues": {
+            "items": {
+              "$ref": "#/components/schemas/OtherDueOut"
+            },
+            "type": "array",
+            "title": "Other Dues",
+            "description": "Earlier balances of people not playing this match (from outside OneShort)"
           },
           "currency": {
             "type": "string",

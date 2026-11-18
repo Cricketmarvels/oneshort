@@ -8,14 +8,16 @@ import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Image, type ImageContentPosition } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { Check, Lock } from "lucide-react-native";
 import type { ComponentType, ReactNode } from "react";
-import { memo, useRef } from "react";
+import { memo, useRef, useState } from "react";
 import { Pressable, ScrollView, TextInput, useWindowDimensions, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { OneShortMark, Wordmark } from "@/components/brand";
 import { PlayRIcon, type PlayRIconName } from "@/components/icons";
 import { PHOTO } from "@/components/identity";
+import { AuroraBackground } from "@/components/dashboard/SportsIllustrationCard";
 import { MatchCoverImage, TeamCoverImage, TeamLogo } from "@/components/media";
 import { FilterBottomSheet } from "@/components/sheet";
 import { Avatar, Txt } from "@/components/ui";
@@ -28,15 +30,39 @@ export type IconT = ComponentType<{ size?: number; color?: string; strokeWidth?:
 // ---------------------------------------------------------------- header
 export { Wordmark };
 
-/** "Player ⌄" pill → sheet. Captains switch context; players get a path to start a team (one account, never a second one). */
-export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" | "captain"; canCaptain: boolean; onChange: (v: "player" | "captain") => void }) {
-  const sheet = useRef<BottomSheetModal>(null);
-  const opt = (v: "player" | "captain", title: string, body: string) => (
-    <Pressable key={v} accessibilityRole="radio" accessibilityState={{ selected: value === v }} onPress={() => { sheet.current?.dismiss(); onChange(v); }}
-      style={{ padding: 16, borderRadius: 18, borderWidth: value === v ? 2 : 1, borderColor: value === v ? T.primary : T.line, backgroundColor: value === v ? T.primarySoft : T.surface, gap: 3 }}>
-      <Txt v="h3">{title}</Txt><Txt v="small" color={T.muted}>{body}</Txt>
+const ROLE_ART = {
+  player: { art: require("../../assets/images/art/cricket/find-players.png"), colors: { base: ["#DCEEFF", "#C5E2FA"], glow: "#B8DBFF", deep: "#9CC7F5" } },
+  captain: { art: require("../../assets/images/art/cricket/my-team.png"), colors: { base: ["#FFEEDD", "#FFE0C2"], glow: "#FFD3B0", deep: "#FFC48E" } },
+} as const;
+
+/** One picture tile in the role sheet: the home-card artwork on its aurora colour, a tick when chosen. */
+function RoleTile({ role, title, body, selected, locked, onPress }: { role: "player" | "captain"; title: string; body: string; selected: boolean; locked?: boolean; onPress?: () => void }) {
+  const a = ROLE_ART[role];
+  return (
+    <Pressable accessibilityRole="radio" accessibilityState={{ selected, disabled: !!locked }} accessibilityLabel={`${title}. ${body}`} disabled={locked} onPress={onPress}
+      style={({ pressed }) => ({ flex: 1, minHeight: 196, borderRadius: 20, overflow: "hidden", justifyContent: "flex-end", paddingHorizontal: 12, paddingBottom: 14, paddingTop: 116,
+        borderWidth: 2, borderStyle: locked ? "dashed" : "solid", borderColor: selected ? T.primaryDark : locked ? T.line : "transparent", backgroundColor: locked ? T.surface2 : undefined,
+        transform: [{ scale: pressed ? 0.97 : 1 }],
+        ...(selected ? { shadowColor: "#0B7F58", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4 } : {}) })}>
+      {locked ? null : <AuroraBackground id={`role-${role}`} colors={a.colors} />}
+      <Image source={a.art} style={{ position: "absolute", left: 0, right: 0, top: 4, height: 108, opacity: locked ? 0.4 : 1 }} contentFit="contain" />
+      <View style={{ position: "absolute", top: 10, right: 10 }}>
+        {selected ? (
+          <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: T.primaryDark, alignItems: "center", justifyContent: "center" }}><Check size={15} color="#FFFFFF" strokeWidth={3} /></View>
+        ) : locked ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, height: 22, borderRadius: 11, backgroundColor: T.surface }}><Lock size={12} color={T.muted} strokeWidth={2.2} /><Txt style={{ ...FW.semibold, fontSize: 11, color: T.muted }}>Player account</Txt></View>
+        ) : <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: "#C7D2CB", backgroundColor: "rgba(255,255,255,0.7)" }} />}
+      </View>
+      <Txt style={{ ...FW.display, fontSize: 18, lineHeight: 22, color: locked ? T.muted : "#102C28" }}>{title}</Txt>
+      <Txt style={{ ...FW.medium, fontSize: 12, lineHeight: 16, color: locked ? T.muted : "#3D5652" }}>{body}</Txt>
     </Pressable>
   );
+}
+
+/** "Player ⌄" pill → sheet of two picture tiles. Captains switch context; player-only accounts see Captain locked (never self-service). */
+export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" | "captain"; canCaptain: boolean; onChange: (v: "player" | "captain") => void }) {
+  const sheet = useRef<BottomSheetModal>(null);
+  const pick = (v: "player" | "captain") => { sheet.current?.dismiss(); onChange(v); };
   return (
     <>
       <Pressable accessibilityRole="button" accessibilityLabel={`Viewing as ${value}. Change`} onPress={() => sheet.current?.present()}
@@ -44,14 +70,15 @@ export function RoleSwitcher({ value, canCaptain, onChange }: { value: "player" 
         <Txt v="smallSemi" style={{ fontSize: 14 }}>{value === "player" ? "Player" : "Captain"}</Txt>
         <PlayRIcon name="caret" size={15} color={T.ink} weight="bold" />
       </Pressable>
-      <FilterBottomSheet ref={sheet} title="View OneShort as" snap={["44%"]}>
-        <View style={{ gap: 10 }}>
-          {opt("player", "Player", "Find games, teams and playing partners")}
-          {canCaptain ? opt("captain", "Captain", "Manage your team, matches and invitations") : (
-            <View style={{ padding: 16, borderRadius: 18, borderWidth: 1, borderColor: T.line, borderStyle: "dashed", gap: 3 }}>
-              <Txt v="h3" color={T.muted}>Captain</Txt><Txt v="small" color={T.muted}>{"This is a player account. Captain tools are set up when an account is created."}</Txt>
-            </View>
-          )}
+      <FilterBottomSheet ref={sheet} title="View OneShort as" snap={["52%"]}>
+        <View style={{ gap: 12 }}>
+          <Txt v="small" color={T.muted} style={{ marginTop: -6 }}>Switch anytime. Your account stays the same.</Txt>
+          <View accessibilityRole="radiogroup" style={{ flexDirection: "row", gap: 10 }}>
+            <RoleTile role="player" title="Player" body="Find games, teams and partners" selected={value === "player"} onPress={() => pick("player")} />
+            {canCaptain
+              ? <RoleTile role="captain" title="Captain" body="Run your team, matches and fees" selected={value === "captain"} onPress={() => pick("captain")} />
+              : <RoleTile role="captain" title="Captain" body="Captain tools are set up when an account is created." selected={false} locked />}
+          </View>
         </View>
       </FilterBottomSheet>
     </>
@@ -156,28 +183,78 @@ export function BrandFallback({ style, icon: Icon, label }: { style?: ViewStyle;
 }
 
 // ---------------------------------------------------------------- match card
-/** Compact match card: branded ground thumbnail, format badge, 2-line title, date · time, ~distance · area, open positions, CTA. */
-export const MatchDiscoveryCard = memo(function MatchDiscoveryCard({ title, format, date, time, distanceKm, area, spots, needs, cta = "View", cover, onPress }: {
-  title: string; format?: string | null; date: string; time: string; distanceKm?: number | null; area?: string | null; spots: number; needs?: string | null; cta?: string; cover?: string | null; onPress: () => void;
+const TICKET_PHOTOS = [PHOTO.ground, PHOTO.batting, PHOTO.bowler, PHOTO.stadium] as const;
+/** Same game, same fallback photo: neighbouring cards in a swipe row usually differ. */
+function ticketPhoto(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return TICKET_PHOTOS[Math.abs(h) % TICKET_PHOTOS.length]!;
+}
+
+/**
+ * "Photo ticket" match card: the match or venue photo on top (a cricket photo when there's none) with format,
+ * distance and date on it; then the title, host team, a bar showing how full the squad is, the fee and the CTA.
+ * One accessible button.
+ */
+export const MatchDiscoveryCard = memo(function MatchDiscoveryCard({ id, title, format, date, time, distanceKm, area, spots, capacity, needs, host, feePaise, cta = "View", cover, onPress }: {
+  id: string; title: string; format?: string | null; date: string; time: string; distanceKm?: number | null; area?: string | null; spots: number; capacity?: number | null;
+  needs?: string | null; host?: string | null; feePaise?: number | null; cta?: string; cover?: string | null; onPress: () => void;
 }) {
+  const cap = capacity && capacity > 0 ? capacity : null;
+  const filled = cap ? Math.max(0, cap - spots) : null;
+  const pct = cap && filled != null ? Math.min(100, Math.max(4, Math.round((filled / cap) * 100))) : 0;
+  const fee = feePaise && feePaise > 0 ? `₹${Math.round(feePaise / 100).toLocaleString("en-IN")}` : null;
+  const open = `${spots} spot${spots === 1 ? "" : "s"} open`;
+  const label = [title, `${date} ${time}`, host ? `hosted by ${host}` : null, open, fee ? `${fee} per head` : null, cta].filter(Boolean).join(". ");
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const src = (cover && !photoFailed ? { uri: cover } : ticketPhoto(id)) as number | { uri: string };
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${date} ${time}. ${spots} spots open. ${cta}`} onPress={onPress}
-      style={({ pressed }) => ({ flexDirection: "row", gap: 12, padding: 12, borderRadius: 20, backgroundColor: pressed ? T.surface2 : T.surface, borderWidth: 1, borderColor: T.line, ...shadow(1) })}>
-      <View style={{ width: 84, alignSelf: "stretch", minHeight: 96, borderRadius: 16, overflow: "hidden" }}>
-        <MatchCoverImage uri={cover} title={title} format={format} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
-        {cover && format ? <View style={{ position: "absolute", left: 6, bottom: 6, paddingHorizontal: 7, height: 18, borderRadius: 9, backgroundColor: "rgba(6,63,61,0.85)", justifyContent: "center" }}><Txt v="micro" color="#FFFFFF" style={{ fontSize: 10 }}>{format}</Txt></View> : null}
-      </View>
-      <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-        <Txt v="h3" numberOfLines={2} style={{ fontSize: 16.5, lineHeight: 21 }}>{title}</Txt>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <Meta icon="calendar" text={date} />
-          <Meta icon="clock" text={time} />
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
+      style={({ pressed }) => ({ borderRadius: 20, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line, overflow: "hidden", transform: [{ scale: pressed ? 0.98 : 1 }],
+        shadowColor: "#183B35", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 3 })}>
+      <View style={{ height: 118 }}>
+        <Image source={src} onError={() => setPhotoFailed(true)} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" transition={150} accessibilityElementsHidden />
+        <LinearGradient colors={["rgba(5,25,18,0.15)", "rgba(5,25,18,0)", "rgba(5,25,18,0.7)"]} locations={[0, 0.35, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
+        <View style={{ position: "absolute", top: 10, left: 10, right: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          {format ? <View style={{ paddingHorizontal: 9, height: 24, borderRadius: 12, backgroundColor: "#0A2A20", justifyContent: "center" }}><Txt style={{ ...FW.bold, fontSize: 12, color: "#FFFFFF" }}>{format}</Txt></View> : <View />}
+          {distanceKm != null ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, height: 24, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.93)" }}>
+              <PlayRIcon name="pin" size={13} color={T.ink} weight="bold" />
+              <Txt style={{ ...FW.semibold, fontSize: 12, color: T.ink }}>~{distanceKm} km</Txt>
+            </View>
+          ) : null}
         </View>
-        {distanceKm != null || area ? <Meta icon="pin" text={[distanceKm != null ? `~${distanceKm} km` : null, area].filter(Boolean).join(" · ")} /> : null}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 2 }}>
-          <View style={{ flexShrink: 1 }}><AvailabilityPill text={`${spots} spot${spots === 1 ? "" : "s"} open${needs ? ` · ${needs}` : ""}`} /></View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 32, paddingHorizontal: 14, borderRadius: 16, backgroundColor: T.primary }}>
-            <Txt v="smallSemi" color="#FFFFFF" style={{ fontSize: 13.5 }}>{cta}</Txt>
+        <View style={{ position: "absolute", left: 12, right: 12, bottom: 10, flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <PlayRIcon name="calendar" size={15} color="#FFFFFF" weight="bold" />
+          <Txt style={{ ...FW.bold, fontSize: 14, color: "#FFFFFF" }} numberOfLines={1}>{date} · {time}</Txt>
+        </View>
+      </View>
+
+      <View style={{ paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14, gap: 8 }}>
+        <Txt style={{ ...FW.display, fontSize: 16, lineHeight: 20.5, letterSpacing: -0.2, color: T.ink }} numberOfLines={2}>{title}</Txt>
+        {host || area ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <PlayRIcon name={host ? "shield" : "pin"} size={14} color={T.muted} weight="bold" />
+            <Txt v="small" color={T.text2} numberOfLines={1} style={{ flexShrink: 1 }}>{[host ? `Hosted by ${host}` : null, area].filter(Boolean).join(" · ")}</Txt>
+          </View>
+        ) : null}
+        <View style={{ gap: 5 }}>
+          {cap ? (
+            <View style={{ height: 7, borderRadius: 4, backgroundColor: T.surface2, overflow: "hidden" }}>
+              <LinearGradient colors={["#12A672", "#0B7F58"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width: `${pct}%`, height: "100%", borderRadius: 4 }} />
+            </View>
+          ) : null}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
+            <Txt v="small" color={T.text2} numberOfLines={1} style={{ flexShrink: 1, fontSize: 12 }}>{cap && filled != null ? `${filled} of ${cap} in${needs ? ` · need ${needs}` : ""}` : needs ? `Need ${needs}` : " "}</Txt>
+            <Txt numberOfLines={1} style={{ ...FW.bold, fontSize: 12, flexShrink: 0, color: spots ? T.accentOrange : T.successText }}>{spots ? open : "Squad full"}</Txt>
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
+          <Txt v="small" color={T.text2}>{fee ? <Txt style={{ ...FW.display, fontSize: 16, color: T.ink }}>{fee}</Txt> : <Txt style={{ ...FW.bold, fontSize: 14, color: T.successText }}>Free to play</Txt>}{fee ? " per head" : ""}</Txt>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 40, paddingHorizontal: 18, borderRadius: 13, backgroundColor: T.primaryDark,
+            shadowColor: "#0B7F58", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 }}>
+            <Txt style={{ ...FW.bold, fontSize: 14.5, color: "#FFFFFF" }}>{cta}</Txt>
+            <PlayRIcon name="chevronRight" size={15} color="#FFFFFF" weight="bold" />
           </View>
         </View>
       </View>

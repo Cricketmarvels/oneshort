@@ -24,7 +24,7 @@ from app.core.container import Container
 from app.core.exceptions import BusinessRuleViolation, Conflict, Forbidden, NotFound
 from app.modules.matches.service import match_when
 from app.modules.settlements.context import FeeAccess
-from app.modules.settlements.message import FeeLine, FeeMessage, compose
+from app.modules.settlements.message import FeeLine, FeeMessage, OtherDue, compose
 from app.modules.settlements.schemas import (
     CaptainDashboardOut,
     DiscussionOut,
@@ -52,6 +52,10 @@ class PaymentProvider(Protocol):
     """Future App Pro seam (online payments). Not implemented in the MVP by design."""
 
     async def initiate(self, record_id: ObjectId, amount_paise: int) -> str: ...
+
+
+def _short_day(dt: Any) -> str:
+    return ensure_utc(dt).astimezone(IST).strftime("%-d %b")
 
 
 def rupees(paise: int) -> str:
@@ -207,6 +211,11 @@ class PaymentService:
             raise Forbidden("Only the captain or a team admin can correct payment status", code="NOT_MATCH_MANAGER")
         if rec["status"] == target.value:
             raise BusinessRuleViolation("Status is already set", code="NO_CHANGE")
+        if rec["status"] == P.CARRIED:
+            raise BusinessRuleViolation(
+                "This fee was added to a later match's fee. Update it there, or revise that split to remove it.",
+                code="FEE_CARRIED_FORWARD",
+            )
         if target == P.DISPUTED:
             raise BusinessRuleViolation("Only the player can raise a dispute", code="INVALID_PAYMENT_TRANSITION")
         updated = await self._change(user, rec, target, reason, action="payment.corrected")
@@ -269,7 +278,7 @@ class PaymentService:
         cache: dict[Any, Any] = {}
         outs = [await self._out(r, cache) for r in recs]
         collected = sum(r["amount_paise"] if r["status"] == P.PAID else r.get("credited_paise", 0) for r in recs)
-        owed = sum(r["amount_paise"] for r in recs if r["status"] != P.EXEMPTED)
+        owed = sum(r["amount_paise"] for r in recs if r["status"] not in (P.EXEMPTED, P.CARRIED))
         return CaptainDashboardOut(
             settlement=await self.settlements.get_out(settlement_id),
             total_paise=st["total_expenses_paise"],
@@ -385,7 +394,10 @@ class PaymentService:
         player = await get("users", r["player_id"])
         captain = await get("users", r["captain_id"])
         credited = r.get("credited_paise", 0)
-        balance = 0 if r["status"] in (P.PAID, P.EXEMPTED) else max(0, r["amount_paise"] - credited)
+        balance = 0 if r["status"] in (P.PAID, P.EXEMPTED, P.CARRIED) else max(0, r["amount_paise"] - credited)
+        moved_to = None
+        if r["status"] == P.CARRIED and r.get("carried_to_match_id"):
+            moved_to = (await self._fixture(cache, {"match_id": r["carried_to_match_id"]})).get("title", "Match")
         return PaymentRecordOut(
             id=str(r["_id"]),
             settlement_id=str(r["settlement_id"]),
@@ -404,6 +416,10 @@ class PaymentService:
             method=r.get("method"),
             remarks=r.get("remarks"),
             dispute_reason=(r.get("dispute") or {}).get("reason") if r["status"] == P.DISPUTED else None,
+            carried_paise=r.get("carried_paise", 0),
+            carried_to_match_title=moved_to,
+            prior_paise=r.get("prior_paise", 0),
+            prior_note=r.get("prior_note"),
             updated_by=str(r["updated_by"]) if r.get("updated_by") else None,
             updated_at=r["updated_at"],
             history=[
@@ -498,7 +514,7 @@ class PaymentService:
                 collected = sum(
                     r["amount_paise"] if r["status"] == P.PAID else r.get("credited_paise", 0) for r in recs
                 )
-                owed = sum(r["amount_paise"] for r in recs if r["status"] != P.EXEMPTED)
+                owed = sum(r["amount_paise"] for r in recs if r["status"] not in (P.EXEMPTED, P.CARRIED))
                 outstanding = max(0, owed - collected)
                 pending = sum(1 for r in recs if r["status"] in (P.PENDING, P.DISPUTED))
                 paid = sum(1 for r in recs if r["status"] == P.PAID)
@@ -516,6 +532,7 @@ class PaymentService:
             out.append(
                 FeeDueOut(
                     match_id=str(m["_id"]),
+                    settlement_id=str(pub["_id"]) if pub else str(draft["_id"]) if draft else None,
                     title=m.get("title", "Match"),
                     start_at=m["start_at"],
                     venue_name=(m.get("venue") or {}).get("name"),
@@ -569,6 +586,14 @@ class PaymentService:
                         eligible=line.eligible,
                         status=statuses.get(line.player.id),
                         guest=line.guest,
+                        carried_paise=line.carried_paise,
+                        share=line.share_paise,
+                        prior_paise=line.prior_paise,
+                        prior_note=line.prior_note,
+                        carried_from=[
+                            c.match_title + (f" ({_short_day(c.match_start_at)})" if c.match_start_at else "")
+                            for c in line.carried
+                        ],
                     )
                     for line in st.lines
                 ],
@@ -577,6 +602,7 @@ class PaymentService:
                 revised=bool(st.revises_settlement_id),
                 revised_reason=st.revision_reason,
                 link=f"{base}/fee?ledger={st.match_id}",
+                others=[OtherDue(name=o.name, amount_paise=o.amount_paise, note=o.note) for o in st.other_dues],
             )
         )
         return ShareOut(text=text, whatsapp_url=f"https://wa.me/?text={quote(text)}")
@@ -593,6 +619,17 @@ class PaymentService:
             f"Hi {first} 👋" if first else "Hi 👋",
             f"Friendly reminder: your match fee of *{amount}* for *{match.get('title', 'our match')}* is pending.",
         ]
+        carried, prior = rec.get("carried_paise", 0), rec.get("prior_paise", 0)
+        if carried or prior:
+            share = rupees(max(0, rec["amount_paise"] - carried - prior))
+            parts = [f"{share} for this match"]
+            if carried:
+                parts.append(f"+ {rupees(carried)} unpaid from earlier matches")
+            if prior > 0:
+                parts.append(f"+ {rupees(prior)} {(rec.get('prior_note') or 'previous dues').lower()}")
+            if prior < 0:
+                parts.append(f"- {rupees(-prior)} paid in advance")
+            lines.append(f"_That's {' '.join(parts)}._")
         if upi:
             lines += ["", f"💳 UPI ID: *{upi}*"]
         if st.get("payment_instructions"):

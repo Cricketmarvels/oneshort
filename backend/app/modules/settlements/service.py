@@ -26,15 +26,24 @@ from app.core.exceptions import BusinessRuleViolation, Conflict, Forbidden, NotF
 from app.modules.settlements.calculator import Participant, calculate
 from app.modules.settlements.context import FeeAccess
 from app.modules.settlements.schemas import (
+    CarriedDueOut,
     ExpenseIn,
     ExpenseOut,
     ExpenseSnapshot,
     ExtraPlayerIn,
+    ManualDueIn,
+    OtherDueIn,
+    OtherDueOut,
+    PreviousDueOut,
     SettlementDraftIn,
     SettlementLineOut,
     SettlementOut,
 )
 from app.modules.users.schemas import public_user
+
+
+def _norm(name: str | None) -> str:
+    return " ".join((name or "").lower().split())
 
 
 def settlement_code() -> str:
@@ -173,6 +182,9 @@ class SettlementService:
         ]
         total = sum(e["amount_paise"] for e in expenses)
         calc = calculate(total, participants, data.rounding_mode)
+        carries = await self._carries(match, data.carry_record_ids, people)
+        priors = self._priors(data.manual_dues, people)
+        others = self._others(data.other_dues)
         published = await self.col.find_one({"match_id": match_id, "settlement_status": SettlementStatus.PUBLISHED})
         latest = await self.col.find_one({"match_id": match_id}, sort=[("version", -1)])
         draft = await self.col.find_one({"match_id": match_id, "settlement_status": SettlementStatus.DRAFT})
@@ -195,6 +207,9 @@ class SettlementService:
             "rounding_mode": calc.rounding_mode.value,
             "rounding_adjustment_paise": calc.rounding_adjustment_paise,
             "total_assigned_paise": calc.total_assigned_paise,
+            "carried_paise": sum(i["amount_paise"] for items in carries.values() for i in items),
+            "prior_paise": sum(v["amount_paise"] for v in priors.values()),
+            "other_dues": others,
             "lines": [
                 {
                     "player_id": ObjectId(line.player_id),
@@ -203,8 +218,14 @@ class SettlementService:
                     "eligible": line.eligible,
                     "exempt": line.exempt,
                     "adjusted": line.adjusted,
-                    "amount_paise": line.amount_paise,
-                    "credited_paise": min(credited.get(ObjectId(line.player_id), 0), line.amount_paise),
+                    "share_paise": line.amount_paise,
+                    "carried_paise": (owed := sum(i["amount_paise"] for i in carries.get(line.player_id, []))),
+                    "carried": carries.get(line.player_id, []),
+                    "prior_paise": (prior := priors.get(line.player_id, {}).get("amount_paise", 0)),
+                    "prior_note": priors.get(line.player_id, {}).get("note"),
+                    # An advance can bring the amount down to zero, never below.
+                    "amount_paise": (total := max(0, line.amount_paise + owed + prior)),
+                    "credited_paise": min(credited.get(ObjectId(line.player_id), 0), total),
                     "guest": flags[line.player_id]["guest"],
                     "added": flags[line.player_id]["added"],
                 }
@@ -273,6 +294,175 @@ class SettlementService:
             )
         return out
 
+    # ------------------------------------------------------- previous dues
+    async def _fixture_info(self, match_id: ObjectId) -> dict[str, Any]:
+        m = await self.c.mongo["matches"].find_one({"_id": match_id}, {"title": 1, "start_at": 1})
+        if not m:
+            m = await self.c.mongo["fee_sides"].find_one({"_id": match_id}, {"title": 1, "start_at": 1})
+        return m or {}
+
+    async def _carryable(self, match: dict[str, Any]) -> list[dict[str, Any]]:
+        """Unpaid records from this team's other matches that may be added to this match's fee: still pending on
+        a current (published) split, or already moved to an earlier version of this match's split."""
+        mine = [s["_id"] async for s in self.col.find({"match_id": match["_id"]}, {"_id": 1})]
+        others = [
+            s["_id"]
+            async for s in self.col.find(
+                {
+                    "team_id": match["team_id"],
+                    "match_id": {"$ne": match["_id"]},
+                    "settlement_status": SettlementStatus.PUBLISHED.value,
+                },
+                {"_id": 1},
+            )
+        ]
+        if not others:
+            return []
+        q = {
+            "settlement_id": {"$in": others},
+            "$or": [
+                {"status": PaymentStatus.PENDING.value, "carried_to": None},
+                {"status": PaymentStatus.CARRIED.value, "carried_to": {"$in": mine}},
+            ],
+        }
+        return [r async for r in self.records.find(q).limit(500) if r["amount_paise"] - r.get("credited_paise", 0) > 0]
+
+    async def _due_item(self, r: dict[str, Any], cache: dict[ObjectId, dict[str, Any]]) -> dict[str, Any]:
+        if r["match_id"] not in cache:
+            cache[r["match_id"]] = await self._fixture_info(r["match_id"])
+        fx = cache[r["match_id"]]
+        return {
+            "record_id": r["_id"],
+            "match_id": r["match_id"],
+            "match_title": fx.get("title") or "Match",
+            "match_start_at": fx.get("start_at"),
+            "amount_paise": int(r["amount_paise"] - r.get("credited_paise", 0)),
+        }
+
+    async def previous_dues(self, user: CurrentUser, match_id: ObjectId) -> list[PreviousDueOut]:
+        """Who still owes this team from earlier matches, so the captain can add it to this match's fee.
+        Guests have no account, so a guest is recognised across matches by name."""
+        match, _ = await self.access.load_managed(match_id, user)
+        recs = await self._carryable(match)
+        users = {
+            u["_id"]: u
+            async for u in self.c.mongo["users"].find(
+                {"_id": {"$in": list({r["player_id"] for r in recs if not r.get("is_guest")})}}, {"full_name": 1}
+            )
+        }
+        cache: dict[ObjectId, dict[str, Any]] = {}
+        groups: dict[str, dict[str, Any]] = {}
+        for r in recs:
+            guest = bool(r.get("is_guest"))
+            name = r.get("player_name") if guest else users.get(r["player_id"], {}).get("full_name")
+            key = f"guest:{_norm(name)}" if guest else str(r["player_id"])
+            g = groups.setdefault(
+                key, {"player_id": r["player_id"], "name": name or "Player", "guest": guest, "items": []}
+            )
+            g["items"].append(await self._due_item(r, cache))
+        out = []
+        for g in groups.values():
+            items = sorted(g["items"], key=lambda i: i["match_start_at"] or utcnow())
+            if g["guest"]:
+                g["player_id"] = next(r["player_id"] for r in recs if r["_id"] == items[-1]["record_id"])
+            out.append(
+                PreviousDueOut(
+                    player_id=str(g["player_id"]),
+                    name=g["name"],
+                    guest=g["guest"],
+                    total_paise=sum(i["amount_paise"] for i in items),
+                    items=[self._due_out(i) for i in items],
+                )
+            )
+        return sorted(out, key=lambda d: (-d.total_paise, d.name.lower()))
+
+    @staticmethod
+    def _due_out(i: dict[str, Any]) -> CarriedDueOut:
+        return CarriedDueOut(
+            record_id=str(i["record_id"]),
+            match_id=str(i["match_id"]),
+            match_title=i["match_title"],
+            match_start_at=i.get("match_start_at"),
+            amount_paise=i["amount_paise"],
+        )
+
+    async def _carries(
+        self, match: dict[str, Any], record_ids: list[str], people: list[dict[str, Any]]
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Earlier unpaid fees the captain chose to add, keyed by the line (player id) they land on. A registered
+        player's due lands on their own line; a guest's on the guest of the same name in this split."""
+        if not record_ids:
+            return {}
+        allowed = {r["_id"]: r for r in await self._carryable(match)}
+        guests = {_norm(p["name"]): str(p["player_id"]) for p in people if p.get("guest")}
+        players = {str(p["player_id"]) for p in people}
+        cache: dict[ObjectId, dict[str, Any]] = {}
+        out: dict[str, list[dict[str, Any]]] = {}
+        for rid in dict.fromkeys(ObjectId(x) for x in record_ids):
+            r = allowed.get(rid)
+            if not r:
+                raise BusinessRuleViolation(
+                    "That earlier fee is no longer unpaid. Refresh and try again.", code="PREVIOUS_DUE_CHANGED"
+                )
+            target = guests.get(_norm(r.get("player_name"))) if r.get("is_guest") else str(r["player_id"])
+            if target not in players:
+                raise BusinessRuleViolation(
+                    "Earlier dues can only be added for players in this split", code="NOT_IN_SPLIT"
+                )
+            out.setdefault(target, []).append(await self._due_item(r, cache))
+        return out
+
+    @staticmethod
+    def _priors(dues: list[ManualDueIn], people: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        """Earlier balances kept outside OneShort, keyed by the line (player id) they land on. A guest added by
+        name in this request is found by name."""
+        if not dues:
+            return {}
+        ids = {str(p["player_id"]) for p in people}
+        guests = {_norm(p["name"]): str(p["player_id"]) for p in people if p.get("guest")}
+        out: dict[str, dict[str, Any]] = {}
+        for d in dues:
+            target = d.player_id if d.player_id in ids else guests.get(_norm(d.name)) if d.name else None
+            if target is None:
+                raise BusinessRuleViolation(
+                    "Earlier dues can only be added for players in this split", code="NOT_IN_SPLIT"
+                )
+            if d.amount_paise == 0:
+                continue
+            prev = out.get(target)
+            out[target] = {
+                "amount_paise": (prev["amount_paise"] if prev else 0) + d.amount_paise,
+                "note": d.note or (prev or {}).get("note") or ("Advance" if d.amount_paise < 0 else "Previous dues"),
+            }
+        return out
+
+    @staticmethod
+    def _others(dues: list[OtherDueIn]) -> list[dict[str, Any]]:
+        """Balances of people not playing this match, one row per person (same name merged), zeros dropped."""
+        out: dict[str, dict[str, Any]] = {}
+        for d in dues:
+            if d.amount_paise == 0:
+                continue
+            key = _norm(d.name)
+            prev = out.get(key)
+            out[key] = {
+                "name": prev["name"] if prev else d.name.strip(),
+                "amount_paise": (prev["amount_paise"] if prev else 0) + d.amount_paise,
+                "note": d.note or (prev or {}).get("note") or ("Advance" if d.amount_paise < 0 else "Previous dues"),
+            }
+        return list(out.values())
+
+    async def outside_dues(self, user: CurrentUser, match_id: ObjectId) -> list[OtherDueOut]:
+        """Balances of people not playing, kept from this team's most recent split, so the list rolls forward to
+        the next match without pasting it again. Empty once this match has its own split."""
+        match, _ = await self.access.load_managed(match_id, user)
+        if await self.col.find_one({"match_id": match_id}, projection={"_id": 1}):
+            return []
+        latest = await self.col.find_one(
+            {"team_id": match["team_id"], "match_id": {"$ne": match_id}}, sort=[("created_at", -1)]
+        )
+        return [OtherDueOut(**d) for d in (latest or {}).get("other_dues", [])]
+
     async def captain_upi(self, captain_id: ObjectId) -> str | None:
         """The captain's saved UPI ID: used when a split was shared before they added one, so the group
         message and reminders still tell players where to pay without revising the split."""
@@ -282,7 +472,9 @@ class SettlementService:
     async def _credits(self, settlement_id: ObjectId) -> dict[ObjectId, int]:
         out: dict[ObjectId, int] = {}
         async for r in self.records.find({"settlement_id": settlement_id}):
-            paid = r["amount_paise"] if r["status"] == PaymentStatus.PAID else r.get("credited_paise", 0)
+            # A due moved onto a later match's fee is settled here: revising this split must not bill it again.
+            settled = r["status"] in (PaymentStatus.PAID, PaymentStatus.CARRIED)
+            paid = r["amount_paise"] if settled else r.get("credited_paise", 0)
             out[r["player_id"]] = paid
         return out
 
@@ -328,10 +520,11 @@ class SettlementService:
             )
             if res.modified_count == 0:
                 raise Conflict("Settlement was already published", code="SETTLEMENT_IMMUTABLE")
+            await self._move_dues(st, user.id, match.get("title") or "Match", now, s)
             docs = []
             for line in st["lines"]:
                 credited = int(line.get("credited_paise", 0))
-                if not line["eligible"]:
+                if not line["eligible"] and line["amount_paise"] == 0:
                     status = PaymentStatus.EXEMPTED
                 elif line["amount_paise"] == 0 or credited >= line["amount_paise"]:
                     status = PaymentStatus.PAID
@@ -348,6 +541,10 @@ class SettlementService:
                         "captain_id": st["captain_id"],
                         "amount_paise": int(line["amount_paise"]),
                         "credited_paise": credited,
+                        "carried_paise": int(line.get("carried_paise", 0)),
+                        "prior_paise": int(line.get("prior_paise", 0)),
+                        "prior_note": line.get("prior_note"),
+                        "carried_record_ids": [i["record_id"] for i in line.get("carried", [])],
                         "currency": "INR",
                         "status": status.value,
                         "method": None,
@@ -399,6 +596,69 @@ class SettlementService:
         )
         return await self.get_out(settlement_id)
 
+    async def _move_dues(self, st: dict[str, Any], by: ObjectId, title: str, now: Any, s: AsyncClientSession) -> None:
+        """Inside the publish transaction: earlier unpaid fees added to this split move here (their old record says
+        where they went), and any a revision dropped go back to pending on their own match."""
+        moving = {i["record_id"] for line in st["lines"] for i in line.get("carried", [])}
+        prev = st.get("revises_settlement_id")
+        for rid in moving:
+            res = await self.records.update_one(
+                {
+                    "_id": rid,
+                    "$or": [
+                        {"status": PaymentStatus.PENDING.value, "carried_to": None},
+                        *([{"status": PaymentStatus.CARRIED.value, "carried_to": prev}] if prev else []),
+                    ],
+                },
+                {
+                    "$set": {
+                        "status": PaymentStatus.CARRIED.value,
+                        "carried_to": st["_id"],
+                        "carried_to_match_id": st["match_id"],
+                        "remarks": f"Added to the {title} fee",
+                        "updated_by": by,
+                        "updated_at": now,
+                    },
+                    "$push": {
+                        "status_history": {
+                            "from": PaymentStatus.PENDING.value,
+                            "to": PaymentStatus.CARRIED.value,
+                            "by": by,
+                            "at": now,
+                            "reason": f"Added to the {title} fee",
+                        }
+                    },
+                },
+                session=s,
+            )
+            if res.modified_count == 0:
+                raise Conflict(
+                    "An earlier fee in this split was paid or changed. Recalculate the split.",
+                    code="PREVIOUS_DUE_CHANGED",
+                )
+        if prev:
+            await self.records.update_many(
+                {"status": PaymentStatus.CARRIED.value, "carried_to": prev, "_id": {"$nin": list(moving)}},
+                {
+                    "$set": {
+                        "status": PaymentStatus.PENDING.value,
+                        "carried_to": None,
+                        "remarks": None,
+                        "updated_at": now,
+                    },
+                    "$push": {
+                        "status_history": {
+                            "from": PaymentStatus.CARRIED.value,
+                            "to": PaymentStatus.PENDING.value,
+                            "by": by,
+                            "at": now,
+                            "reason": f"Removed from the {title} fee",
+                        }
+                    },
+                },
+                session=s,
+            )
+
     async def list_for_match(self, user: CurrentUser, match_id: ObjectId) -> list[SettlementOut]:
         relation = await self._ensure_can_view(user, match_id)
         q: dict[str, Any] = {"match_id": match_id}
@@ -440,9 +700,17 @@ class SettlementService:
                     credited_paise=line.get("credited_paise", 0),
                     guest=bool(line.get("guest")),
                     added=bool(line.get("added")),
+                    share_paise=line.get("share_paise", line["amount_paise"] - line.get("carried_paise", 0)),
+                    carried_paise=line.get("carried_paise", 0),
+                    carried=[self._due_out(i) for i in line.get("carried", [])],
+                    prior_paise=line.get("prior_paise", 0),
+                    prior_note=line.get("prior_note"),
                 )
                 for line in st["lines"]
             ],
+            carried_paise=st.get("carried_paise", 0),
+            prior_paise=st.get("prior_paise", 0),
+            other_dues=[OtherDueOut(**d) for d in st.get("other_dues", [])],
             payment_instructions=st.get("payment_instructions"),
             upi_id=st.get("upi_id") or await self.captain_upi(st["captain_id"]),
             created_at=st["created_at"],

@@ -91,6 +91,7 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   paid: "Paid",
   exempted: "Exempted",
   disputed: "Disputed",
+  carried_forward: "Moved to a later fee",
 };
 
 export type Tone = "neutral" | "brand" | "success" | "warning" | "danger" | "info";
@@ -98,7 +99,7 @@ export const STATUS_TONE: Record<string, Tone> = {
   draft: "neutral", published: "info", recruiting: "brand", squad_confirmed: "success", scheduled: "success",
   in_progress: "warning", completed: "neutral", cancelled: "danger",
   pending: "warning", accepted: "info", rejected: "danger", expired: "neutral", confirmed: "success",
-  paid: "success", exempted: "neutral", disputed: "danger",
+  paid: "success", exempted: "neutral", disputed: "danger", carried_forward: "neutral",
   available: "success", tentative: "warning", unavailable: "danger", partial: "warning", unknown: "neutral",
   open: "warning", investigating: "info", resolved: "success", dismissed: "neutral",
 };

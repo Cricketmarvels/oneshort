@@ -26,3 +26,18 @@ Licence: MIT, Copyright (c) Microsoft Corporation. Re-encoded at 256 × 256 px, 
 | `art/challenge.png` | Crossed swords | Challenge (captain) |
 | `art/share-availability.png` | Tear-off calendar | Share Availability (player) |
 | `art/manage-fees.png` | Receipt | Manage Fees (player) |
+
+## Home card illustrations (`art/cricket/`)
+
+Original OneShort artwork, drawn for this app as vector illustrations and exported at 510 × 324 px (3× the
+on-screen size). No third-party material; the owner's reference images were used for style only.
+
+| File | Used for |
+|---|---|
+| `art/cricket/create-match.png` | Create Match (kit emblem: stumps, bats, ball, helmet, glove) |
+| `art/cricket/find-players.png` | Find Players (batter mid-shot) |
+| `art/cricket/my-team.png` | My Team (three batters and a bowler) |
+| `art/cricket/challenge-team.png` | Challenge Team (gold trophy) |
+| `art/cricket/share-availability.png` | Share Availability (calendar, tick, ball) |
+| `art/cricket/find-teams.png` | Find Teams (team crest under a magnifying glass) |
+| `art/cricket/manage-fees.png` | Manage Fees (wallet, rupee coins, receipt) |

@@ -21,8 +21,10 @@ from app.modules.settlements.schemas import (
     ExpenseOut,
     FeeDueOut,
     MarkPaidIn,
+    OtherDueOut,
     PaymentRecordOut,
     PlayerDashboardOut,
+    PreviousDueOut,
     RemarksIn,
     RemindAllOut,
     SettlementDraftIn,
@@ -70,6 +72,24 @@ async def delete_expense(match_id: str, expense_id: str, user: MatchmakerDep, sv
 
 
 # --------------------------------------------------------------- settlements
+@router.get(
+    "/matches/{match_id}/previous-dues",
+    response_model=Envelope[list[PreviousDueOut]],
+    summary="Unpaid fees from this team's earlier matches, to add to this match's split (captain only)",
+)
+async def previous_dues(match_id: str, user: MatchmakerDep, svc: St) -> Envelope[list[PreviousDueOut]]:
+    return ok(await svc.previous_dues(user, _id(match_id, "match")))
+
+
+@router.get(
+    "/matches/{match_id}/outside-dues",
+    response_model=Envelope[list[OtherDueOut]],
+    summary="Earlier balances of people not playing, carried from the team's last split (captain only)",
+)
+async def outside_dues(match_id: str, user: MatchmakerDep, svc: St) -> Envelope[list[OtherDueOut]]:
+    return ok(await svc.outside_dues(user, _id(match_id, "match")))
+
+
 @router.post(
     "/matches/{match_id}/settlements",
     status_code=201,

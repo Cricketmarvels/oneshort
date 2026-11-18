@@ -145,6 +145,7 @@ class PaymentStatus(StrEnum):
     PAID = "paid"
     EXEMPTED = "exempted"
     DISPUTED = "disputed"
+    CARRIED = "carried_forward"  # unpaid, moved onto a later match fee of the same team
 
 
 class PaymentMethod(StrEnum):

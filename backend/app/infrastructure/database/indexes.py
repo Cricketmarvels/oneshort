@@ -303,7 +303,7 @@ VALIDATORS: dict[str, dict[str, Any]] = {
                 "amount_paise": {"bsonType": ["int", "long"], "minimum": 0},
                 "credited_paise": {"bsonType": ["int", "long"], "minimum": 0},
                 "currency": {"enum": ["INR"]},
-                "status": {"enum": ["pending", "paid", "exempted", "disputed"]},
+                "status": {"enum": ["pending", "paid", "exempted", "disputed", "carried_forward"]},
                 "verification": {"enum": ["manual_captain_confirmed"]},
             },
         }

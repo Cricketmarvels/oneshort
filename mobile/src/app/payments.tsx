@@ -20,7 +20,7 @@ import { R, SP, T } from "@/theme";
 type Spend = S<"SpendOut">;
 type Period = "month" | "year" | "all";
 
-const STATUS: Record<string, [string, string]> = { pending: ["warning", "To pay"], paid: ["success", "Paid"], exempted: ["neutral", "Exempt"], disputed: ["danger", "Disputed"] };
+const STATUS: Record<string, [string, string]> = { pending: ["warning", "To pay"], paid: ["success", "Paid"], exempted: ["neutral", "Exempt"], disputed: ["danger", "Disputed"], carried_forward: ["neutral", "Moved"] };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const now = new Date();
 
@@ -131,6 +131,8 @@ export default function ManageFees() {
               <View style={{ flex: 1, gap: 2 }}>
                 <Txt v="h3" numberOfLines={1}>{r.match_title}</Txt>
                 <Txt v="small" color={T.muted}>{r.team_name} · {when(r.match_start_at, { day: "numeric", month: "short" })} · captain {r.captain.full_name}</Txt>
+                {r.carried_to_match_title ? <Txt v="small" color={T.text2} numberOfLines={2}>Added to the {r.carried_to_match_title} fee</Txt>
+                  : r.carried_paise ? <Txt v="small" color={T.text2}>Includes {formatPaise(r.carried_paise)} unpaid from earlier matches</Txt> : null}
               </View>
               <View style={{ alignItems: "flex-end", gap: 4 }}>
                 <Txt v="number" style={{ fontSize: 17 }}>{formatPaise(r.amount_paise)}</Txt>

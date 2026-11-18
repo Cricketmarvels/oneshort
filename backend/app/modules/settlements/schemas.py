@@ -48,6 +48,27 @@ class ExtraPlayerIn(StrictModel):
     guest_id: ObjectIdStr | None = None
 
 
+class ManualDueIn(StrictModel):
+    """An earlier balance kept outside OneShort (e.g. a WhatsApp list): positive = still owes, negative = paid in
+    advance. Lands on a player in this split: ``player_id`` for a squad player, app player or known guest;
+    ``name`` for a guest added by name in this same request."""
+
+    player_id: ObjectIdStr | None = None
+    name: Name | None = None
+    amount_paise: int = Field(ge=-10_000_000, le=10_000_000)
+    note: ShortText | None = Field(default=None, description="e.g. 'Previous match dues' or 'Advance'")
+
+
+class OtherDueIn(StrictModel):
+    """An earlier balance of someone who is NOT playing this match (kept from a WhatsApp list so nobody is
+    forgotten): positive = still owes, negative = holds an advance. Listed in the group message, never added
+    to anyone's fee here, and carried to the team's next split."""
+
+    name: Name
+    amount_paise: int = Field(ge=-10_000_000, le=10_000_000)
+    note: ShortText | None = None
+
+
 class SettlementDraftIn(StrictModel):
     rounding_mode: RoundingMode = RoundingMode.EXACT_PAISE
     player_ids: list[ObjectIdStr] | None = Field(
@@ -68,6 +89,45 @@ class SettlementDraftIn(StrictModel):
     upi_id: UpiId | None = Field(
         default=None, description="Captain's UPI ID for this fee. Remembered on the account for the next split."
     )
+    carry_record_ids: list[ObjectIdStr] = Field(
+        default_factory=list,
+        max_length=60,
+        description="Unpaid fee records from this team's earlier matches to add to the players' amounts here",
+    )
+    manual_dues: list[ManualDueIn] = Field(
+        default_factory=list, max_length=40, description="Earlier dues or advances tracked outside OneShort"
+    )
+    other_dues: list[OtherDueIn] = Field(
+        default_factory=list,
+        max_length=60,
+        description="Earlier balances of people not playing this match; listed in the message, not charged here",
+    )
+
+
+class OtherDueOut(BaseModel):
+    name: str
+    amount_paise: int = Field(description="+ still owes, - holds an advance")
+    note: str | None = None
+
+
+class CarriedDueOut(BaseModel):
+    """An unpaid fee from an earlier match of the same team, added to a player's amount in this split."""
+
+    record_id: str
+    match_id: str
+    match_title: str
+    match_start_at: datetime | None
+    amount_paise: int
+
+
+class PreviousDueOut(BaseModel):
+    """What one player still owes from this team's earlier matches (unpaid, not yet moved to another fee)."""
+
+    player_id: str = Field(description="User id; for a guest, the id from their most recent match")
+    name: str
+    guest: bool
+    total_paise: int
+    items: list[CarriedDueOut]
 
 
 class SettlementLineOut(BaseModel):
@@ -80,6 +140,11 @@ class SettlementLineOut(BaseModel):
     credited_paise: int
     guest: bool = Field(default=False, description="Added by name only; has no OneShort account")
     added: bool = Field(default=False, description="Not in the squad; added to this split by the captain")
+    share_paise: int = Field(default=0, description="This match's share; amount_paise = share + carried")
+    carried_paise: int = Field(default=0, description="Unpaid fees from earlier matches added to this line")
+    carried: list[CarriedDueOut] = Field(default_factory=list)
+    prior_paise: int = Field(default=0, description="Earlier balance from outside OneShort: + owes, - advance")
+    prior_note: str | None = None
 
 
 class ExpenseSnapshot(BaseModel):
@@ -106,6 +171,11 @@ class SettlementOut(BaseModel):
     lines: list[SettlementLineOut]
     payment_instructions: str | None
     upi_id: str | None = None
+    carried_paise: int = Field(default=0, description="Earlier unpaid fees added across all lines")
+    prior_paise: int = Field(default=0, description="Net earlier balances from outside OneShort across all lines")
+    other_dues: list[OtherDueOut] = Field(
+        default_factory=list, description="Earlier balances of people not playing this match (from outside OneShort)"
+    )
     currency: Literal["INR"] = "INR"
     created_at: datetime
     published_at: datetime | None
@@ -164,6 +234,12 @@ class PaymentRecordOut(BaseModel):
     )
     remarks: str | None
     dispute_reason: str | None
+    carried_paise: int = Field(default=0, description="Part of amount_paise that is earlier matches' unpaid fees")
+    prior_paise: int = Field(default=0, description="Earlier balance from outside OneShort: + owes, - advance")
+    prior_note: str | None = None
+    carried_to_match_title: str | None = Field(
+        default=None, description="For a carried_forward record: the match fee it was moved to"
+    )
     updated_by: str | None
     updated_at: datetime
     history: list[StatusChange]
@@ -244,6 +320,9 @@ class FeeDueOut(BaseModel):
     """A finished match whose fee the captain still has to split or collect (home dashboard card)."""
 
     match_id: str
+    settlement_id: str | None = Field(
+        default=None, description="The shared split (collecting) or the unshared draft; used for one-tap reminders"
+    )
     title: str
     start_at: datetime
     venue_name: str | None

@@ -1,7 +1,7 @@
 /**
  * Home — premium redesign (3-screen reference): header (wordmark, role switcher, bell, avatar), greeting +
- * locality, cricket hero with real nearby-match data, pastel 2×2 quick actions, games near you, invitations,
- * community pulse. Captain view: team hero, captain actions, join requests, squad gaps.
+ * locality, cricket hero with real nearby-match data, pastel 2×2 quick actions, games near you, invitations.
+ * Captain view: team hero, captain actions, join requests, squad gaps.
  */
 import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import type { S } from "@cm/shared";
@@ -11,9 +11,11 @@ import { useEffect, useRef, useState } from "react";
 import { FlatList, Pressable, RefreshControl, ScrollView, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ago, LocationOptions } from "@/components/cricket";
+import { LocationOptions } from "@/components/cricket";
 import { ShortChip, shortLabel } from "@/components/brand";
 import { ActionCardGrid } from "@/components/dashboard/ActionCardGrid";
+import { SportsIllustrationCard } from "@/components/dashboard/SportsIllustrationCard";
+import { CRICKET_CAPTAIN_CARDS, CRICKET_PLAYER_CARDS, illustrate } from "@/components/dashboard/sportsCards";
 import { CollectFeesCard } from "@/components/dashboard/CollectFeesCard";
 import { captainActions, playerActions } from "@/components/dashboard/dashboardActions";
 import { CricHeroesEditor, HomeCricHeroesCard } from "@/components/cricheroes-link";
@@ -39,7 +41,6 @@ import { shadow, SP, T } from "@/theme";
 
 type Opp = S<"OpportunityOut">;
 type Match = S<"MatchOut">;
-type Pulse = { id: string; community_id: string; body: string; created_at: string; community_name?: string | null; author: { full_name: string } };
 
 function greeting() {
   const h = new Date().getHours();
@@ -61,7 +62,8 @@ function GameCard({ o }: { o: Opp }) {
   const needs = Object.entries(o.roles_needed ?? {}).filter(([, n]) => n > 0).map(([r, n]) => roleCount(r, n).toLowerCase()).join(", ");
   return (
     <MatchDiscoveryCard title={o.title} format={fmt(o.format)} date={when(o.start_at, { weekday: "short", day: "numeric", month: "short" })} time={when(o.start_at, { hour: "numeric", minute: "2-digit" })}
-      distanceKm={o.approx_distance_km} area={o.area ?? o.city} spots={o.vacancies} needs={needs || null} cta={o.my_status ? "View" : "Join"} cover={o.cover_image}
+      id={o.match_id} distanceKm={o.approx_distance_km} area={o.area ?? o.city} spots={o.vacancies} capacity={o.squad_capacity} needs={needs || null}
+      host={o.team?.team_name} feePaise={o.per_head_fee_paise} cta={o.my_status ? "View" : "Join"} cover={o.cover_image}
       onPress={() => router.push({ pathname: "/match/[id]", params: { id: o.match_id } })} />
   );
 }
@@ -108,14 +110,15 @@ function CricketHome() {
   // People asking to join the captain's team (the team itself, not one match).
   const teamDash = useQuery({ enabled: ctx === "captain" && !!team, queryKey: ["team", team?.id, "dashboard"], queryFn: () => api<S<"TeamDashboardOut">>(`/teams/${team!.id}/dashboard`), refetchInterval: 60_000 });
   const teamRequests = teamDash.data?.can_manage ? teamDash.data.join_requests : [];
-  const pulse = useQuery({ queryKey: ["community-feed", "pulse", lat, lng], queryFn: () => api<Pulse[]>("/communities/feed", { query: { scope: "for_you", lat, lng, radius_km: 25, limit: 2 } }) });
-  const refresh = () => { for (const q of [home, myTeams, invites, opps, mine, requests, pulse, unread, playing, teamDash]) void q.refetch(); };
+  const refresh = () => { for (const q of [home, myTeams, invites, opps, mine, requests, unread, playing, teamDash]) void q.refetch(); };
   const name = h?.greeting_name ?? user?.full_name.split(" ")[0] ?? "";
   // The place results are measured from: what the player just picked (device or an area) wins over the saved profile area.
   const area = locSource !== "default" ? label : [h?.locality, h?.city].filter(Boolean).join(", ") || label;
   const openSpots = teamMatches.reduce((n, m) => n + m.composition.vacancies, 0);
 
   const actionCards = ctx === "player" ? playerActions() : captainActions({ teamId: team?.id, matchId: teamMatches[0]?.id });
+  // Illustrated banner cards for both roles (falls back to the 3D tiles if an action has no artwork).
+  const banners = illustrate(actionCards, ctx === "captain" ? CRICKET_CAPTAIN_CARDS : CRICKET_PLAYER_CARDS);
 
   return (
     <>
@@ -155,11 +158,11 @@ function CricketHome() {
           </ScrollView>
         ) : null}
 
-        <ActionCardGrid cards={actionCards} />
-        {chEdit ? (
-          <CricHeroesEditor kind="player" current={me.data?.cricheroes_profile_url} currentStats={me.data?.cricheroes_stats}
-            save={async (u, st) => { await savePlayerCricHeroes(u, st); await me.refetch(); }} onClose={() => setChEdit(false)} />
-        ) : me.data ? <HomeCricHeroesCard url={me.data.cricheroes_profile_url} stats={me.data.cricheroes_stats} onEdit={() => setChEdit(true)} /> : null}
+        {banners ? (
+          <View style={{ gap: 12 }}>
+            {banners.map((c) => <SportsIllustrationCard key={c.key} testID={`home-card-${c.key}`} title={c.title} subtitle={c.subtitle} illustration={c.illustration} colors={c.colors} onPress={c.onPress} />)}
+          </View>
+        ) : <ActionCardGrid cards={actionCards} />}
 
         {ctx === "player" && myShown.length ? (
           <View style={{ gap: 12 }}>
@@ -261,20 +264,11 @@ function CricketHome() {
           </View>
         ) : null}
 
-        <View style={{ gap: 12 }}>
-          <SectionHeader title="Community pulse" action="Open" onAction={() => router.push("/community")} />
-          {pulse.data?.length ? pulse.data.map((p) => (
-            <Panel key={p.id} label={`${p.author.full_name}: ${p.body}`} onPress={() => router.push({ pathname: "/community/[id]", params: { id: p.community_id } })}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Avatar name={p.community_name ?? p.author.full_name} size={36} />
-                <View style={{ flex: 1, minWidth: 0 }}><Txt v="h3" numberOfLines={1} style={{ fontSize: 15 }}>{p.community_name ?? p.author.full_name}</Txt><Txt v="small" color={T.muted}>{p.author.full_name} · {ago(p.created_at)}</Txt></View>
-              </View>
-              <Txt v="body" numberOfLines={2} style={{ fontSize: 14 }}>{p.body}</Txt>
-            </Panel>
-          )) : (
-            <Panel onPress={() => router.push("/community")} label="Open community"><Txt v="h3">Your local cricket community</Txt><Txt v="small" color={T.muted}>Match moments, player requests and team news near {label}.</Txt></Panel>
-          )}
-        </View>
+        {/* CricHeroes profile: last on the page, after everything to do today */}
+        {chEdit ? (
+          <CricHeroesEditor kind="player" current={me.data?.cricheroes_profile_url} currentStats={me.data?.cricheroes_stats}
+            save={async (u, st) => { await savePlayerCricHeroes(u, st); await me.refetch(); }} onClose={() => setChEdit(false)} />
+        ) : me.data ? <HomeCricHeroesCard url={me.data.cricheroes_profile_url} stats={me.data.cricheroes_stats} onEdit={() => setChEdit(true)} /> : null}
       </ScrollView>
       <FilterBottomSheet ref={locSheet} title="Where are you playing?" snap={["75%"]}><LocationOptions onDone={() => locSheet.current?.dismiss()} /></FilterBottomSheet>
     </>
